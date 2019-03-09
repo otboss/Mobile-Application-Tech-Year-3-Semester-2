@@ -1,4 +1,4 @@
-package com.example.ottochat;
+package com.example.cipherchat;
 
 import android.os.Bundle;
 import io.flutter.app.FlutterActivity;

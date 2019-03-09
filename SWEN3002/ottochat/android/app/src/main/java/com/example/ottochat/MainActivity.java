@@ -1,4 +1,4 @@
-package com.example.instamess;
+package com.example.ottochat;
 
 import android.os.Bundle;
 import io.flutter.app.FlutterActivity;

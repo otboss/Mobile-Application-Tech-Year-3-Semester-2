@@ -1,9 +1,0 @@
-
-
-class FirebaseInterface{
-
-}
-
-class FirebaseAuthInterface{
-  
-}

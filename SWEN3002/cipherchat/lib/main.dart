@@ -1,18 +1,22 @@
+import 'package:cipherchat/client.dart';
 import 'package:cipherchat/screens/chat.dart';
 import 'package:cipherchat/screens/home.dart';
 import 'package:cipherchat/secp256k1.dart';
+import 'package:cipherchat/server.dart';
 import 'package:flutter/material.dart';
 import 'package:dio/dio.dart';
-import 'dart:io';
+import 'package:flutter_string_encryption/flutter_string_encryption.dart';
 import 'dart:async';
-
 import 'package:flutter_webview_plugin/flutter_webview_plugin.dart';
 
 void main() => runApp(MyApp());
 
-Dio dio = new Dio(Options(connectTimeout: 5000, receiveTimeout: 5000));
-final flutterWebviewPlugin = new FlutterWebviewPlugin();
-Secp256k1 secp256k1EllipticCurve = Secp256k1();
+Dio dio = Dio(Options(connectTimeout: 5000, receiveTimeout: 5000));
+final flutterWebviewPlugin = FlutterWebviewPlugin();
+final Secp256k1 secp256k1EllipticCurve = Secp256k1();
+final Server server = Server();
+final Client client = Client();
+final cryptor = new PlatformStringCryptor();
 
 
 Color themeColor = Colors.black38;

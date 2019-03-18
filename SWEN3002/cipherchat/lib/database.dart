@@ -31,10 +31,11 @@ class DatabaseManager {
     try {
       String path = await getDatabasePath();
       db = await openDatabase(path, version: 1);
-      await db.execute("CREATE TABLE IF NOT EXISTS $accountTable(aid INTEGER PRIMARY KEY, username TEXT, ipAddress TEXT, port INTEGER, ts DATETIME DEFAULT CURRENT_TIMESTAMP)");
+      await db.execute("CREATE TABLE IF NOT EXISTS $accountTable(aid INTEGER PRIMARY KEY, username TEXT, ts DATETIME DEFAULT CURRENT_TIMESTAMP)");
       await db.execute("CREATE TABLE IF NOT EXISTS $connectionsTable(usrid INTEGER PRIMARY KEY, username TEXT, network TEXT, ts DATETIME DEFAULT CURRENT_TIMESTAMP)");
       await db.execute("CREATE TABLE IF NOT EXISTS $inboxTable(inId INTEGER PRIMARY KEY, username TEXT, network TEXT, ts DATETIME DEFAULT CURRENT_TIMESTAMP)");
       await db.execute("CREATE TABLE IF NOT EXISTS $outboxTable(usrid INTEGER PRIMARY KEY, username TEXT, network TEXT, ts DATETIME DEFAULT CURRENT_TIMESTAMP)");
+      await db.rawInsert("INSERT INTO $accountTable (username) VALUES ('Anonymous')");
       return db;
     } catch (err) {
       print(err);
@@ -46,6 +47,20 @@ class DatabaseManager {
     if (db != null) return db;
     await initDb();
     return db;
+  }
+
+  Future<String> getUsername() async{
+    var client = await getDatabase();
+    String username;
+    try{
+      List query = await client.rawQuery("SELECT username FROM $accountTable");
+      username = query[0]["username"];
+    }
+    catch(err){
+      print(err);
+      return "Anonymous";
+    }
+    return username;
   }
 
   

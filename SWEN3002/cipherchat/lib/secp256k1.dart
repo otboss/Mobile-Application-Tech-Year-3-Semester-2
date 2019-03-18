@@ -42,7 +42,7 @@ class Secp256k1{
   Future<BigInt> generatePrivateKey() async{
     try{
       String privateKeyJsCode = await rootBundle.loadString('assets/privateKeyGenerator.js');
-      await flutterWebviewPlugin.launch("");
+      await flutterWebviewPlugin.launch("", hidden: true);
       String privateKey = await flutterWebviewPlugin.evalJavascript(privateKeyJsCode);
       privateKey = privateKey.split('"').join("");
       await flutterWebviewPlugin.close();

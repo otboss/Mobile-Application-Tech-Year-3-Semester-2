@@ -1,5 +1,7 @@
 
 
+import 'dart:math';
+
 import 'package:flutter/services.dart';
 import './main.dart';
 
@@ -54,7 +56,25 @@ class Secp256k1{
   }
 
   BigInt generatePublicKey(BigInt privateKey) {
-    return privateKey*g;
+    return (privateKey*g)%p;
   }
-  
+
+  BigInt generateSymmetricKey(BigInt privateKey, BigInt receivedPublicKey){
+    return (privateKey*receivedPublicKey)%p;
+  }
+
+  String generateRandomString(int length) {
+    List<String> alpha =
+        "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ123456789"
+            .split("");
+    Random rng = Random();
+    int min = 0;
+    int max = alpha.length - 1;
+    String result = "";
+    for (var x = 0; x < length; x++) {
+      int r = min + rng.nextInt(max - min);
+      result += alpha[r];
+    }
+    return result;
+  }  
 }

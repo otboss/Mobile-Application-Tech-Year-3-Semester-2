@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:cipherchat/main.dart';
 import 'package:cipherchat/server.dart';
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import '../main.dart';
 
@@ -9,16 +10,28 @@ class Home extends StatefulWidget {
 }
 
 class HomeState extends State<Home> {
- 
+  
+
+  TextEditingController accountIpInputController = TextEditingController();
+  TextEditingController accountPortInputController = TextEditingController();
+  TextEditingController accountUsernameInputController = TextEditingController();
+  TextEditingController peerIpInputController = TextEditingController();
 
   @override
   void initState() {
-    isConnected().then((connection) {
+    isConnected().then((connection) async{
       if (connection) {
-        //START SERVER
-        server.startServer();
-      } else {}
+        server.getPublicIpAddress().then((ip){
+          accountIpInputController.text = ip;
+        });
+        accountPortInputController.text = server.port.toString();
+      } else {
+        toastMessageBottomShort("Connection Unavailable", context);
+      }
+      accountUsernameInputController.text = await databaseManager.getUsername();
     });
+     
+    
     super.initState();
   }
 
@@ -39,6 +52,7 @@ class HomeState extends State<Home> {
         print(secp256k1EllipticCurve.generateSymmetricKey(prkey1, pubKey2));
       }); 
     });
+
     return Scaffold(
       appBar: AppBar(
         backgroundColor: themeColor,
@@ -54,7 +68,7 @@ class HomeState extends State<Home> {
               Icons.vpn_key,
             ),
             onPressed: () {
-              showAccountSettings("Account", context, null, null);
+              showAccountSettings("Account", context, accountUsernameInputController, accountIpInputController, accountPortInputController, null);
             },
           )
         ],
@@ -76,7 +90,38 @@ class HomeState extends State<Home> {
       floatingActionButton: FloatingActionButton(
         backgroundColor: themeColor,
         child: Icon(Icons.add),
-        onPressed: () async {},
+        onPressed: () {
+          showPrompt("Enter Peer IP", context, peerIpInputController, () async{
+            
+            String ip = peerIpInputController.text;
+            if(ip.split(".").length == 4 && ip != await server.getCompleteIpAddress()){
+              showCustomProcessDialog("Sending Packets..", context);
+              try{
+                Response response = await dio.get(ip);
+                //RESPONSE RECEIVED
+                await Future.delayed(Duration(seconds: 3));
+                Navigator.pop(context);      
+                await Future.delayed(Duration(seconds: 1));      
+                await toastMessageBottomShort("Connected", context);
+                Navigator.pushNamed(context, "/chat");
+              }
+              catch(err){
+                //REQUEST TIMEOUT
+                await Future.delayed(Duration(seconds: 3));
+                Navigator.pop(context);                
+                await Future.delayed(Duration(seconds: 1)); 
+                await toastMessageBottomShort("Waiting on Peer", context);     
+                Navigator.pushNamed(context, "/chat");
+              }
+            }
+            else{
+              await Future.delayed(Duration(seconds: 1)); 
+              Navigator.pop(context);
+              await toastMessageBottomShort("Invalid IP", context);
+            }
+
+          });
+        },
       ),
     );
   }

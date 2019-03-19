@@ -1,7 +1,8 @@
-import 'package:cipherchat/client.dart';
-import 'package:cipherchat/database.dart';
-import 'package:cipherchat/screens/chat.dart';
-import 'package:cipherchat/screens/home.dart';
+import './client.dart';
+import './database.dart';
+import './screens/chat.dart';
+import './screens/home.dart';
+import './screens/profile.dart';
 import 'package:cipherchat/secp256k1.dart';
 import 'package:cipherchat/server.dart';
 import 'package:flutter/material.dart';
@@ -23,9 +24,14 @@ final DatabaseManager databaseManager = DatabaseManager();
 final cryptor = new PlatformStringCryptor();
 
 
-Color themeColor = Colors.black38;
+Color themeColor = Color.fromRGBO(162, 162, 162, 1);//Colors.black38;
 Color materialGreen = Colors.teal[400];
 Color appBarTextColor = Colors.white;
+String defaultProfilePicFile = "assets/default_profile_pic_base64.txt";
+String peerUsername = "Anonymous";
+String peerIpAddress = "";
+String peerProfilePic = "";
+Map loadedMessagesIds = {};
 
 _launchURL(url) async {
   if (await canLaunch(url)) {
@@ -33,6 +39,10 @@ _launchURL(url) async {
   } else {
     throw 'Could not launch $url';
   }
+}
+
+Locale getLocality(BuildContext context){
+  return Localizations.localeOf(context);
 }
 
 Future<bool> showCustomProcessDialog(String text, BuildContext context,
@@ -448,21 +458,13 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'CipherChat',
       theme: ThemeData(
-        // This is the theme of your application.
-        //
-        // Try running your application with "flutter run". You'll see the
-        // application has a blue toolbar. Then, without quitting the app, try
-        // changing the primarySwatch below to Colors.green and then invoke
-        // "hot reload" (press "r" in the console where you ran "flutter run",
-        // or simply save your changes to "hot reload" in a Flutter IDE).
-        // Notice that the counter didn't reset back to zero; the application
-        // is not restarted.
         primarySwatch: Colors.blue,
       ),
-      home: Chat(), //MyHomePage(title: 'Flutter Demo Home Page'),
+      home: Chat(),
       routes: { 
         "/home": (BuildContext context) => Home(),
         "/chat": (BuildContext context) => Chat(),
+        "/profile": (BuildContext context) => Profile(),
       },
     );
   }

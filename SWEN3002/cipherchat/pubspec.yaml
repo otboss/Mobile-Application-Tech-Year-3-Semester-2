@@ -47,6 +47,8 @@ flutter:
   assets:
     - assets/languages/en_US.json
     - assets/privateKeyGenerator.js
+    - assets/default_profile_pic.png
+    - assets/default_profile_pic_base64.txt
 
   # The following line ensures that the Material Icons font is
   # included with your application, so that you can use the icons in

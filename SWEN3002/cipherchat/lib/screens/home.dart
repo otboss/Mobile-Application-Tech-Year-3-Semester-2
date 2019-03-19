@@ -9,8 +9,7 @@ class Home extends StatefulWidget {
   HomeState createState() => HomeState();
 }
 
-class HomeState extends State<Home> {
-  
+class HomeState extends State<Home> {  
 
   TextEditingController accountIpInputController = TextEditingController();
   TextEditingController accountPortInputController = TextEditingController();
@@ -28,7 +27,8 @@ class HomeState extends State<Home> {
       } else {
         toastMessageBottomShort("Connection Unavailable", context);
       }
-      accountUsernameInputController.text = await databaseManager.getUsername();
+      var currentUserInfo = await databaseManager.getCurrentUserInfo();
+      accountUsernameInputController.text = await currentUserInfo["username"];
     });
      
     
@@ -52,7 +52,7 @@ class HomeState extends State<Home> {
         print(secp256k1EllipticCurve.generateSymmetricKey(prkey1, pubKey2));
       }); 
     });
-
+    
     return Scaffold(
       appBar: AppBar(
         backgroundColor: themeColor,

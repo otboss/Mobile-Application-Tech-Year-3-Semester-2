@@ -33,6 +33,17 @@ class Server {
     }
     return "unknown";
   }
+  
+  Future<Map> getIpInformation(String ipAddress) async{
+    try{
+        Response response = await dio.get("http://extreme-ip-lookup.com/json/$ipAddress");
+        return json.decode(response.data);
+    }
+    catch(err){
+      print(err);
+    }
+    return {};
+  }
 
   Future<String> getCompleteIpAddress() async {
     return "http://" + await getPublicIpAddress() + port.toString() + "/";

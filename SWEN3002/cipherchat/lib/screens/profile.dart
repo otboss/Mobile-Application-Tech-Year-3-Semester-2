@@ -53,7 +53,7 @@ class ProfileState extends State<Profile> {
               print(snapshot.error);
               return Text('Error: ${snapshot.error}');
             }
-            Image profilePicture = snapshot.data["profilePic"];
+            Image profilePicture = base64ToImageConverter(snapshot.data["profilePic"]);
             return profilePicture;
         }
         return null; // unreachable
@@ -156,7 +156,7 @@ class ProfileState extends State<Profile> {
                 TableRow(
                   children: [
                     Text(
-                      "Isp: ",
+                      "ISP: ",
                       style: TextStyle(
                         fontSize: 16,
                       ),
@@ -164,7 +164,7 @@ class ProfileState extends State<Profile> {
                     ),
                     Container(
                       padding: EdgeInsets.fromLTRB(5, 0, 0, 0),
-                      child: Text("China MobileChina MobileChina MobileChina MobileChina MobileChina MobileChina MobileChina Mobile", style: TextStyle(fontSize: 16),),
+                      child: Text("China Mobile", style: TextStyle(fontSize: 16),),
                     ),
                   ],
                 ),

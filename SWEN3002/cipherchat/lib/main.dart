@@ -1,3 +1,6 @@
+import 'dart:convert';
+import 'dart:io';
+import 'dart:typed_data';
 import './client.dart';
 import './database.dart';
 import './screens/chat.dart';
@@ -7,8 +10,10 @@ import 'package:cipherchat/secp256k1.dart';
 import 'package:cipherchat/server.dart';
 import 'package:flutter/material.dart';
 import 'package:dio/dio.dart';
+import 'package:share/share.dart';
 import 'package:flutter_string_encryption/flutter_string_encryption.dart';
 import 'dart:async';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter_webview_plugin/flutter_webview_plugin.dart';
 import 'package:toast/toast.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -23,15 +28,18 @@ final Client client = Client();
 final DatabaseManager databaseManager = DatabaseManager();
 final cryptor = new PlatformStringCryptor();
 
-
-Color themeColor = Color.fromRGBO(162, 162, 162, 1);//Colors.black38;
+Color themeColor = Color.fromRGBO(162, 162, 162, 1); //Colors.black38;
 Color materialGreen = Colors.teal[400];
 Color appBarTextColor = Colors.white;
+Color cardColor = Colors.white;
 String defaultProfilePicFile = "assets/default_profile_pic_base64.txt";
-String peerUsername = "Anonymous";
+String peerUsername = "";
 String peerIpAddress = "";
 String peerProfilePic = "";
+int limitPerChatsFetchFromDatabase = 20;
+int limitPerMessagesFetchFromDatabase = 20;
 Map loadedMessagesIds = {};
+Map loadedChatIds = {};
 
 _launchURL(url) async {
   if (await canLaunch(url)) {
@@ -41,7 +49,7 @@ _launchURL(url) async {
   }
 }
 
-Locale getLocality(BuildContext context){
+Locale getLocality(BuildContext context) {
   return Localizations.localeOf(context);
 }
 
@@ -130,8 +138,17 @@ Future<void> showPrompt(String title, BuildContext context,
   return completer.future;
 }
 
-Future<void> showAccountSettings(String title, BuildContext context,
-    TextEditingController usernameController, TextEditingController ipController, TextEditingController portController, Future<dynamic> callback()) {
+
+
+Future<void> showAccountSettings(
+    String title,
+    BuildContext context,
+    TextEditingController usernameController,
+    //FutureBuilder loadUsernameFromDatabase,
+    TextEditingController ipController,
+    TextEditingController portController,
+    FutureBuilder loadProfilePicFromDatabase,
+    Future<dynamic> callback()) {
   Widget alert = AlertDialog(
     title: Text(
       title,
@@ -139,15 +156,38 @@ Future<void> showAccountSettings(String title, BuildContext context,
     content: SingleChildScrollView(
       child: Column(
         children: <Widget>[
-          Container(
-            width: 70,
-            height: 70,
-            alignment: Alignment.bottomLeft,
-            decoration: BoxDecoration(
-              border: Border.all(
-                color: Colors.black12,
+          GestureDetector(
+            onTap: () async {
+              try {
+                File image = await FilePicker.getFile(type: FileType.IMAGE);
+                //print("THE IMAGE PATH IS: ");
+                //print(imagePath.toString());
+                String base64ProfilePic =
+                    base64.encode(await image.readAsBytes());
+                await databaseManager.updateProfilePicture(base64ProfilePic);
+                Navigator.pop(context);
+                toastMessageBottomShort("Profile Updated", context);
+                
+              } catch (err) {
+                print(err);
+              }
+            },
+            child: Container(
+              width: 70,
+              height: 70,
+              alignment: Alignment.bottomLeft,
+              decoration: BoxDecoration(
+                border: Border.all(
+                  color: Colors.black12,
+                ),
+                borderRadius: BorderRadius.circular(100),
               ),
-              borderRadius: BorderRadius.circular(100),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(30),
+                child: SizedBox.expand(
+                  child: loadProfilePicFromDatabase,
+                ),
+              ),
             ),
           ),
           Container(
@@ -170,7 +210,9 @@ Future<void> showAccountSettings(String title, BuildContext context,
               ),
               Flexible(
                 child: Theme(
-                  data: ThemeData(cursorColor: materialGreen,),
+                  data: ThemeData(
+                    cursorColor: materialGreen,
+                  ),
                   child: TextField(
                     obscureText: false,
                     controller: usernameController,
@@ -196,7 +238,7 @@ Future<void> showAccountSettings(String title, BuildContext context,
                       color: materialGreen,
                       fontSize: 16,
                     ),
-                    onEditingComplete: (){
+                    onEditingComplete: () {
                       //UPDATE USERNAME
                     },
                   ),
@@ -266,7 +308,15 @@ Future<void> showAccountSettings(String title, BuildContext context,
                   Icons.share,
                 ),
                 color: themeColor,
-                onPressed: () {},
+                onPressed: () async {
+                  try {
+                    String completeIpAddress =
+                        await server.getCompleteIpAddress();
+                    Share.share(completeIpAddress);
+                  } catch (err) {
+                    print(err);
+                  }
+                },
               )
             ],
           ),
@@ -336,21 +386,27 @@ Future<void> showAccountSettings(String title, BuildContext context,
       ),
     ),
     actions: <Widget>[
-     FlatButton(
+      FlatButton(
         child: Text("SUPPORT", style: TextStyle(color: materialGreen)),
-        onPressed: () async{
+        onPressed: () async {
           Navigator.pop(context);
-          //START NEW SEARCH
           await Future.delayed(Duration(seconds: 2));
           showDonationAlert(context);
-          //callback();
         },
       ),
       FlatButton(
         child: Text("SAVE", style: TextStyle(color: materialGreen)),
         onPressed: () {
+          //Update account information
           Navigator.pop(context);
-          //START NEW SEARCH
+          if (usernameController.text.length > 0)
+            databaseManager.updateUsername(usernameController.text);
+          else
+            toastMessageBottomShort("Invalid Username", context);
+          if (ipController.text.split(".").length == 4)
+            server.ip = ipController.text;
+          else
+            toastMessageBottomShort("Invalid Ip", context);
           callback();
         },
       )
@@ -395,7 +451,8 @@ Future<void> showDonationAlert(BuildContext context) {
         padding: EdgeInsets.fromLTRB(0, 0, 0, 0),
         child: ListBody(
           children: <Widget>[
-            Text("CipherChat allows users to send messages securely using multiple cryptographical techniques. It is also completely free and open source. If you would like to support the CipherChat project tap Donate below"),
+            Text(
+                "CipherChat allows users to send messages securely using multiple cryptographical techniques. It is also completely free and open source. If you would like to support the CipherChat project tap Donate below"),
           ],
         ),
       ),
@@ -411,7 +468,8 @@ Future<void> showDonationAlert(BuildContext context) {
         child: Text("DONATE", style: TextStyle(color: materialGreen)),
         onPressed: () {
           Navigator.pop(context);
-          _launchURL("https://www.paypal.com/cgi-bin/webscr?cmd=_donations&business=otsurfer6@gmail.com&lc=US&item_name=Open Source Support&no_note=0&cn=&curency_code=USD&bn=PP-DonationsBF:btn_donateCC_LG.gif:NonHosted");
+          _launchURL(
+              "https://www.paypal.com/cgi-bin/webscr?cmd=_donations&business=otsurfer6@gmail.com&lc=US&item_name=Open Source Support&no_note=0&cn=&curency_code=USD&bn=PP-DonationsBF:btn_donateCC_LG.gif:NonHosted");
         },
       )
     ],
@@ -428,40 +486,27 @@ Future<bool> isConnected() async {
   }
 }
 
-Future<bool> toastMessageBottomShort(String message, BuildContext context) async {
+Image base64ToImageConverter(String base64String) {
+  Uint8List bytes = base64.decode(base64String);
+  return Image.memory(Uint8List.fromList(bytes));
+}
+
+Future<bool> toastMessageBottomShort(
+    String message, BuildContext context) async {
   Toast.show(message, context, duration: 4, gravity: Toast.BOTTOM);
   return true;
 }
 
 class MyApp extends StatelessWidget {
-  // This widget is the root of your application.
-
   @override
   Widget build(BuildContext context) {
-    /*void listener() async{
-      print("STARTING SERVER...");
-      var server = await HttpServer.bind(
-        InternetAddress.loopbackIPv4,
-        4040,
-      );
-      print('Listening on localhost:${server.port}');
-
-      await for (HttpRequest request in server) {
-        request.response
-          ..write('Hello, world!')
-          ..close();
-      }      
-    }
-
-    listener();*/
-
     return MaterialApp(
       title: 'CipherChat',
       theme: ThemeData(
         primarySwatch: Colors.blue,
       ),
-      home: Chat(),
-      routes: { 
+      home: Home(),
+      routes: {
         "/home": (BuildContext context) => Home(),
         "/chat": (BuildContext context) => Chat(),
         "/profile": (BuildContext context) => Profile(),

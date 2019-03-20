@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 
 import './main.dart';
@@ -10,9 +11,10 @@ class Client {
 
   Client() {
     privateKey = secp256k1EllipticCurve.generatePrivateKey().toString();
+    databaseManager.getCurrentUserInfo();
   }
 
-  Future<bool> connectToPeer(String ipAddress) async {
+  Future<bool> checkConnection(String ipAddress) async {
     try {
       await dio.get(ipAddress + "?check=1");
     } catch (err) {
@@ -32,7 +34,7 @@ class Client {
     return true;
   }
 
-  Future<bool> sendSymmetricKey(String ipAddress, String message) async {
+  Future<bool> sendPublicKey(String ipAddress) async {
     try {
       String encodedSymmetricKey = secp256k1EllipticCurve
           .generatePublicKey(BigInt.parse(privateKey))
@@ -42,6 +44,25 @@ class Client {
       return false;
     }
     return true;
+  }
+
+  Future<Map> getPeerInfo(String ipAddress) async{
+    if(peerUsername == ""){
+      Response response;
+      try {
+        response = await dio.get(ipAddress + "?info=1");
+      } catch (err) {
+        return null;
+      }
+      peerUsername = json.decode(response.data["username"]);
+      peerProfilePic = json.decode(response.data["username"]);
+      return response.data;
+    }
+    else
+      return {
+        "username": peerUsername,
+        "profilePic": peerProfilePic
+      };
   }
 
   List<Widget> receivedMessages = [

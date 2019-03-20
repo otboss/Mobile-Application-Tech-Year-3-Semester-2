@@ -26,6 +26,7 @@ class Server {
   Future<String> getPublicIpAddress() async {
     try{
       Response response = await dio.get("http://ipecho.net/plain");
+      ip = response.data;
       return response.data;
     }
     catch(err){
@@ -46,7 +47,7 @@ class Server {
   }
 
   Future<String> getCompleteIpAddress() async {
-    return "http://" + await getPublicIpAddress() + port.toString() + "/";
+    return "http://" + await getPublicIpAddress() +":"+ port.toString() + "/";
   }
 
   Future<bool> startServer() async {
@@ -71,27 +72,34 @@ class Server {
           if (request.uri.queryParameters['key'] != null) {
             //RECEIVED KEY PARAMETERS FROM PEER
             if (client.symmetricKey.length != 64) {
-              BigInt receivedPublicKey =
-                  BigInt.parse(request.uri.queryParameters['key']);
-              BigInt symmetricKey = secp256k1EllipticCurve.generateSymmetricKey(
-                  BigInt.parse(client.privateKey), receivedPublicKey);
+              BigInt receivedPublicKey = BigInt.parse(request.uri.queryParameters['key']);
+              BigInt symmetricKey = secp256k1EllipticCurve.generateSymmetricKey(BigInt.parse(client.privateKey), receivedPublicKey);
               String hashedSymmetricKey = sha256
                   .convert(utf8.encode(symmetricKey.toString()))
                   .toString();
               client.symmetricKey = hashedSymmetricKey;
             }
+            Map userInfo = await databaseManager.getCurrentUserInfo();
             response
-              ..write('true')
+              ..write('{"username": "'+userInfo["username"]+'", "profilePic": "'+userInfo["profilePic"]+'"}')
               ..close();
           }
           if (request.uri.queryParameters['msg'] != null) {
             //RECEIVE MESSAGE FROM PEER
             String decryptedMessage = json.encode(await cryptor.decrypt(
                 request.uri.queryParameters['msg'], client.symmetricKey));
+            await databaseManager.saveMessage(decryptedMessage);
             //SAVE MESSAGE TO DATABASE
+
             response
               ..write('true')
               ..close();
+          }
+          if(request.uri.queryParameters['info'] != null){
+            Map userInfo = await databaseManager.getCurrentUserInfo();
+            response
+              ..write(json.encode(userInfo))
+              ..close();            
           }
         }
       }

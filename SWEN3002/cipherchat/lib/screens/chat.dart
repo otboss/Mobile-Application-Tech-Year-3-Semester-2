@@ -8,6 +8,9 @@ class Chat extends StatefulWidget {
 class ChatState extends State<Chat> {
   TextEditingController messageTextController = TextEditingController();
 
+  bool publicKeySent = false;
+  bool publicKeyReceived = false;
+
   Widget generateSentMessageWidget(String message, String timestamp) {
     return Container(
       margin: EdgeInsets.fromLTRB(0, 0, 0, 10),
@@ -140,49 +143,103 @@ class ChatState extends State<Chat> {
     );
   }
 
+  ///Sends a sample request to the peer. returns true if a response is received
+  ///and a timeout otherwise
+  Future<bool> checkConnection(String ipAddress) async {
+    try {
+      await dio.get(ipAddress + "?check=1");
+    } catch (err) {
+      return false;
+    }
+    return true;
+  }
+
+  ///Repeatedely send TCP packets to the peer until a conneciton is established
+  Future<bool> checkUntilConnected() async {
+    while (await client.checkConnection(peerIpAddress) == false) {
+      await Future.delayed(Duration(seconds: 5));
+    }
+    //Connection Successful
+    while (await client.sendPublicKey(peerIpAddress) == false) {
+      await Future.delayed(Duration(seconds: 5));
+    }
+    return true;
+  }
+
   bool loadMoreMessages = false;
 
+  var loadProfilePic;
+  var loadUsername;
   @override
   Widget build(BuildContext context) {
     // TODO: implement build
 
-    client.receivedMessages = [
+    /*client.receivedMessages = [
       generateSentMessageWidget(
           "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.",
           "d"),
       generateReceivedMessageWidget(
           "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.",
           "d")
-    ];
+    ];*/
 
-    databaseManager.getCurrentUserInfo().then((info) {
-      print(info);
-      print(info);
-    });
+    if (peerProfilePic == "") {
+      loadProfilePic = FutureBuilder<Map>(
+        future: client.getPeerInfo(peerIpAddress),
+        builder: (BuildContext context, AsyncSnapshot<Map> snapshot) {
+          switch (snapshot.connectionState) {
+            case ConnectionState.none:
+              break;
+            case ConnectionState.active:
+              return base64ToImageConverter(
+                  databaseManager.defaultProfilePicBase64);
+            case ConnectionState.waiting:
+              return base64ToImageConverter(
+                  databaseManager.defaultProfilePicBase64);
+            case ConnectionState.done:
+              if (snapshot.hasError) {
+                print(snapshot.error);
+                return Text('Error: ${snapshot.error}');
+              }
+              peerProfilePic = snapshot.data["profilePic"];
+              return base64ToImageConverter(snapshot.data["profilePic"]);
+          }
+        },
+      );
+    } else {
+      loadProfilePic = base64ToImageConverter(peerProfilePic);
+    }
 
-    FutureBuilder profilePic = FutureBuilder<Map>(
-      future: databaseManager.getCurrentUserInfo(),
-      builder: (BuildContext context, AsyncSnapshot<Map> snapshot) {
-        switch (snapshot.connectionState) {
-          case ConnectionState.none:
-            break;
-          case ConnectionState.active:
-            return Container();
-          case ConnectionState.waiting:
-            return Container();
-          case ConnectionState.done:
-            if (snapshot.hasError) {
-              print(snapshot.error);
-              return Text('Error: ${snapshot.error}');
-            }
-            Image profilePicture = snapshot.data["profilePic"];
-            return profilePicture;
-        }
-      },
-    );
+    if (peerUsername == "") {
+      loadUsername = FutureBuilder<Map>(
+        future: client.getPeerInfo(peerIpAddress),
+        builder: (BuildContext context, AsyncSnapshot<Map> snapshot) {
+          switch (snapshot.connectionState) {
+            case ConnectionState.none:
+              break;
+            case ConnectionState.active:
+              return Text("Anonymous");
+            case ConnectionState.waiting:
+              return Text("Anonymous");
+            case ConnectionState.done:
+              if (snapshot.hasError) {
+                print(snapshot.error);
+                return Text('Error: ${snapshot.error}');
+              }
+              Map data = snapshot.data;
+              peerUsername = data["username"];
+              return data["username"];
+          }
+        },
+      );
+    }
+    else{
+      loadUsername = peerUsername;
+    }
 
     FutureBuilder loadMessages = FutureBuilder<List>(
-      future: databaseManager.getMessages(peerIpAddress, peerUsername, false, loadedMessagesIds.keys.toList(), loadMoreMessages),
+      future: databaseManager.getMessages(peerIpAddress, peerUsername, false,
+          loadedMessagesIds.keys.toList(), loadMoreMessages),
       builder: (BuildContext context, AsyncSnapshot<List> snapshot) {
         switch (snapshot.connectionState) {
           case ConnectionState.none:
@@ -192,11 +249,14 @@ class ChatState extends State<Chat> {
           case ConnectionState.waiting:
             return Container();
           case ConnectionState.done:
+            if (loadMoreMessages) loadMoreMessages = false;
             if (snapshot.hasError) {
               print(snapshot.error);
               return Text('Error: ${snapshot.error}');
             }
-
+            bool allMessagesLoaded = true;
+            if (loadedMessagesIds.keys.length < snapshot.data.length)
+              allMessagesLoaded = false;
             List messages = snapshot.data;
             List<Widget> messagesContainer = [];
             Widget messagesList = ListView(
@@ -205,21 +265,18 @@ class ChatState extends State<Chat> {
               padding: EdgeInsets.fromLTRB(2, 10, 2, 75),
               children: messagesContainer,
             );
-            if(loadMoreMessages){
-              loadMoreMessages = false;
-            }
-
             for (var x = 0; x < messages.length; x++) {
               if (messages[x]["inbound"] < 0) {
                 //SENT MESSAGE
-                messagesContainer.add(generateSentMessageWidget(messages[x]["inbound"], messages[x]["ts"]));
+                messagesContainer.add(generateSentMessageWidget(
+                    messages[x]["inbound"], messages[x]["ts"]));
               } else {
                 //RECEIVED MESSAGE
-                messagesContainer.add(generateReceivedMessageWidget(messages[x]["inbound"], messages[x]["ts"]));
+                messagesContainer.add(generateReceivedMessageWidget(
+                    messages[x]["inbound"], messages[x]["ts"]));
               }
-              loadedMessagesIds[messages[x]["mid"]] = true;
+              loadedMessagesIds[messages[x]["mid"].toString()] = true;
             }
-            
             if (messagesContainer.length == 0) {
               return ListView(
                 shrinkWrap: true,
@@ -227,15 +284,18 @@ class ChatState extends State<Chat> {
                 children: [
                   Center(
                     child: new Text(
-                        'No messages to here. Remember to ask Security Questions.'),
+                      'No messages to here. Remember to ask Security Questions.',
+                    ),
                   ),
                   Center(
-                    child: new Text('Happy Chatting!'),
-                  )
+                    child: new Text(
+                      'Happy Chatting!',
+                    ),
+                  ),
                 ],
               );
             }
-            if(messagesContainer.length < loadedMessagesIds.length){
+            if (allMessagesLoaded == false) {
               messagesContainer.insert(
                 0,
                 RaisedButton(
@@ -248,7 +308,7 @@ class ChatState extends State<Chat> {
                   ),
                   onPressed: () async {
                     setState(() {
-                      loadMoreMessages = true;                    
+                      loadMoreMessages = true;
                     });
                   },
                 ),
@@ -258,13 +318,39 @@ class ChatState extends State<Chat> {
         }
       },
     );
+
+    FutureBuilder startConnectionChecker = FutureBuilder<bool>(
+      future: checkUntilConnected(),
+      builder: (BuildContext context, AsyncSnapshot<bool> snapshot) {
+        switch (snapshot.connectionState) {
+          case ConnectionState.none:
+            return Text("Connecting..");
+          case ConnectionState.active:
+            return Text("Connecting..");
+          case ConnectionState.waiting:
+            return Text("Connecting..");
+          case ConnectionState.done:
+            if (snapshot.hasError) {
+              print(snapshot.error);
+              return Text('Error: ${snapshot.error}');
+            }
+            return Container();
+        }
+      },
+    );
+
     return Scaffold(
       appBar: AppBar(
         leading: IconButton(
           icon: Icon(
             Icons.arrow_back,
           ),
-          onPressed: () async {},
+          onPressed: () async {
+            peerUsername = "";
+            peerIpAddress = "";
+            peerProfilePic = "";
+            Navigator.pop(context);
+          },
         ),
         title: Row(
           children: <Widget>[
@@ -287,15 +373,12 @@ class ChatState extends State<Chat> {
                 ), */
                 ),
                 child: ClipRRect(
-                  borderRadius: new BorderRadius.circular(30),
-                  child: Hero(
-                    tag: 'peerProfilePicture',
-                    child: profilePic,
-                  ),
+                  borderRadius: BorderRadius.circular(30),
+                  child: loadProfilePic,
                 ),
               ),
             ),
-            Text(peerUsername)
+            Column(children: [loadUsername, startConnectionChecker])
           ],
         ),
         backgroundColor: themeColor,
@@ -303,12 +386,7 @@ class ChatState extends State<Chat> {
       body: Stack(
         children: <Widget>[
           Container(
-            child: ListView(
-              shrinkWrap: true,
-              reverse: true,
-              padding: EdgeInsets.fromLTRB(2, 10, 2, 75),
-              children: client.receivedMessages,
-            ),
+            child: loadMessages,
           ),
           Column(
             crossAxisAlignment: CrossAxisAlignment.center,

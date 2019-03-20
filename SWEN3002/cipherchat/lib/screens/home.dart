@@ -1,5 +1,11 @@
+import 'dart:async';
+import 'dart:convert';
+import 'dart:io';
+
 import 'package:cipherchat/main.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:share/share.dart';
 import '../main.dart';
 
 class Home extends StatefulWidget {
@@ -86,6 +92,284 @@ class HomeState extends State<Home> {
   }
 
 
+Future<void> showAccountSettings(
+    String title,
+    BuildContext context,
+    TextEditingController usernameController,
+    TextEditingController ipController,
+    TextEditingController portController,
+    FutureBuilder loadProfilePicFromDatabase,
+    Future<dynamic> callback()) {
+  Widget alert = AlertDialog(
+    title: Text(
+      title,
+    ),
+    content: SingleChildScrollView(
+      child: Column(
+        children: <Widget>[
+          GestureDetector(
+            onTap: () async {
+              try {
+                File image = await FilePicker.getFile(type: FileType.IMAGE);
+                //print("THE IMAGE PATH IS: ");
+                //print(imagePath.toString());
+                String base64ProfilePic =
+                    base64.encode(await image.readAsBytes());
+                await databaseManager.updateProfilePicture(base64ProfilePic);
+                Navigator.pop(context);
+                setState(() {});
+                toastMessageBottomShort("Profile Updated", context);
+                
+              } catch (err) {
+                print(err);
+              }
+            },
+            child: Container(
+              width: 70,
+              height: 70,
+              alignment: Alignment.bottomLeft,
+              decoration: BoxDecoration(
+                border: Border.all(
+                  color: Colors.black12,
+                ),
+                borderRadius: BorderRadius.circular(100),
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(30),
+                child: SizedBox.expand(
+                  child: loadProfilePicFromDatabase,
+                ),
+              ),
+            ),
+          ),
+          Container(
+            height: 10,
+          ),
+          Container(
+            height: 0,
+            alignment: Alignment.bottomLeft,
+            child: Text(
+              "Username",
+              style: TextStyle(
+                color: themeColor,
+              ),
+            ),
+          ),
+          Row(
+            children: <Widget>[
+              Container(
+                width: 20,
+              ),
+              Flexible(
+                child: Theme(
+                  data: ThemeData(
+                    cursorColor: materialGreen,
+                  ),
+                  child: TextField(
+                    obscureText: false,
+                    controller: usernameController,
+                    autofocus: false,
+                    decoration: InputDecoration(
+                      enabledBorder: UnderlineInputBorder(
+                        borderSide: BorderSide(color: materialGreen),
+                      ),
+                      focusedBorder: UnderlineInputBorder(
+                        borderSide:
+                            BorderSide(color: materialGreen, width: 2.0),
+                      ),
+                      //labelText: "(eg.) https://steemit.com/blog/@username/blog-title",
+                      border: new UnderlineInputBorder(
+                          borderSide: new BorderSide(color: Colors.red)),
+                      labelStyle: Theme.of(context).textTheme.caption.copyWith(
+                            color: materialGreen,
+                            fontSize: 16,
+                          ),
+                      errorText: null,
+                    ),
+                    style: TextStyle(
+                      color: materialGreen,
+                      fontSize: 16,
+                    ),
+                    onEditingComplete: () {
+                      //UPDATE USERNAME
+                    },
+                  ),
+                ),
+              ),
+              Container(
+                height: 80,
+                width: 0,
+              ),
+            ],
+          ),
+          Container(
+            height: 10,
+            padding: EdgeInsets.fromLTRB(0, 5, 0, 0),
+            alignment: Alignment.bottomLeft,
+            child: Text(
+              "IP",
+              style: TextStyle(color: themeColor),
+            ),
+          ),
+          Row(
+            children: <Widget>[
+              Container(
+                width: 20,
+              ),
+              Flexible(
+                child: Theme(
+                  data: ThemeData(cursorColor: materialGreen),
+                  child: TextField(
+                    enabled: true,
+                    obscureText: false,
+                    controller: ipController,
+                    autofocus: false,
+                    decoration: InputDecoration(
+                      enabledBorder: UnderlineInputBorder(
+                        borderSide: BorderSide(color: materialGreen),
+                      ),
+                      focusedBorder: UnderlineInputBorder(
+                        borderSide:
+                            BorderSide(color: materialGreen, width: 2.0),
+                      ),
+                      disabledBorder: UnderlineInputBorder(
+                        borderSide:
+                            BorderSide(color: Colors.transparent, width: 2.0),
+                      ),
+                      //labelText: "(eg.) https://steemit.com/blog/@username/blog-title",
+                      border: new UnderlineInputBorder(
+                          borderSide: new BorderSide(color: Colors.red)),
+                      labelStyle: Theme.of(context).textTheme.caption.copyWith(
+                            color: materialGreen,
+                            fontSize: 16,
+                          ),
+                      errorText: null,
+                    ),
+                    style: TextStyle(
+                      color: materialGreen,
+                      fontSize: 16,
+                    ),
+                  ),
+                ),
+              ),
+              Container(
+                width: 0,
+              ),
+              IconButton(
+                icon: Icon(
+                  Icons.share,
+                ),
+                color: themeColor,
+                onPressed: () async {
+                  try {
+                    String completeIpAddress =
+                        await server.getCompleteIpAddress();
+                    Share.share(completeIpAddress);
+                  } catch (err) {
+                    print(err);
+                  }
+                },
+              )
+            ],
+          ),
+          Container(
+            height: 20,
+            padding: EdgeInsets.fromLTRB(0, 5, 0, 0),
+            alignment: Alignment.bottomLeft,
+            child: Text(
+              "Port",
+              style: TextStyle(color: themeColor),
+            ),
+          ),
+          Row(
+            children: <Widget>[
+              Container(
+                width: 20,
+              ),
+              Flexible(
+                child: Theme(
+                  data: ThemeData(cursorColor: materialGreen),
+                  child: TextField(
+                    enabled: false,
+                    obscureText: false,
+                    controller: portController,
+                    autofocus: false,
+                    decoration: InputDecoration(
+                      enabledBorder: UnderlineInputBorder(
+                        borderSide: BorderSide(color: materialGreen),
+                      ),
+                      focusedBorder: UnderlineInputBorder(
+                        borderSide:
+                            BorderSide(color: materialGreen, width: 2.0),
+                      ),
+                      disabledBorder: UnderlineInputBorder(
+                        borderSide:
+                            BorderSide(color: Colors.transparent, width: 2.0),
+                      ),
+                      //labelText: "(eg.) https://steemit.com/blog/@username/blog-title",
+                      border: new UnderlineInputBorder(
+                          borderSide: new BorderSide(color: Colors.red)),
+                      labelStyle: Theme.of(context).textTheme.caption.copyWith(
+                            color: materialGreen,
+                            fontSize: 16,
+                          ),
+                      errorText: null,
+                    ),
+                    style: TextStyle(
+                      color: materialGreen,
+                      fontSize: 16,
+                    ),
+                  ),
+                ),
+              ),
+              Flexible(
+                flex: 1,
+                child: Container(),
+              ),
+              Container(
+                width: 0,
+              ),
+            ],
+          ),
+          Container(
+            height: 5,
+          )
+        ],
+      ),
+    ),
+    actions: <Widget>[
+      FlatButton(
+        child: Text("SUPPORT", style: TextStyle(color: materialGreen)),
+        onPressed: () async {
+          Navigator.pop(context);
+          await Future.delayed(Duration(seconds: 2));
+          showDonationAlert(context);
+        },
+      ),
+      FlatButton(
+        child: Text("SAVE", style: TextStyle(color: materialGreen)),
+        onPressed: () {
+          //Update account information
+          Navigator.pop(context);
+          if (usernameController.text.length > 0)
+            databaseManager.updateUsername(usernameController.text);
+          else
+            toastMessageBottomShort("Invalid Username", context);
+          if (ipController.text.split(".").length == 4)
+            server.ip = ipController.text;
+          else
+            toastMessageBottomShort("Invalid Ip", context);
+          setState(() {});
+          callback();
+        },
+      )
+    ],
+  );
+  showDialog(context: context, barrierDismissible: true, child: alert);
+  Completer<Null> completer = Completer();
+  completer.complete();
+  return completer.future;
+}
 
   var loadProfilePicForSettingsMenu;
 
@@ -198,6 +482,7 @@ class HomeState extends State<Home> {
         }
       },
     );
+
 
     FutureBuilder loadProfilePicFromDatabase = FutureBuilder<Map>(
       future: databaseManager.getCurrentUserInfo(),

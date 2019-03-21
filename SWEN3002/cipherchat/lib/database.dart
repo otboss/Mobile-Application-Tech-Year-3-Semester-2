@@ -40,7 +40,7 @@ class DatabaseManager {
       db = await openDatabase(path, version: 1);
       await db.execute("CREATE TABLE IF NOT EXISTS $accountTable(aid INTEGER PRIMARY KEY, username TEXT, profilePic TEXT, ts DATETIME DEFAULT CURRENT_TIMESTAMP)");
       await db.execute("CREATE TABLE IF NOT EXISTS $chatsTable(cid INTEGER PRIMARY KEY, username TEXT, profilePic TEXT, ts DATETIME DEFAULT CURRENT_TIMESTAMP)");
-      await db.execute("CREATE TABLE IF NOT EXISTS $messagesTable(mid INTEGER PRIMARY KEY, cid INTEGER, username TEXT, ip TEXT, msg TEXT, inbound INTEGER(1) DEFAULT 0, ts DATETIME DEFAULT CURRENT_TIMESTAMP");
+      await db.execute("CREATE TABLE IF NOT EXISTS $messagesTable(mid INTEGER PRIMARY KEY, cid INTEGER, username TEXT, ip TEXT, msg TEXT, inbound INTEGER(1) DEFAULT 0, ts DATETIME DEFAULT CURRENT_TIMESTAMP)");
       //await db.execute("CREATE TABLE IF NOT EXISTS $inboxTable(inId INTEGER PRIMARY KEY, username TEXT, ip TEXT, msg TEXT, ts DATETIME DEFAULT CURRENT_TIMESTAMP, FOREIGN KEY(aid) REFERENCES ($accountTable.aid))");
       //await db.execute("CREATE TABLE IF NOT EXISTS $outboxTable(usrid INTEGER PRIMARY KEY, username TEXT, ip TEXT, msg TEXT, ts DATETIME DEFAULT CURRENT_TIMESTAMP, FOREIGN KEY(aid) REFERENCES ($accountTable.aid))");
       /*await rootBundle
@@ -142,7 +142,7 @@ class DatabaseManager {
 
 
   ///Gets the messages for a specific ip address and username from the database
-  Future<List> getMessages(String ipAddress, String username, bool isGroup, List<String> negatePostsArray, bool loadMore) async{
+  Future<List> getMessages(String ipAddress, String username, bool isGroup, List negatePostsArray, bool loadMore) async{
     var client = await getDatabase();
     List results = [];
     try{

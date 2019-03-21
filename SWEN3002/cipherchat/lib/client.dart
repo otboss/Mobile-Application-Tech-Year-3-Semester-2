@@ -14,13 +14,14 @@ class Client {
     databaseManager.getCurrentUserInfo();
   }
 
-  Future<bool> checkConnection(String ipAddress) async {
+  Future<Map> checkConnection(String ipAddress) async {
+    Response response;
     try {
-      await dio.get(ipAddress + "?check=1");
+      response =  await dio.get(ipAddress + "?check=1");
+      return json.decode(response.data);
     } catch (err) {
-      return false;
+      print(err);
     }
-    return true;
   }
 
   Future<bool> sendMessage(String ipAddress, String message) async {

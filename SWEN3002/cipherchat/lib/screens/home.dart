@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
-
 import 'package:cipherchat/main.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
@@ -32,6 +31,7 @@ class HomeState extends State<Home> {
           child: InkWell(
             onTap: () {
               //Navigate to chat screen and show previous messages
+              Navigator.pushNamed(context, "/chat");
             },
             child: Container(
               padding: EdgeInsets.fromLTRB(10, 10, 10, 10),
@@ -482,8 +482,8 @@ Future<void> showAccountSettings(
         }
       },
     );
-
-
+ 
+ 
     FutureBuilder loadProfilePicFromDatabase = FutureBuilder<Map>(
       future: databaseManager.getCurrentUserInfo(),
       builder: (BuildContext context, AsyncSnapshot<Map> snapshot) {
@@ -544,15 +544,11 @@ Future<void> showAccountSettings(
           showPrompt("Enter Peer IP", context, peerIpInputController, () async {
             String ip = peerIpInputController.text;
             if (ip.split(".").length == 4 &&
-                ip != await server.getCompleteIpAddress()) {
-              await Future.delayed(Duration(seconds: 1));
-              Navigator.pop(context);
+                ip != server.ip) {
               peerIpAddress = ip;
               peerIpInputController.text = "";
               Navigator.pushNamed(context, "/chat");
             } else {
-              await Future.delayed(Duration(seconds: 1));
-              Navigator.pop(context);
               peerIpInputController.text = "";
               await toastMessageBottomShort("Invalid IP", context);
             }

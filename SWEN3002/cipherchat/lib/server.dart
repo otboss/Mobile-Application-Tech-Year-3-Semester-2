@@ -65,8 +65,9 @@ class Server {
 
           if (request.uri.queryParameters['check'] != null) {
             //PEER IS CHECKING FOR CONNECTION
+            Map userInfo = await databaseManager.getCurrentUserInfo();
             response
-              ..write('true')
+              ..write('{"username": "'+userInfo["username"]+'", "profilePic": "'+userInfo["profilePic"]+'"}')
               ..close();
           }
           if (request.uri.queryParameters['key'] != null) {
@@ -81,7 +82,7 @@ class Server {
             }
             Map userInfo = await databaseManager.getCurrentUserInfo();
             response
-              ..write('{"username": "'+userInfo["username"]+'", "profilePic": "'+userInfo["profilePic"]+'"}')
+              ..write('true')
               ..close();
           }
           if (request.uri.queryParameters['msg'] != null) {

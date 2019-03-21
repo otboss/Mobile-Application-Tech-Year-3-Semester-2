@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import '../main.dart';
 
@@ -145,25 +146,27 @@ class ChatState extends State<Chat> {
 
   ///Sends a sample request to the peer. returns true if a response is received
   ///and a timeout otherwise
-  Future<bool> checkConnection(String ipAddress) async {
+  Future<Map> checkConnection(String ipAddress) async {
+    Response response;
     try {
-      await dio.get(ipAddress + "?check=1");
+      response = await dio.get(ipAddress + "?check=1");
+      return response.data;
     } catch (err) {
-      return false;
+      return null;
     }
-    return true;
   }
 
   ///Repeatedely send TCP packets to the peer until a conneciton is established
-  Future<bool> checkUntilConnected() async {
-    while (await client.checkConnection(peerIpAddress) == false) {
+  Future<Map> checkUntilConnected() async {
+    while (await client.checkConnection(peerIpAddress) == null) {
       await Future.delayed(Duration(seconds: 5));
     }
+    Map userInfo = await client.checkConnection(peerIpAddress);
     //Connection Successful
-    while (await client.sendPublicKey(peerIpAddress) == false) {
+    while (await client.sendPublicKey(peerIpAddress) == null) {
       await Future.delayed(Duration(seconds: 5));
     }
-    return true;
+    return userInfo;
   }
 
   bool loadMoreMessages = false;
@@ -226,14 +229,14 @@ class ChatState extends State<Chat> {
                 print(snapshot.error);
                 return Text('Error: ${snapshot.error}');
               }
+
               Map data = snapshot.data;
               peerUsername = data["username"];
               return data["username"];
           }
         },
       );
-    }
-    else{
+    } else {
       loadUsername = peerUsername;
     }
 
@@ -319,29 +322,189 @@ class ChatState extends State<Chat> {
       },
     );
 
-    FutureBuilder startConnectionChecker = FutureBuilder<bool>(
+    FutureBuilder startConnectionChecker = FutureBuilder<Map>(
       future: checkUntilConnected(),
-      builder: (BuildContext context, AsyncSnapshot<bool> snapshot) {
+      builder: (BuildContext context, AsyncSnapshot<Map> snapshot) {
         switch (snapshot.connectionState) {
           case ConnectionState.none:
-            return Text("Connecting..");
+            return Row(
+              children: <Widget>[
+                GestureDetector(
+                  onTap: () {
+                    //Navigator.pushNamed(context, '/profile');
+                  },
+                  child: Container(
+                    margin: EdgeInsets.fromLTRB(0, 0, 7, 0),
+                    height: 34,
+                    width: 34,
+                    decoration: BoxDecoration(
+                      border: Border.all(
+                        color: Colors.white,
+                      ),
+                      borderRadius: BorderRadius.circular(30),
+                    ),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(30),
+                      child: base64ToImageConverter(
+                          databaseManager.defaultProfilePicBase64),
+                    ),
+                  ),
+                ),
+                Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      "Anonymous",
+                      style: TextStyle(
+                        fontSize: 18,
+                      ),
+                    ),
+                    Text(
+                      "Connecting..",
+                      style: TextStyle(
+                        fontSize: 14,
+                      ),
+                    )
+                  ],
+                )
+              ],
+            );
           case ConnectionState.active:
-            return Text("Connecting..");
+            return Row(
+              children: <Widget>[
+                GestureDetector(
+                  onTap: () {
+                    //Navigator.pushNamed(context, '/profile');
+                  },
+                  child: Container(
+                    margin: EdgeInsets.fromLTRB(0, 0, 7, 0),
+                    height: 34,
+                    width: 34,
+                    decoration: BoxDecoration(
+                      border: Border.all(
+                        color: Colors.white,
+                      ),
+                      borderRadius: BorderRadius.circular(30),
+                    ),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(30),
+                      child: base64ToImageConverter(
+                          databaseManager.defaultProfilePicBase64),
+                    ),
+                  ),
+                ),
+                Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      "Anonymous",
+                      style: TextStyle(
+                        fontSize: 18,
+                      ),
+                    ),
+                    Text(
+                      "Connecting..",
+                      style: TextStyle(
+                        fontSize: 14,
+                      ),
+                    )
+                  ],
+                )
+              ],
+            );
           case ConnectionState.waiting:
-            return Text("Connecting..");
+            return Row(
+              children: <Widget>[
+                GestureDetector(
+                  onTap: () {
+                    //Navigator.pushNamed(context, '/profile');
+                  },
+                  child: Container(
+                    margin: EdgeInsets.fromLTRB(0, 0, 7, 0),
+                    height: 34,
+                    width: 34,
+                    decoration: BoxDecoration(
+                      border: Border.all(
+                        color: Colors.white,
+                      ),
+                      borderRadius: BorderRadius.circular(30),
+                    ),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(30),
+                      child: base64ToImageConverter(
+                          databaseManager.defaultProfilePicBase64),
+                    ),
+                  ),
+                ),
+                Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      "Anonymous",
+                      style: TextStyle(
+                        fontSize: 18,
+                      ),
+                    ),
+                    Text(
+                      "Connecting..",
+                      style: TextStyle(
+                        fontSize: 14,
+                      ),
+                    )
+                  ],
+                )
+              ],
+            );
           case ConnectionState.done:
             if (snapshot.hasError) {
+              toastMessageBottomShort("Error While Connecting", context);
               print(snapshot.error);
               return Text('Error: ${snapshot.error}');
             }
-            return Container();
+            Map userInfo = snapshot.data;  
+            
+            return Row(
+              children: <Widget>[
+                GestureDetector(
+                  onTap: () {
+                    Navigator.pushNamed(context, '/profile');
+                  },
+                  child: Container(
+                    margin: EdgeInsets.fromLTRB(0, 0, 7, 0),
+                    height: 34,
+                    width: 34,
+                    decoration: BoxDecoration(
+                      border: Border.all(
+                        color: Colors.white,
+                      ),
+                      borderRadius: BorderRadius.circular(30),
+                    ),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(30),
+                      child: base64ToImageConverter(userInfo["profilePic"]),
+                    ),
+                  ),
+                ),
+                Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      userInfo["username"],
+                      style: TextStyle(
+                        fontSize: 18,
+                      ),
+                    ),
+                  ],
+                )
+              ],
+            );
         }
       },
     );
 
     return Scaffold(
       appBar: AppBar(
-        leading: IconButton(
+        /*leading: IconButton(
           icon: Icon(
             Icons.arrow_back,
           ),
@@ -351,36 +514,8 @@ class ChatState extends State<Chat> {
             peerProfilePic = "";
             Navigator.pop(context);
           },
-        ),
-        title: Row(
-          children: <Widget>[
-            GestureDetector(
-              onTap: () {
-                Navigator.pushNamed(context, '/profile');
-              },
-              child: Container(
-                margin: EdgeInsets.fromLTRB(0, 0, 7, 0),
-                height: 34,
-                width: 34,
-                decoration: BoxDecoration(
-                  border: Border.all(
-                    color: Colors.white,
-                  ),
-                  borderRadius: BorderRadius.circular(30),
-                  /*
-                image: DecorationImage(
-                  image: AssetImage('assets/default_profile_pic.png'),
-                ), */
-                ),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(30),
-                  child: loadProfilePic,
-                ),
-              ),
-            ),
-            Column(children: [loadUsername, startConnectionChecker])
-          ],
-        ),
+        ),*/
+        title: startConnectionChecker,
         backgroundColor: themeColor,
       ),
       body: Stack(

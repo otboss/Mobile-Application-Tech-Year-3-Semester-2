@@ -186,141 +186,115 @@ class ChatState extends State<Chat> {
           "d")
     ];*/
 
-    if (peerProfilePic == "") {
-      loadProfilePic = FutureBuilder<Map>(
-        future: client.getPeerInfo(peerIpAddress),
-        builder: (BuildContext context, AsyncSnapshot<Map> snapshot) {
+    if (peerProfilePic == ""){
+      peerProfilePic = databaseManager.defaultProfilePicBase64;
+    }
+
+    if (peerUsername == ""){
+      peerUsername = "Anonymous";
+    }
+
+    var loadMessages;
+    if (peerUsername != "Anonymous") {
+      loadMessages = FutureBuilder<List>(
+        future: databaseManager.getMessages(peerIpAddress, peerUsername, false,
+            loadedMessagesIds.keys.toList(), loadMoreMessages),
+        builder: (BuildContext context, AsyncSnapshot<List> snapshot) {
           switch (snapshot.connectionState) {
             case ConnectionState.none:
               break;
             case ConnectionState.active:
-              return base64ToImageConverter(
-                  databaseManager.defaultProfilePicBase64);
+              return Container();
             case ConnectionState.waiting:
-              return base64ToImageConverter(
-                  databaseManager.defaultProfilePicBase64);
+              return Container();
             case ConnectionState.done:
+              if (loadMoreMessages) loadMoreMessages = false;
               if (snapshot.hasError) {
                 print(snapshot.error);
                 return Text('Error: ${snapshot.error}');
               }
-              peerProfilePic = snapshot.data["profilePic"];
-              return base64ToImageConverter(snapshot.data["profilePic"]);
-          }
-        },
-      );
-    } else {
-      loadProfilePic = base64ToImageConverter(peerProfilePic);
-    }
-
-    if (peerUsername == "") {
-      loadUsername = FutureBuilder<Map>(
-        future: client.getPeerInfo(peerIpAddress),
-        builder: (BuildContext context, AsyncSnapshot<Map> snapshot) {
-          switch (snapshot.connectionState) {
-            case ConnectionState.none:
-              break;
-            case ConnectionState.active:
-              return Text("Anonymous");
-            case ConnectionState.waiting:
-              return Text("Anonymous");
-            case ConnectionState.done:
-              if (snapshot.hasError) {
-                print(snapshot.error);
-                return Text('Error: ${snapshot.error}');
-              }
-
-              Map data = snapshot.data;
-              peerUsername = data["username"];
-              return data["username"];
-          }
-        },
-      );
-    } else {
-      loadUsername = peerUsername;
-    }
-
-    FutureBuilder loadMessages = FutureBuilder<List>(
-      future: databaseManager.getMessages(peerIpAddress, peerUsername, false,
-          loadedMessagesIds.keys.toList(), loadMoreMessages),
-      builder: (BuildContext context, AsyncSnapshot<List> snapshot) {
-        switch (snapshot.connectionState) {
-          case ConnectionState.none:
-            break;
-          case ConnectionState.active:
-            return Container();
-          case ConnectionState.waiting:
-            return Container();
-          case ConnectionState.done:
-            if (loadMoreMessages) loadMoreMessages = false;
-            if (snapshot.hasError) {
-              print(snapshot.error);
-              return Text('Error: ${snapshot.error}');
-            }
-            bool allMessagesLoaded = true;
-            if (loadedMessagesIds.keys.length < snapshot.data.length)
-              allMessagesLoaded = false;
-            List messages = snapshot.data;
-            List<Widget> messagesContainer = [];
-            Widget messagesList = ListView(
-              shrinkWrap: true,
-              reverse: true,
-              padding: EdgeInsets.fromLTRB(2, 10, 2, 75),
-              children: messagesContainer,
-            );
-            for (var x = 0; x < messages.length; x++) {
-              if (messages[x]["inbound"] < 0) {
-                //SENT MESSAGE
-                messagesContainer.add(generateSentMessageWidget(
-                    messages[x]["inbound"], messages[x]["ts"]));
-              } else {
-                //RECEIVED MESSAGE
-                messagesContainer.add(generateReceivedMessageWidget(
-                    messages[x]["inbound"], messages[x]["ts"]));
-              }
-              loadedMessagesIds[messages[x]["mid"].toString()] = true;
-            }
-            if (messagesContainer.length == 0) {
-              return ListView(
+              bool allMessagesLoaded = true;
+              if (loadedMessagesIds.keys.length < snapshot.data.length)
+                allMessagesLoaded = false;
+              List messages = snapshot.data;
+              List<Widget> messagesContainer = [];
+              Widget messagesList = ListView(
                 shrinkWrap: true,
-                padding: const EdgeInsets.all(20.0),
-                children: [
-                  Center(
-                    child: new Text(
-                      'No messages to here. Remember to ask Security Questions.',
-                    ),
-                  ),
-                  Center(
-                    child: new Text(
-                      'Happy Chatting!',
-                    ),
-                  ),
-                ],
+                reverse: true,
+                padding: EdgeInsets.fromLTRB(2, 10, 2, 75),
+                children: messagesContainer,
               );
-            }
-            if (allMessagesLoaded == false) {
-              messagesContainer.insert(
-                0,
-                RaisedButton(
-                  color: themeColor,
-                  child: Text(
-                    "Load More",
-                    style: TextStyle(
-                      color: appBarTextColor,
+              for (var x = 0; x < messages.length; x++) {
+                if (messages[x]["inbound"] < 0) {
+                  //SENT MESSAGE
+                  messagesContainer.add(generateSentMessageWidget(
+                      messages[x]["inbound"], messages[x]["ts"]));
+                } else {
+                  //RECEIVED MESSAGE
+                  messagesContainer.add(generateReceivedMessageWidget(
+                      messages[x]["inbound"], messages[x]["ts"]));
+                }
+                loadedMessagesIds[messages[x]["mid"].toString()] = true;
+              }
+              if (messagesContainer.length == 0) {
+                return ListView(
+                  shrinkWrap: true,
+                  padding: const EdgeInsets.all(20.0),
+                  children: [
+                    Center(
+                      child: new Text(
+                        'No messages to here. Remember to ask Security Questions.',
+                      ),
                     ),
+                    Center(
+                      child: new Text(
+                        'Happy Chatting!',
+                      ),
+                    ),
+                  ],
+                );
+              }
+              if (allMessagesLoaded == false) {
+                messagesContainer.insert(
+                  0,
+                  RaisedButton(
+                    color: themeColor,
+                    child: Text(
+                      "Load More",
+                      style: TextStyle(
+                        color: appBarTextColor,
+                      ),
+                    ),
+                    onPressed: () async {
+                      setState(() {
+                        loadMoreMessages = true;
+                      });
+                    },
                   ),
-                  onPressed: () async {
-                    setState(() {
-                      loadMoreMessages = true;
-                    });
-                  },
-                ),
-              );
-            }
-            return messagesList;
-        }
-      },
-    );
+                );
+              }
+              return messagesList;
+          }
+        },
+      );
+    } else {
+      loadMessages = ListView(
+        shrinkWrap: true,
+        padding: const EdgeInsets.all(20.0),
+        children: [
+          Center(
+            child: new Text(
+              'No messages to here. Remember to ask Security Questions.',
+            ),
+          ),
+          Center(
+            child: new Text(
+              'Happy Chatting!',
+            ),
+          ),
+        ],
+      );
+    }
 
     FutureBuilder startConnectionChecker = FutureBuilder<Map>(
       future: checkUntilConnected(),
@@ -461,8 +435,7 @@ class ChatState extends State<Chat> {
               print(snapshot.error);
               return Text('Error: ${snapshot.error}');
             }
-            Map userInfo = snapshot.data;  
-            
+            Map userInfo = snapshot.data;
             return Row(
               children: <Widget>[
                 GestureDetector(
@@ -504,7 +477,7 @@ class ChatState extends State<Chat> {
 
     return Scaffold(
       appBar: AppBar(
-        /*leading: IconButton(
+        leading: IconButton(
           icon: Icon(
             Icons.arrow_back,
           ),
@@ -514,7 +487,7 @@ class ChatState extends State<Chat> {
             peerProfilePic = "";
             Navigator.pop(context);
           },
-        ),*/
+        ),
         title: startConnectionChecker,
         backgroundColor: themeColor,
       ),

@@ -12,6 +12,8 @@ class ChatState extends State<Chat> {
   bool publicKeySent = false;
   bool publicKeyReceived = false;
 
+  
+
   Widget generateSentMessageWidget(String message, String timestamp) {
     return Container(
       margin: EdgeInsets.fromLTRB(0, 0, 0, 10),
@@ -168,6 +170,11 @@ class ChatState extends State<Chat> {
     }
     return userInfo;
   }
+
+
+  List<Map> messages = [];
+
+
 
   bool loadMoreMessages = false;
 

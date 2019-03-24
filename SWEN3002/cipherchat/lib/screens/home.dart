@@ -397,16 +397,23 @@ Future<void> showAccountSettings(
 
     secp256k1EllipticCurve.generatePrivateKey().then((prkey1) {
       secp256k1EllipticCurve.generatePrivateKey().then((prkey2) {
-        print("THE Private KEY 1 IS :");
-        print(prkey1);
-        print("THE Private KEY 2 IS :");
-        print(prkey2);
-        BigInt pubKey1 = secp256k1EllipticCurve.generatePublicKey(prkey1);
-        BigInt pubKey2 = secp256k1EllipticCurve.generatePublicKey(prkey2);
-        print("THE SYMMETRIC KEY A IS :");
-        print(secp256k1EllipticCurve.generateSymmetricKey(prkey2, pubKey1));
-        print("THE SYMMETRIC KEY B IS :");
-        print(secp256k1EllipticCurve.generateSymmetricKey(prkey1, pubKey2));
+        secp256k1EllipticCurve.generatePrivateKey().then((prkey3) {
+          print("THE Private KEY 1 IS :");
+          print(prkey1);
+          print("THE Private KEY 2 IS :");
+          print(prkey2);
+          print("THE Private KEY 3 IS :");
+          print(prkey3);
+          BigInt pubKey1 = secp256k1EllipticCurve.generatePublicKey(prkey1);
+          BigInt pubKey2 = secp256k1EllipticCurve.generatePublicKey(prkey2);
+          BigInt pubKey3 = secp256k1EllipticCurve.generatePublicKey(prkey3);
+          print("THE SYMMETRIC KEY A IS :");
+          print((prkey1*pubKey2*pubKey3)%secp256k1EllipticCurve.p);
+          print("THE SYMMETRIC KEY B IS :");
+          print((prkey2*pubKey1*pubKey3)%secp256k1EllipticCurve.p);
+          print("THE SYMMETRIC KEY C IS :");
+          print((prkey3*pubKey1*pubKey2)%secp256k1EllipticCurve.p);
+        });
       });
     });
 

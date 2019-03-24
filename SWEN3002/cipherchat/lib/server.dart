@@ -6,14 +6,15 @@ import './main.dart';
 import 'dart:math';
 import 'package:crypto/crypto.dart';
 
+///Connection Information of the server
 class Server {
   int port = 6333;
-  String ip = "unknown";
+  String ip = "";
   HttpServer server;
 
   Server() {
-    print("STARTING SERVER..");
-    startServer();
+    //print("STARTING SERVER..");
+    //startServer();
   }
 
   int choosePort() {
@@ -47,9 +48,11 @@ class Server {
   }
 
   Future<String> getCompleteIpAddress() async {
-    return "http://" + await getPublicIpAddress() +":"+ port.toString() + "/";
+    //return "http://" + await getPublicIpAddress() +":"+ port.toString() + "/";
+    return "http://" + ip +":"+ port.toString() + "/";
   }
 
+/*
   Future<bool> startServer() async {
     try {
       //port = choosePort();
@@ -110,4 +113,5 @@ class Server {
     }
     return true;
   }
+*/
 }

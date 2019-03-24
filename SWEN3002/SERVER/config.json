@@ -1,5 +1,9 @@
 {
     "admodId":"YOUR ADMOB ID HERE",
+    "showCustomAds": false,
+    "customAds": {
+
+    },
     "maxClients":"2",
     "port":"6333"
 }

@@ -21,7 +21,7 @@ Dio dio = Dio(Options(connectTimeout: 5000, receiveTimeout: 5000));
 final flutterWebviewPlugin = FlutterWebviewPlugin();
 final Secp256k1 secp256k1EllipticCurve = Secp256k1();
 final Server server = Server();
-final Client client = Client();
+//final Client client = Client();
 final DatabaseManager databaseManager = DatabaseManager();
 final cryptor = new PlatformStringCryptor();
 
@@ -30,13 +30,18 @@ Color materialGreen = Colors.teal[400];
 Color appBarTextColor = Colors.white;
 Color cardColor = Colors.white;
 String defaultProfilePicFile = "assets/default_profile_pic_base64.txt";
-String peerUsername = "";
+/*String peerUsername = "";
 String peerIpAddress = "";
-String peerProfilePic = "";
+String peerProfilePic = "";*/
 int limitPerChatsFetchFromDatabase = 20;
 int limitPerMessagesFetchFromDatabase = 20;
 Map loadedMessagesIds = {};
 Map loadedChatIds = {};
+
+//SERVER PARAMS
+//int port = 6333;
+//String ip = "unknown";
+//String privateKey = "";
 
 _launchURL(url) async {
   if (await canLaunch(url)) {

@@ -6,11 +6,11 @@ import './main.dart';
 
 class Client {
   final jsonEncoder = JsonEncoder();
-  String privateKey = "";
+  //String privateKey = "";
   String symmetricKey = "";
 
   Client() {
-    privateKey = secp256k1EllipticCurve.generatePrivateKey().toString();
+    //privateKey = secp256k1EllipticCurve.generatePrivateKey().toString();
     databaseManager.getCurrentUserInfo();
   }
 

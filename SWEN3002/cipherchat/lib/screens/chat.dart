@@ -1,6 +1,8 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:crypto/crypto.dart';
 import '../main.dart';
+import 'dart:convert';
 
 class Chat extends StatefulWidget {
   ChatState createState() => ChatState();
@@ -9,11 +11,14 @@ class Chat extends StatefulWidget {
 class ChatState extends State<Chat> {
   TextEditingController messageTextController = TextEditingController();
 
-  bool publicKeySent = false;
-  bool publicKeyReceived = false;
+  //bool publicKeySent = false;
+  //bool publicKeyReceived = false;
+  String privateKey = secp256k1EllipticCurve.generatePrivateKey().toString();
+  Map participants = {};
+  Map messages = {};
 
-  
-
+  ///Generates a chat bubble on the left side of the screen to indicate
+  ///a message which was sent from the current user
   Widget generateSentMessageWidget(String message, String timestamp) {
     return Container(
       margin: EdgeInsets.fromLTRB(0, 0, 0, 10),
@@ -79,6 +84,8 @@ class ChatState extends State<Chat> {
     );
   }
 
+  ///Generates a chat bubble on the right side of the screen to indicate
+  ///a message which was received from another user
   Widget generateReceivedMessageWidget(String message, String timestamp) {
     return Container(
       margin: EdgeInsets.fromLTRB(0, 0, 0, 10),
@@ -146,6 +153,236 @@ class ChatState extends State<Chat> {
     );
   }
 
+  ///For improved robustness, Each message has its own set of public keys
+  ///The message is then decrypted using the current private key
+  Future<String> generateDecryptionSymmetricKeyForMessage(String messageId) async {
+    BigInt combinedPublicKey = BigInt.parse("1");
+    Map messagePublicKeys = json.decode(messages[messageId]["recipients"]);
+    List messagePublicKeysUsernames = messagePublicKeys.keys.toList();
+    for (var x = 0; x < messagePublicKeysUsernames.length; x++) {
+      try {
+        combinedPublicKey *= BigInt.parse(messagePublicKeys[messagePublicKeysUsernames[x]]);
+      } catch (err) {
+        print(err);
+      }
+    }
+    BigInt symmetricKey = secp256k1EllipticCurve.generateSymmetricKey(BigInt.parse(privateKey), combinedPublicKey);
+    return sha256.convert(utf8.encode(symmetricKey.toString())).toString();
+  }
+  
+  ///Generates a symmetric key based on the current participants of the chat.
+  ///Before this function is called the participants map should be updated to
+  ///get the latest public keys to generate the symmetric key
+  Future<String> generateEncryptionSymmetricKeyForMessage() async {
+    BigInt combinedPublicKey = BigInt.parse("1");
+    List participantUsernames = participants.keys.toList();
+    Map userInfo = await databaseManager.getCurrentUserInfo();
+    String username = userInfo["username"];    
+    for(var x = 0; x < participantUsernames.length; x++){
+      try{
+        if(participantUsernames[x] != username)
+          combinedPublicKey *= BigInt.parse(participants[participantUsernames[x]]["publicKey"]);
+      }
+      catch(err){
+        print(err);
+      }
+    }
+    BigInt symmetricKey = secp256k1EllipticCurve.generateSymmetricKey(BigInt.parse(privateKey), combinedPublicKey);
+    return sha256.convert(utf8.encode(symmetricKey.toString())).toString();
+  }
+
+  ///Get a map of the current users of the chat from the server.
+  ///Also updates the user's public key on the Server
+  Future<Map> getChatParticipants() async{
+    Response response;
+    Map userInfo = await databaseManager.getCurrentUserInfo();
+    String username = userInfo["username"];
+    try{
+      String ip = await server.getCompleteIpAddress();
+      response = await dio.get(ip + "getchatparticipants", data: {
+        "username": username,
+        "publicKey": secp256k1EllipticCurve.generatePublicKey(BigInt.parse(privateKey))
+      });      
+      return json.decode(response.data);
+    }
+    catch(err){
+      print(err);
+    }
+    return null;
+  }
+
+  ///Messages are encrypted by using the current users private key and
+  ///public key from each of the participants. Therefore before a
+  ///message is encrypted the participants of the chat should be updated
+  ///if possible. Once the message has been sent successfully it should be 
+  ///immediately saved to the local database along with all the keys
+  Future<String> encryptMessage(String message) async {
+    try{
+      var currentParticipants = await getChatParticipants();
+      if(currentParticipants != null){
+        participants.addAll(currentParticipants);
+        String key = await generateEncryptionSymmetricKeyForMessage();
+        String encryptedMessage = await cryptor.encrypt(message, key);
+        return encryptedMessage;      
+      }
+    }
+    catch(err){
+      print(err);
+    }
+    //Connection Error
+    return null;
+  }
+
+
+  Future<bool> sendMessage(String message) async {
+    Response response;
+    Map userInfo = await databaseManager.getCurrentUserInfo();
+    String username = userInfo["username"];
+    try {
+      String encryptedMessage = await encryptMessage(message);
+      if(encryptedMessage != null){
+        String ip = await server.getCompleteIpAddress();
+        Map recipients = {};
+        List participantsUsernames = participants.keys.toList();
+        for(var x = 0; x < participantsUsernames.length; x++){
+          if(participantsUsernames[x] != username)
+            recipients[participantsUsernames[x]] = participants[participantsUsernames[x]]["publicKey"];
+        }
+        response = await dio.post(ip + "message",
+            data: {
+              "username": username, 
+              "message": encryptedMessage,
+              "recipients": recipients
+            });
+        var responseData = json.decode(response.data);
+        if (responseData){
+          //Message Sent
+          return true;
+        }
+      }
+    } catch (err) {
+      print(err);
+    }
+    return false;
+  }
+
+
+  ///Keep-Alive Requests to the server intermittently to indicate
+  ///to the server that the user is still active
+  Future<bool> connectionRefresher() async{
+    while(true){
+      try{
+        await connectToServer();
+      }
+      catch(err){
+        print(err);
+      } 
+      await Future.delayed(Duration(seconds: 30));
+    }
+  }
+
+  ///Called before a message is loaded onto the screen, as all
+  ///messages received from the server are encrypted
+  Future<String> decryptMessage(String messageId) async {
+    String key = await generateDecryptionSymmetricKeyForMessage(messageId);
+    String decryptedMessage = await cryptor.decrypt(messages[messageId]["message"], key);
+    return decryptedMessage;
+  }
+
+  ///Attempts to connect to the server
+  Future<bool> connectToServer() async {
+    Response response;
+    Map userInfo = await databaseManager.getCurrentUserInfo();
+    String username = userInfo["username"];
+    try {
+      String ip = await server.getCompleteIpAddress();
+      String profilePic = userInfo["profilePic"];
+      response = await dio.post(ip + "connect", data: {
+        "username": username,
+        "profilePic": profilePic,
+        "publicKey": secp256k1EllipticCurve.generatePublicKey(BigInt.parse(privateKey))
+      });
+      var responseData = json.decode(response.data);
+      if (responseData["username"] != null) {
+        participants = responseData;
+        return true;
+      }
+      return false;
+    } catch (err) {
+      return false;
+    }
+  }
+
+  ///Checks the server intermittently for new messages. if new messages
+  ///Are received load them into the message view if the user is scrolled to
+  ///the bottom of the screen else show a new messages bubble.
+  ///TO BE IMPLEMENTED IN A FUTURE BUILDER
+  Future<bool> checkForNewMessages() async {
+    Response response;
+    bool newMessages = false;
+    while (true) {
+      try {
+        String ip = await server.getCompleteIpAddress();
+        response = await dio.get(ip + "anynewmessages",
+            data: {"oldMessages": messages.keys.toList()});
+        newMessages = json.decode(response.data);
+        if (newMessages) 
+          break;
+      } catch (err) {
+        print(err);
+      }
+      await Future.delayed(Duration(seconds: 10));
+    }
+    return newMessages;
+  }
+
+  Future<Map> getNewMessages() async {
+    Response response;
+    Map userInfo = await databaseManager.getCurrentUserInfo();
+    String username = userInfo["username"];
+    try {
+      String ip = await server.getCompleteIpAddress();
+      response = await dio.get(ip + "getmessages",
+          data: {"username": username, "oldMessages": messages.keys.toList()});
+      Map newMessages = json.decode(response.data);
+      messages.addAll(newMessages);
+    } catch (err) {
+      print(err);
+    }
+    return messages;
+  }
+
+
+  ///Disconnects from the current chat. Fired when the user presses
+  ///the back button on the Chat Screen
+  Future<bool> disconnectFromServer() async {
+    Response response;
+    Map userInfo = await databaseManager.getCurrentUserInfo();
+    String username = userInfo["username"];
+    try {
+      String ip = await server.getCompleteIpAddress();
+      response = await dio.post(ip + "disconnect", data: {"username": username});
+      var responseData = json.decode(response.data);
+      return responseData;
+    } catch (err) {
+      return false;
+    }
+  }
+
+  /* 
+   {
+        "sender": senderIP,
+        "username": username,
+        "message": message,
+        "ts": timestamp,
+        "recipients": {
+            username: publicKey,
+            username: publicKey,
+            username: publicKey,
+        }
+    }  
+  */
+
   ///Sends a sample request to the peer. returns true if a response is received
   ///and a timeout otherwise
   Future<Map> checkConnection(String ipAddress) async {
@@ -159,21 +396,64 @@ class ChatState extends State<Chat> {
   }
 
   ///Repeatedely send TCP packets to the peer until a conneciton is established
-  Future<Map> checkUntilConnected() async {
-    while (await client.checkConnection(peerIpAddress) == null) {
+  Future<bool> checkUntilConnected() async {
+    while (await connectToServer() == false) {
       await Future.delayed(Duration(seconds: 5));
     }
-    Map userInfo = await client.checkConnection(peerIpAddress);
-    //Connection Successful
-    while (await client.sendPublicKey(peerIpAddress) == null) {
-      await Future.delayed(Duration(seconds: 5));
-    }
-    return userInfo;
+    return true;
   }
 
 
-  List<Map> messages = [];
-
+  Widget connectingWidget(bool connecting){
+    if(connecting){
+      return Row(
+        children: <Widget>[
+          GestureDetector(
+            onTap: () {
+              Navigator.pushNamed(context, '/profile');
+            },
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  server.ip,
+                  style: TextStyle(
+                    fontSize: 18,
+                  ),
+                ),
+                Text(
+                  "Connecting..",
+                  style: TextStyle(
+                    fontSize: 14,
+                  ),
+                )
+              ],
+            ),
+          ),
+        ],
+      );
+    }
+    return Row(
+      children: <Widget>[
+        GestureDetector(
+          onTap: () {
+            Navigator.pushNamed(context, '/profile');
+          },
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(
+                server.ip,
+                style: TextStyle(
+                  fontSize: 18,
+                ),
+              )
+            ],
+          ),
+        ),
+      ],
+    );
+  }
 
 
   bool loadMoreMessages = false;
@@ -182,7 +462,6 @@ class ChatState extends State<Chat> {
   var loadUsername;
   @override
   Widget build(BuildContext context) {
-    // TODO: implement build
 
     /*client.receivedMessages = [
       generateSentMessageWidget(
@@ -193,15 +472,10 @@ class ChatState extends State<Chat> {
           "d")
     ];*/
 
-    if (peerProfilePic == ""){
-      peerProfilePic = databaseManager.defaultProfilePicBase64;
-    }
-
-    if (peerUsername == ""){
-      peerUsername = "Anonymous";
-    }
+    connectionRefresher();
 
     var loadMessages;
+    /*
     if (peerUsername != "Anonymous") {
       loadMessages = FutureBuilder<List>(
         future: databaseManager.getMessages(peerIpAddress, peerUsername, false,
@@ -301,183 +575,48 @@ class ChatState extends State<Chat> {
           ),
         ],
       );
-    }
+    }*/
 
-    FutureBuilder startConnectionChecker = FutureBuilder<Map>(
-      future: checkUntilConnected(),
-      builder: (BuildContext context, AsyncSnapshot<Map> snapshot) {
+
+
+    loadMessages = FutureBuilder<List>(
+      future: databaseManager.getPreviousConversations(),
+      builder: (BuildContext context, AsyncSnapshot<List> snapshot) {
         switch (snapshot.connectionState) {
           case ConnectionState.none:
-            return Row(
-              children: <Widget>[
-                GestureDetector(
-                  onTap: () {
-                    //Navigator.pushNamed(context, '/profile');
-                  },
-                  child: Container(
-                    margin: EdgeInsets.fromLTRB(0, 0, 7, 0),
-                    height: 34,
-                    width: 34,
-                    decoration: BoxDecoration(
-                      border: Border.all(
-                        color: Colors.white,
-                      ),
-                      borderRadius: BorderRadius.circular(30),
-                    ),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(30),
-                      child: base64ToImageConverter(
-                          databaseManager.defaultProfilePicBase64),
-                    ),
-                  ),
-                ),
-                Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      "Anonymous",
-                      style: TextStyle(
-                        fontSize: 18,
-                      ),
-                    ),
-                    Text(
-                      "Connecting..",
-                      style: TextStyle(
-                        fontSize: 14,
-                      ),
-                    )
-                  ],
-                )
-              ],
-            );
+            return connectingWidget(true);
           case ConnectionState.active:
-            return Row(
-              children: <Widget>[
-                GestureDetector(
-                  onTap: () {
-                    //Navigator.pushNamed(context, '/profile');
-                  },
-                  child: Container(
-                    margin: EdgeInsets.fromLTRB(0, 0, 7, 0),
-                    height: 34,
-                    width: 34,
-                    decoration: BoxDecoration(
-                      border: Border.all(
-                        color: Colors.white,
-                      ),
-                      borderRadius: BorderRadius.circular(30),
-                    ),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(30),
-                      child: base64ToImageConverter(
-                          databaseManager.defaultProfilePicBase64),
-                    ),
-                  ),
-                ),
-                Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      "Anonymous",
-                      style: TextStyle(
-                        fontSize: 18,
-                      ),
-                    ),
-                    Text(
-                      "Connecting..",
-                      style: TextStyle(
-                        fontSize: 14,
-                      ),
-                    )
-                  ],
-                )
-              ],
-            );
+            return connectingWidget(true);
           case ConnectionState.waiting:
-            return Row(
-              children: <Widget>[
-                GestureDetector(
-                  onTap: () {
-                    //Navigator.pushNamed(context, '/profile');
-                  },
-                  child: Container(
-                    margin: EdgeInsets.fromLTRB(0, 0, 7, 0),
-                    height: 34,
-                    width: 34,
-                    decoration: BoxDecoration(
-                      border: Border.all(
-                        color: Colors.white,
-                      ),
-                      borderRadius: BorderRadius.circular(30),
-                    ),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(30),
-                      child: base64ToImageConverter(
-                          databaseManager.defaultProfilePicBase64),
-                    ),
-                  ),
-                ),
-                Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      "Anonymous",
-                      style: TextStyle(
-                        fontSize: 18,
-                      ),
-                    ),
-                    Text(
-                      "Connecting..",
-                      style: TextStyle(
-                        fontSize: 14,
-                      ),
-                    )
-                  ],
-                )
-              ],
-            );
+            return connectingWidget(true);
           case ConnectionState.done:
             if (snapshot.hasError) {
               toastMessageBottomShort("Error While Connecting", context);
               print(snapshot.error);
               return Text('Error: ${snapshot.error}');
             }
-            Map userInfo = snapshot.data;
-            return Row(
-              children: <Widget>[
-                GestureDetector(
-                  onTap: () {
-                    Navigator.pushNamed(context, '/profile');
-                  },
-                  child: Container(
-                    margin: EdgeInsets.fromLTRB(0, 0, 7, 0),
-                    height: 34,
-                    width: 34,
-                    decoration: BoxDecoration(
-                      border: Border.all(
-                        color: Colors.white,
-                      ),
-                      borderRadius: BorderRadius.circular(30),
-                    ),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(30),
-                      child: base64ToImageConverter(userInfo["profilePic"]),
-                    ),
-                  ),
-                ),
-                Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      userInfo["username"],
-                      style: TextStyle(
-                        fontSize: 18,
-                      ),
-                    ),
-                  ],
-                )
-              ],
-            );
+            return connectingWidget(false);
+        }
+      },
+    );
+
+    FutureBuilder startConnectionChecker = FutureBuilder<bool>(
+      future: checkUntilConnected(),
+      builder: (BuildContext context, AsyncSnapshot<bool> snapshot) {
+        switch (snapshot.connectionState) {
+          case ConnectionState.none:
+            return connectingWidget(true);
+          case ConnectionState.active:
+            return connectingWidget(true);
+          case ConnectionState.waiting:
+            return connectingWidget(true);
+          case ConnectionState.done:
+            if (snapshot.hasError) {
+              toastMessageBottomShort("Error While Connecting", context);
+              print(snapshot.error);
+              return Text('Error: ${snapshot.error}');
+            }
+            return connectingWidget(false);
         }
       },
     );
@@ -489,9 +628,7 @@ class ChatState extends State<Chat> {
             Icons.arrow_back,
           ),
           onPressed: () async {
-            peerUsername = "";
-            peerIpAddress = "";
-            peerProfilePic = "";
+            disconnectFromServer();
             Navigator.pop(context);
           },
         ),
@@ -584,8 +721,7 @@ class ChatState extends State<Chat> {
                         ),
                         color: appBarTextColor,
                         onPressed: () {
-                          client.sendMessage(
-                              peerIpAddress, messageTextController.text);
+                          sendMessage(messageTextController.text);
                         },
                       ),
                     ),

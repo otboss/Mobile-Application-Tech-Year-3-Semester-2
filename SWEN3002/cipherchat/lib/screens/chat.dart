@@ -580,7 +580,7 @@ class ChatState extends State<Chat> {
 
 
     loadMessages = FutureBuilder<List>(
-      future: databaseManager.getPreviousConversations(),
+      future: databaseManager.getPreviousConversations(server.ip),
       builder: (BuildContext context, AsyncSnapshot<List> snapshot) {
         switch (snapshot.connectionState) {
           case ConnectionState.none:

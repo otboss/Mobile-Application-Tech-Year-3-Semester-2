@@ -33,7 +33,6 @@ class Secp256k1{
     await flutterWebviewPlugin.launch("", hidden: true);
     String privateKey = await flutterWebviewPlugin.evalJavascript(ellipticCurve+r"""
     const ec = new elliptic.ec('secp256k1');
-    var keyPair = ec.genKeyPair();
     ec.genKeyPair()["priv"].toString();
     """);
     await flutterWebviewPlugin.close();
@@ -82,6 +81,7 @@ class Secp256k1{
     const ec = new elliptic.ec('secp256k1');
     const msgHash = '"""+messageHash+"""';
     var signature = ec.sign(msgHash, ec.genKeyPair(), "hex", {canonical: true});
+    signature = JSON.parse(JSON.stringify(signature));
     signature["r"] = '"""+signature["r"]+r"""';
     signature["s"] = '"""+signature["s"]+r"""';
     const pubKeyRecovered = ec.recoverPubKey(bigInt(msgHash,16).toString(), signature, signature.recoveryParam, "hex");    
@@ -93,7 +93,7 @@ class Secp256k1{
   }
 
   Future<String> generateSymmetricKey(String privateKey, List<String> publicKeys) async{
-    BigInt combinedPublicKey = BigInt.parse("0");
+    BigInt combinedPublicKey = BigInt.parse("1");
     Map publicKeyInfo = await generatePublicKey(privateKey);
     String personalPublicKey = publicKeyInfo["x2"];
     for(var x = 0; x < publicKeys.length; x++){
@@ -101,7 +101,8 @@ class Secp256k1{
         combinedPublicKey *= BigInt.parse(publicKeys[x]);
       }
     }
-    return combinedPublicKey.toString();
+    String symmetricKey = ((BigInt.parse(privateKey)*combinedPublicKey)%p).toString();
+    return symmetricKey;
   }
 
 }

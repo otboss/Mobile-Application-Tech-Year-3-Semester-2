@@ -122,10 +122,10 @@ class DatabaseManager {
 
   ///Returns A list of the past conversation and the last message
   ///of each conversation
-  Future<List> getPreviousConversations(String ipAddress) async{
+  Future<List> getPreviousConversations() async{
     var client = await getDatabase();
     try{
-      return await client.rawQuery("SELECT * FROM $connectionsTable JOIN $messagesTable ON $connectionsTable.conId = $messagesTable.conId WHERE $connectionsTable.ip = '$ipAddress' GROUP BY $connectionsTable.conId HAVING MAX($messagesTable.mid)");
+      return await client.rawQuery("SELECT * FROM $connectionsTable JOIN $messagesTable ON $connectionsTable.conId = $messagesTable.conId GROUP BY $connectionsTable.conId HAVING MAX($messagesTable.mid)");
     }
     catch(err){
       print(err);
@@ -174,21 +174,19 @@ class DatabaseManager {
 
 
   ///Gets the messages for a specific ip address and username from the database
-  Future<List> getMessages(String ipAddress, bool isGroup, List negatePostsArray, bool loadMore) async{
+  Future<List> getMessages(String ipAddress, List negatePostsArray, bool loadMore) async{
     var client = await getDatabase();
     List results = [];
     try{
-      if(!isGroup){
-        if(loadMore){
-          String negation = listToSqlArray(negatePostsArray);
-          results = await client.rawQuery("SELECT * FROM $messagesTable WHERE ip = '$ipAddress' ORDER BY ts DESC LIMIT "+negatePostsArray.length.toString());
-          results = List.from(results)..addAll(
-            await client.rawQuery("SELECT * FROM $messagesTable WHERE ip = '$ipAddress' WHERE mid NOT IN $negation ORDER BY ts DESC LIMIT $limitPerMessagesFetchFromDatabase")
-          );
-        }
-        else{
-          results = await client.rawQuery("SELECT * FROM $messagesTable WHERE ip = '$ipAddress' ORDER BY ts DESC LIMIT $limitPerMessagesFetchFromDatabase");
-        }
+      if(loadMore){
+        String negation = listToSqlArray(negatePostsArray);
+        results = await client.rawQuery("SELECT * FROM $messagesTable WHERE ip = '$ipAddress' ORDER BY ts DESC LIMIT "+negatePostsArray.length.toString());
+        results = List.from(results)..addAll(
+          await client.rawQuery("SELECT * FROM $messagesTable WHERE ip = '$ipAddress' WHERE mid NOT IN $negation ORDER BY ts DESC LIMIT $limitPerMessagesFetchFromDatabase")
+        );
+      }
+      else{
+        results = await client.rawQuery("SELECT * FROM $messagesTable WHERE ip = '$ipAddress' ORDER BY ts DESC LIMIT $limitPerMessagesFetchFromDatabase");
       }
     }
     catch(err){

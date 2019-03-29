@@ -156,17 +156,20 @@ class ChatState extends State<Chat> {
   ///For improved robustness, Each message has its own set of public keys
   ///The message is then decrypted using the current private key
   Future<String> generateDecryptionSymmetricKeyForMessage(String messageId) async {
-    BigInt combinedPublicKey = BigInt.parse("1");
     Map messagePublicKeys = json.decode(messages[messageId]["recipients"]);
+    List<BigInt> publicKeys = [];
     List messagePublicKeysUsernames = messagePublicKeys.keys.toList();
+    Map userInfo = await databaseManager.getCurrentUserInfo();
+    String username = userInfo["username"];      
     for (var x = 0; x < messagePublicKeysUsernames.length; x++) {
       try {
-        combinedPublicKey *= BigInt.parse(messagePublicKeys[messagePublicKeysUsernames[x]]);
+        if(messagePublicKeysUsernames[x] != username)
+          publicKeys.add(BigInt.parse(messagePublicKeys[messagePublicKeysUsernames[x]]));
       } catch (err) {
         print(err);
       }
     }
-    BigInt symmetricKey = secp256k1EllipticCurve.generateSymmetricKey(BigInt.parse(privateKey), combinedPublicKey);
+    BigInt symmetricKey = secp256k1EllipticCurve.generateSymmetricKey(BigInt.parse(privateKey), publicKeys);
     return sha256.convert(utf8.encode(symmetricKey.toString())).toString();
   }
   
@@ -174,20 +177,20 @@ class ChatState extends State<Chat> {
   ///Before this function is called the participants map should be updated to
   ///get the latest public keys to generate the symmetric key
   Future<String> generateEncryptionSymmetricKeyForMessage() async {
-    BigInt combinedPublicKey = BigInt.parse("1");
     List participantUsernames = participants.keys.toList();
     Map userInfo = await databaseManager.getCurrentUserInfo();
-    String username = userInfo["username"];    
+    String username = userInfo["username"];  
+    List<BigInt> publicKeys = [];
     for(var x = 0; x < participantUsernames.length; x++){
       try{
         if(participantUsernames[x] != username)
-          combinedPublicKey *= BigInt.parse(participants[participantUsernames[x]]["publicKey"]);
+          publicKeys.add(BigInt.parse(participants[participantUsernames[x]]["publicKey"]));
       }
       catch(err){
         print(err);
       }
     }
-    BigInt symmetricKey = secp256k1EllipticCurve.generateSymmetricKey(BigInt.parse(privateKey), combinedPublicKey);
+    BigInt symmetricKey = secp256k1EllipticCurve.generateSymmetricKey(BigInt.parse(privateKey), publicKeys);
     return sha256.convert(utf8.encode(symmetricKey.toString())).toString();
   }
 
@@ -233,7 +236,7 @@ class ChatState extends State<Chat> {
     return null;
   }
 
-
+  ///Sends a new message to all users via the server
   Future<bool> sendMessage(String message) async {
     Response response;
     Map userInfo = await databaseManager.getCurrentUserInfo();
@@ -266,6 +269,24 @@ class ChatState extends State<Chat> {
     return false;
   }
 
+  ///Recalls a sent message
+  Future<bool> recallMessage(String messageChecksum) async{
+    Response response;
+    Map userInfo = await databaseManager.getCurrentUserInfo();
+    String username = userInfo["username"];
+    try{
+      String ip = await server.getCompleteIpAddress();
+      response = await dio.get(ip + "recall", data: {
+        "username": username,
+        "messageChecksum": messageChecksum
+      });      
+      return json.decode(response.data);
+    }
+    catch(err){
+      print(err);
+    }
+    return false; 
+  }
 
   ///Keep-Alive Requests to the server intermittently to indicate
   ///to the server that the user is still active
@@ -294,12 +315,14 @@ class ChatState extends State<Chat> {
     Response response;
     Map userInfo = await databaseManager.getCurrentUserInfo();
     String username = userInfo["username"];
+    String connectionPassword = sha256.convert(utf8.encode("input")).toString();
     try {
       String ip = await server.getCompleteIpAddress();
       String profilePic = userInfo["profilePic"];
       response = await dio.post(ip + "connect", data: {
         "username": username,
         "profilePic": profilePic,
+        "connectionPassword": profilePic,
         "publicKey": secp256k1EllipticCurve.generatePublicKey(BigInt.parse(privateKey))
       });
       var responseData = json.decode(response.data);
@@ -336,6 +359,7 @@ class ChatState extends State<Chat> {
     return newMessages;
   }
 
+  ///Fetches new messages from the server
   Future<Map> getNewMessages() async {
     Response response;
     Map userInfo = await databaseManager.getCurrentUserInfo();
@@ -395,14 +419,13 @@ class ChatState extends State<Chat> {
     }
   }
 
-  ///Repeatedely send TCP packets to the peer until a conneciton is established
+  ///Repeatedely send packets to the server until a conneciton is established
   Future<bool> checkUntilConnected() async {
     while (await connectToServer() == false) {
       await Future.delayed(Duration(seconds: 5));
     }
     return true;
   }
-
 
   Widget connectingWidget(bool connecting){
     if(connecting){
@@ -455,11 +478,14 @@ class ChatState extends State<Chat> {
     );
   }
 
-
   bool loadMoreMessages = false;
 
-  var loadProfilePic;
-  var loadUsername;
+  @override
+  void initState() {
+    connectionRefresher();
+    super.initState();
+  }
+
   @override
   Widget build(BuildContext context) {
 
@@ -472,7 +498,7 @@ class ChatState extends State<Chat> {
           "d")
     ];*/
 
-    connectionRefresher();
+    
 
     var loadMessages;
     /*
@@ -580,7 +606,7 @@ class ChatState extends State<Chat> {
 
 
     loadMessages = FutureBuilder<List>(
-      future: databaseManager.getPreviousConversations(server.ip),
+      future: databaseManager.getMessages(server.ip, messages.keys.toList(), loadMoreMessages),
       builder: (BuildContext context, AsyncSnapshot<List> snapshot) {
         switch (snapshot.connectionState) {
           case ConnectionState.none:
@@ -595,6 +621,8 @@ class ChatState extends State<Chat> {
               print(snapshot.error);
               return Text('Error: ${snapshot.error}');
             }
+            if(loadMoreMessages)
+              loadMoreMessages = false;
             return connectingWidget(false);
         }
       },

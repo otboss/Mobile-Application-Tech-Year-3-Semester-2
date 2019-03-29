@@ -1,8 +1,10 @@
 import 'dart:convert';
 import 'dart:typed_data';
-import './client.dart';
+import 'package:cipherchat/screens/serverList.dart';
+
+//import './client.dart';
 import './database.dart';
-import './screens/chat.dart';
+//import './screens/chat.dart';
 import './screens/home.dart';
 import './screens/profile.dart';
 import 'package:cipherchat/secp256k1.dart';
@@ -232,8 +234,9 @@ class MyApp extends StatelessWidget {
       home: Home(),
       routes: {
         "/home": (BuildContext context) => Home(),
-        "/chat": (BuildContext context) => Chat(),
+        //"/chat": (BuildContext context) => Chat(),
         "/profile": (BuildContext context) => Profile(),
+        "/servers": (BuildContext context) => ServerList(),
       },
     );
   }

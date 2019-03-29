@@ -3,7 +3,9 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:cipherchat/main.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:pointycastle/pointycastle.dart';
 import 'package:flutter/material.dart';
+import 'package:pointycastle/key_generators/ec_key_generator.dart';
 import 'package:share/share.dart';
 import '../main.dart';
 
@@ -89,6 +91,12 @@ class HomeState extends State<Home> {
         ),
       ),
     );
+  }
+
+  ///Fetches public CipherChat Servers from the issues page
+  ///on GitHub
+  Future<List> getPublicServers() async{
+    // TODO: implement
   }
 
 
@@ -383,18 +391,29 @@ Future<void> showAccountSettings(
         accountPortInputController.text = server.port.toString();
       } else {
         toastMessageBottomShort("Connection Unavailable", context);
-      }
+      } 
       var currentUserInfo = await databaseManager.getCurrentUserInfo();
       accountUsernameInputController.text = await currentUserInfo["username"];
     });
     super.initState();
   }
-
-  @override
+ 
+  @override  
   Widget build(BuildContext context) {
+    //Secp256k1 secp256k1EllipticCurve = Secp256k1();
+    //print("THE KEYPAIR IS "+secp256k1EllipticCurve.keypair.toString());
+
     accountIpInputController.text = server.ip;
     accountPortInputController.text = server.port.toString();
+    ECKeyGenerator keygen = ECKeyGenerator();
+    KeyGenerator params = KeyGenerator("EC");
+    ECDomainParameters domain = ECDomainParameters("secp256k1");
+    ECKeyGeneratorParameters dd = ECKeyGeneratorParameters(domain);
 
+    keygen.init(dd);
+
+    print("ELLIPTIC CURVE: "+keygen.generateKeyPair().toString());
+  /*
     secp256k1EllipticCurve.generatePrivateKey().then((prkey1) {
       secp256k1EllipticCurve.generatePrivateKey().then((prkey2) {
         secp256k1EllipticCurve.generatePrivateKey().then((prkey3) {
@@ -404,9 +423,9 @@ Future<void> showAccountSettings(
           print(prkey2);
           print("THE Private KEY 3 IS :");
           print(prkey3);
-          BigInt pubKey1 = secp256k1EllipticCurve.generatePublicKey(prkey1);
-          BigInt pubKey2 = secp256k1EllipticCurve.generatePublicKey(prkey2);
-          BigInt pubKey3 = secp256k1EllipticCurve.generatePublicKey(prkey3);
+          BigInt pubKey1 = secp256k1EllipticCurve2.generatePublicKey(prkey1);
+          BigInt pubKey2 = secp256k1EllipticCurve2.generatePublicKey(prkey2);
+          BigInt pubKey3 = secp256k1EllipticCurve2.generatePublicKey(prkey3);
           print("THE SYMMETRIC KEY A IS :");
           print((prkey1*pubKey2*pubKey3)%secp256k1EllipticCurve.p);
           print("THE SYMMETRIC KEY B IS :");
@@ -415,11 +434,10 @@ Future<void> showAccountSettings(
           print((prkey3*pubKey1*pubKey2)%secp256k1EllipticCurve.p);
         });
       });
-    });
+    });*/
 
     FutureBuilder loadPastConversations = FutureBuilder<List>(
-      future: databaseManager.getPastConversations(
-          loadedChatIds.keys.toList(), loadMoreChats),
+      future: databaseManager.getPreviousConversations(),
       builder: (BuildContext context, AsyncSnapshot<List> snapshot) {
         switch (snapshot.connectionState) {
           case ConnectionState.none:
@@ -552,7 +570,7 @@ Future<void> showAccountSettings(
             String ip = peerIpInputController.text;
             if (ip.split(".").length == 4 &&
                 ip != server.ip) {
-              peerIpAddress = ip;
+              //peerIpAddress = ip;
               peerIpInputController.text = "";
               Navigator.pushNamed(context, "/chat");
             } else {

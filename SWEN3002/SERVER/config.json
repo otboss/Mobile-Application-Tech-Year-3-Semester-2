@@ -1,9 +1,11 @@
 {
     "serverIp": "<Server Ip Address Here>",
-    "autoIpDetection": false,
+    "autoIpDetection": true,
     "showAdvertisments": true,
     "admodId":"ca-app-pub-3940256099942544/6300978111",
-    "maxConnections": 500,
+    "enableHTTPS": true,
+    "keyPath":"./key.pem",
+    "certPath":"./cert.pem",
     "showCustomAds": false,
     "customAds": {
 

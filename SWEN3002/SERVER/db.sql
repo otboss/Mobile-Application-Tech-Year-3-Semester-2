@@ -1,7 +1,7 @@
 CREATE DATABASE cipherchat;
 USE cipherchat;
 
-CREATE TABLE groups(
+CREATE TABLE IF NOT EXISTS groups(
     gid INT(11) NOT NULL AUTO_INCREMENT,
     ts TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
     name VARCHAR(50),
@@ -10,24 +10,36 @@ CREATE TABLE groups(
     PRIMARY KEY(gid)
 );
 
-CREATE TABLE participants(
+CREATE TABLE IF NOT EXISTS participants(
     pid INT(11) NOT NULL AUTO_INCREMENT,
     gid INT(11) NOT NULL,
     username VARCHAR(255) NOT NULL,
     publicKey VARCHAR(100) NOT NULL,
-    participantKey VARCHAR(100) NOT NULL,
+    publicKey2 VARCHAR(100) NOT NULL,
     ts TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
     UNIQUE(gid, username),
-    UNIQUE(participantKey),
     PRIMARY KEY(pid),
     FOREIGN KEY(gid) REFERENCES groups(gid)
 );
 
-CREATE TABLE messages(
+CREATE TABLE IF NOT EXISTS messages(
     mid INT(11) NOT NULL AUTO_INCREMENT,
+    gid INT(11) NOT NULL,
     pid INT(11) NOT NULL,
     message TEXT NOT NULL,
+    compositeKey VARCHAR(255) NOT NULL,
     ts TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
     PRIMARY KEY(mid),
     FOREIGN KEY(pid) REFERENCES participants(pid)
+);
+
+CREATE TABLE IF NOT EXISTS expiredSignatures(
+    exsid INT(11) NOT NULL AUTO_INCREMENT,
+    gid INT(11) NOT NULL,
+    r VARCHAR(100),
+    s VARCHAR(100),
+    ts TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    UNIQUE(gid, r, s),
+    PRIMARY KEY(exsid),
+    FOREIGN KEY(gid) REFERENCES groups(gid) 
 );

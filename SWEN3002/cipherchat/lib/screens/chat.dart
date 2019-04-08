@@ -1,4 +1,7 @@
+
+import 'dart:io';
 import 'package:dio/dio.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:crypto/crypto.dart';
 import '../main.dart';
@@ -13,482 +16,570 @@ class ChatState extends State<Chat> {
 
   //bool publicKeySent = false;
   //bool publicKeyReceived = false;
-  String privateKey = secp256k1EllipticCurve.generatePrivateKey().toString();
+  
   Map participants = {};
   Map messages = {};
+  String passphrase = "";
+  TextEditingController passphraseFieldController = TextEditingController();
+  int offsetForMessages;
+  String currentServerUrl = "https://"+currentServer+":"+currentPort.toString()+"/";
 
-  ///Generates a chat bubble on the left side of the screen to indicate
-  ///a message which was sent from the current user
-  Widget generateSentMessageWidget(String message, String timestamp) {
-    return Container(
-      margin: EdgeInsets.fromLTRB(0, 0, 0, 10),
-      constraints: BoxConstraints(maxWidth: 10),
-      alignment: Alignment.topLeft,
-      child: Row(
-        children: <Widget>[
-          Flexible(
-            flex: 2,
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                Container(
-                  color: Colors.orange,
-                  height: 6,
-                  width: 6,
-                ),
-                Flexible(
-                  child: Container(
-                    padding: EdgeInsets.fromLTRB(7, 7, 7, 7),
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.only(
-                        topRight: Radius.circular(0),
-                        bottomLeft: Radius.circular(0),
-                        bottomRight: Radius.circular(0),
-                      ),
-                      color: Colors.orange,
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: <Widget>[
-                        Text(
-                          message,
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 18,
-                          ),
-                        ),
-                        Container(
-                          margin: EdgeInsets.fromLTRB(0, 3, 0, 0),
-                          padding: EdgeInsets.fromLTRB(0, 4, 0, 0),
-                          alignment: Alignment.bottomRight,
-                          child: Text(
-                            timestamp, //DateTime.now().toLocal().toString().split(".")[0],
-                            style: TextStyle(
-                              color: Colors.white,
-                            ),
-                          ),
-                        )
-                      ],
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Flexible(
-            flex: 1,
-            child: Container(),
-          )
-        ],
-      ),
-    );
-  }
 
-  ///Generates a chat bubble on the right side of the screen to indicate
-  ///a message which was received from another user
-  Widget generateReceivedMessageWidget(String message, String timestamp) {
-    return Container(
-      margin: EdgeInsets.fromLTRB(0, 0, 0, 10),
-      constraints: BoxConstraints(maxWidth: 10),
-      alignment: Alignment.topLeft,
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.end,
-        crossAxisAlignment: CrossAxisAlignment.end,
-        children: <Widget>[
-          Flexible(
-            flex: 1,
-            child: Container(),
-          ),
-          Flexible(
-            flex: 2,
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                Flexible(
-                  child: Container(
-                    padding: EdgeInsets.fromLTRB(7, 7, 7, 7),
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.only(
-                        topRight: Radius.circular(0),
-                        bottomLeft: Radius.circular(0),
-                        bottomRight: Radius.circular(0),
-                      ),
-                      color: Colors.black12,
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: <Widget>[
-                        Text(
-                          message,
-                          style: TextStyle(
-                            color: Colors.black,
-                            fontSize: 18,
-                          ),
-                        ),
-                        Container(
-                          margin: EdgeInsets.fromLTRB(0, 3, 0, 0),
-                          padding: EdgeInsets.fromLTRB(0, 4, 0, 0),
-                          alignment: Alignment.bottomLeft,
-                          child: Text(
-                            timestamp, //DateTime.now().toLocal().toString().split(".")[0],
-                            style: TextStyle(
-                              color: Colors.black,
-                            ),
-                          ),
-                        )
-                      ],
-                    ),
-                  ),
-                ),
-                Container(
-                  color: Colors.black12,
-                  height: 6,
-                  width: 6,
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  ///For improved robustness, Each message has its own set of public keys
-  ///The message is then decrypted using the current private key
-  Future<String> generateDecryptionSymmetricKeyForMessage(String messageId) async {
-    Map messagePublicKeys = json.decode(messages[messageId]["recipients"]);
-    List<BigInt> publicKeys = [];
-    List messagePublicKeysUsernames = messagePublicKeys.keys.toList();
-    Map userInfo = await databaseManager.getCurrentUserInfo();
-    String username = userInfo["username"];      
-    for (var x = 0; x < messagePublicKeysUsernames.length; x++) {
-      try {
-        if(messagePublicKeysUsernames[x] != username)
-          publicKeys.add(BigInt.parse(messagePublicKeys[messagePublicKeysUsernames[x]]));
-      } catch (err) {
-        print(err);
-      }
-    }
-    BigInt symmetricKey = secp256k1EllipticCurve.generateSymmetricKey(BigInt.parse(privateKey), publicKeys);
-    return sha256.convert(utf8.encode(symmetricKey.toString())).toString();
-  }
-  
-  ///Generates a symmetric key based on the current participants of the chat.
-  ///Before this function is called the participants map should be updated to
-  ///get the latest public keys to generate the symmetric key
-  Future<String> generateEncryptionSymmetricKeyForMessage() async {
-    List participantUsernames = participants.keys.toList();
-    Map userInfo = await databaseManager.getCurrentUserInfo();
-    String username = userInfo["username"];  
-    List<BigInt> publicKeys = [];
-    for(var x = 0; x < participantUsernames.length; x++){
-      try{
-        if(participantUsernames[x] != username)
-          publicKeys.add(BigInt.parse(participants[participantUsernames[x]]["publicKey"]));
-      }
-      catch(err){
-        print(err);
-      }
-    }
-    BigInt symmetricKey = secp256k1EllipticCurve.generateSymmetricKey(BigInt.parse(privateKey), publicKeys);
-    return sha256.convert(utf8.encode(symmetricKey.toString())).toString();
-  }
-
-  ///Get a map of the current users of the chat from the server.
-  ///Also updates the user's public key on the Server
-  Future<Map> getChatParticipants() async{
-    Response response;
-    Map userInfo = await databaseManager.getCurrentUserInfo();
-    String username = userInfo["username"];
+  Future<bool> updateProfilePic(int participantId) async{
     try{
-      String ip = await server.getCompleteIpAddress();
-      response = await dio.get(ip + "getchatparticipants", data: {
-        "username": username,
-        "publicKey": secp256k1EllipticCurve.generatePublicKey(BigInt.parse(privateKey))
-      });      
-      return json.decode(response.data);
+      File image = await FilePicker.getFile(type: FileType.IMAGE);
+      String base64ProfilePic = base64.encode(await image.readAsBytes());
+      await databaseManager.updateProfilePicture(base64ProfilePic, false, gid: currentGroupId, pid: participantId);
+      Navigator.pop(context);
+      setState(() {});
+      toastMessageBottomShort("Profile Updated", context); 
     }
     catch(err){
-      print(err);
+
     }
-    return null;
   }
 
-  ///Messages are encrypted by using the current users private key and
-  ///public key from each of the participants. Therefore before a
-  ///message is encrypted the participants of the chat should be updated
-  ///if possible. Once the message has been sent successfully it should be 
-  ///immediately saved to the local database along with all the keys
-  Future<String> encryptMessage(String message) async {
+  Future<bool> createNewGroup(String username, String publicKey) async{
     try{
-      var currentParticipants = await getChatParticipants();
-      if(currentParticipants != null){
-        participants.addAll(currentParticipants);
-        String key = await generateEncryptionSymmetricKeyForMessage();
-        String encryptedMessage = await cryptor.encrypt(message, key);
-        return encryptedMessage;      
-      }
-    }
-    catch(err){
-      print(err);
-    }
-    //Connection Error
-    return null;
-  }
-
-  ///Sends a new message to all users via the server
-  Future<bool> sendMessage(String message) async {
-    Response response;
-    Map userInfo = await databaseManager.getCurrentUserInfo();
-    String username = userInfo["username"];
-    try {
-      String encryptedMessage = await encryptMessage(message);
-      if(encryptedMessage != null){
-        String ip = await server.getCompleteIpAddress();
-        Map recipients = {};
-        List participantsUsernames = participants.keys.toList();
-        for(var x = 0; x < participantsUsernames.length; x++){
-          if(participantsUsernames[x] != username)
-            recipients[participantsUsernames[x]] = participants[participantsUsernames[x]]["publicKey"];
-        }
-        response = await dio.post(ip + "message",
-            data: {
-              "username": username, 
-              "message": encryptedMessage,
-              "recipients": recipients
-            });
-        var responseData = json.decode(response.data);
-        if (responseData){
-          //Message Sent
-          return true;
-        }
-      }
-    } catch (err) {
-      print(err);
-    }
-    return false;
-  }
-
-  ///Recalls a sent message
-  Future<bool> recallMessage(String messageChecksum) async{
-    Response response;
-    Map userInfo = await databaseManager.getCurrentUserInfo();
-    String username = userInfo["username"];
-    try{
-      String ip = await server.getCompleteIpAddress();
-      response = await dio.get(ip + "recall", data: {
+      Response response = await dio.post(currentServerUrl+"newgroup", data: {
         "username": username,
-        "messageChecksum": messageChecksum
-      });      
-      return json.decode(response.data);
-    }
-    catch(err){
-      print(err);
-    }
-    return false; 
-  }
-
-  ///Keep-Alive Requests to the server intermittently to indicate
-  ///to the server that the user is still active
-  Future<bool> connectionRefresher() async{
-    while(true){
-      try{
-        await connectToServer();
-      }
-      catch(err){
-        print(err);
-      } 
-      await Future.delayed(Duration(seconds: 30));
-    }
-  }
-
-  ///Called before a message is loaded onto the screen, as all
-  ///messages received from the server are encrypted
-  Future<String> decryptMessage(String messageId) async {
-    String key = await generateDecryptionSymmetricKeyForMessage(messageId);
-    String decryptedMessage = await cryptor.decrypt(messages[messageId]["message"], key);
-    return decryptedMessage;
-  }
-
-  ///Attempts to connect to the server
-  Future<bool> connectToServer() async {
-    Response response;
-    Map userInfo = await databaseManager.getCurrentUserInfo();
-    String username = userInfo["username"];
-    String connectionPassword = sha256.convert(utf8.encode("input")).toString();
-    try {
-      String ip = await server.getCompleteIpAddress();
-      String profilePic = userInfo["profilePic"];
-      response = await dio.post(ip + "connect", data: {
-        "username": username,
-        "profilePic": profilePic,
-        "connectionPassword": profilePic,
-        "publicKey": secp256k1EllipticCurve.generatePublicKey(BigInt.parse(privateKey))
+        "publicKey": publicKey,
+        "passphrase": passphrase
       });
-      var responseData = json.decode(response.data);
-      if (responseData["username"] != null) {
-        participants = responseData;
+      if(response.data == "-1"){
+        return false;
+      }
+      else{
+        String joinKey = response.data;
+        String privateKey = secp256k1EllipticCurve.generatePrivateKey().toString();
+        await databaseManager.saveGroup(currentServer, currentPort, currentServer, privateKey, joinKey);
+        //int insertId = await databaseManager.getLatestGroup();
+        //await databaseManager.saveParticipant(insertId, username, databaseManager.defaultProfilePicBase64);
+        await updateParticipants();
         return true;
       }
-      return false;
-    } catch (err) {
-      return false;
     }
+    catch(err){
+      
+    }
+    return null;
   }
 
-  ///Checks the server intermittently for new messages. if new messages
-  ///Are received load them into the message view if the user is scrolled to
-  ///the bottom of the screen else show a new messages bubble.
-  ///TO BE IMPLEMENTED IN A FUTURE BUILDER
-  Future<bool> checkForNewMessages() async {
-    Response response;
-    bool newMessages = false;
-    while (true) {
-      try {
-        String ip = await server.getCompleteIpAddress();
-        response = await dio.get(ip + "anynewmessages",
-            data: {"oldMessages": messages.keys.toList()});
-        newMessages = json.decode(response.data);
-        if (newMessages) 
-          break;
-      } catch (err) {
-        print(err);
+  Future<Map> joinGroup(String joinKey, String username, String publicKey, String publicKey2, String encryptedMessage, String signature) async{
+      try{
+        Response response = await dio.post(currentServerUrl+"/newgroup", data: {
+          "username": username,
+          "publicKey": publicKey,
+          "publicKey2": publicKey2,
+          "encryptedMessage": encryptedMessage,
+          "signature": signature
+        });
+        return json.decode(response.data);
       }
-      await Future.delayed(Duration(seconds: 10));
-    }
-    return newMessages;
+      catch(err){
+        print(err);
+      }  
+      return null;
   }
 
-  ///Fetches new messages from the server
-  Future<Map> getNewMessages() async {
-    Response response;
-    Map userInfo = await databaseManager.getCurrentUserInfo();
-    String username = userInfo["username"];
-    try {
-      String ip = await server.getCompleteIpAddress();
-      response = await dio.get(ip + "getmessages",
-          data: {"username": username, "oldMessages": messages.keys.toList()});
-      Map newMessages = json.decode(response.data);
-      messages.addAll(newMessages);
-    } catch (err) {
+  ///Creates a base64 encoded Map of the required credentials to join a server
+  Future<String> generateJoinKey() async{
+    Map groupInfo = await databaseManager.getGroupInfo(currentGroupId);
+    Map completeJoinKey = {};
+    completeJoinKey["ip"] = groupInfo["serverIp"];
+    completeJoinKey["port"] = groupInfo["serverPort"];    
+    completeJoinKey["joinKey"] = groupInfo["joinKey"];    
+    completeJoinKey["encryptedMessage"] = cryptor.encrypt(secp256k1EllipticCurve.generateRandomString(100), groupInfo["privateKey"]);
+    return base64.encode(utf8.encode(json.encode(completeJoinKey)));
+  }
+  
+  ///Parses a join key received from another peer (join keys are base64 encoded)
+  Map parseJoinKey(String joinKey) {
+    return json.decode(utf8.decode(base64.decode(joinKey)));
+  }
+
+  Future<Map> getPrivateKey() async{
+    Map groupInfo = await databaseManager.getGroupInfo(currentGroupId);
+    return groupInfo["privateKey"];
+  }
+
+
+  ///Retrieves the Admob ID from the server. Also tests for connection to the server
+  Future<String> getAdmodId() async{
+    while(true){
+      try{
+        Response response = await dio.get(currentServerUrl+"/ads");
+        return response.data;
+      }
+      catch(err){
+
+      }
+      await Future.delayed(Duration(seconds: 4));
+    }  
+  }
+
+  Future<String> getGroupName() async{
+      try{
+        String randomMessage = secp256k1EllipticCurve.generateRandomString(100);
+        String username = await databaseManager.getUsername();
+        String messageHash = sha256.convert(utf8.encode(randomMessage)).toString();
+        BigInt privateKey = await databaseManager.getPrivateKey(currentGroupId);
+        Map signature = await secp256k1EllipticCurve.signMessage(messageHash, privateKey);
+        String joinKey = await databaseManager.getGroupJoinKey(currentGroupId);
+        Response response = await dio.get(currentServerUrl+"/getgroupname", data: {
+          "encryptedMessage": randomMessage,
+          "signature": signature,
+          "username": username,
+          "joinKey": joinKey
+        });
+        return response.data;
+      }
+      catch(err){
+
+      }
+      await Future.delayed(Duration(seconds: 4));    
+  }
+
+  Future<bool> setGroupName(String groupName) async{
+      try{
+        String randomMessage = secp256k1EllipticCurve.generateRandomString(100);
+        String messageHash = sha256.convert(utf8.encode(randomMessage)).toString();
+        BigInt privateKey = await databaseManager.getPrivateKey(currentGroupId);
+        Map signature = await secp256k1EllipticCurve.signMessage(messageHash, privateKey);
+        String joinKey = await databaseManager.getGroupJoinKey(currentGroupId);
+        Response response = await dio.put(currentServerUrl+"/setgroupname", data: {
+          "encryptedMessage": randomMessage,
+          "signature": signature,
+          "joinKey": joinKey
+        });
+        if(response.data != "1")
+          return false;
+      }
+      catch(err){
+        return false;
+      }
+      return true;   
+  }
+  
+  Future<Map> getParticipants() async{
+    try{
+      String message = secp256k1EllipticCurve.generateRandomString(100);
+      String messageHash = sha256.convert(utf8.encode(message)).toString();
+      BigInt privateKey = await databaseManager.getPrivateKey(currentGroupId);
+      BigInt symmetricKey = await databaseManager.getSymmetricKey(currentGroupId);
+      Map signature = await secp256k1EllipticCurve.signMessage(messageHash, privateKey);
+      String encryptedMessage = await cryptor.encrypt(message, symmetricKey.toString());
+      String joinKey = await databaseManager.getGroupJoinKey(currentGroupId);
+      String username = await databaseManager.getUsername();
+      Response response = await dio.get(currentServerUrl+"/participants", data: {
+        "encryptedMessage":encryptedMessage,
+        "signature": json.encode(signature),
+        "joinKey": joinKey,
+        "username": username
+      });    
+      return json.decode(response.data);
+    }
+    catch(err){
       print(err);
     }
-    return messages;
+    return null;
   }
 
+  Future<bool> muteChat() async {
+    
+  }  
 
-  ///Disconnects from the current chat. Fired when the user presses
-  ///the back button on the Chat Screen
-  Future<bool> disconnectFromServer() async {
-    Response response;
-    Map userInfo = await databaseManager.getCurrentUserInfo();
-    String username = userInfo["username"];
-    try {
-      String ip = await server.getCompleteIpAddress();
-      response = await dio.post(ip + "disconnect", data: {"username": username});
-      var responseData = json.decode(response.data);
-      return responseData;
-    } catch (err) {
-      return false;
-    }
-  }
-
-  /* 
-   {
-        "sender": senderIP,
-        "username": username,
-        "message": message,
-        "ts": timestamp,
-        "recipients": {
-            username: publicKey,
-            username: publicKey,
-            username: publicKey,
+  Future<bool> updateParticipants() async{
+      Map participants = await getParticipants();
+      List usernames = participants.keys.toList();    
+      for(var x = 0; x < usernames.length; x++){
+        try{
+          await databaseManager.saveParticipant(currentGroupId, usernames[x], databaseManager.defaultProfilePicBase64, BigInt.parse(participants[usernames[x]]["publicKey"]), participants[usernames[x]]["publicKey2"], participants[usernames[x]]["joined"]);
+          if(usernames.length == 2){
+            String joinKey = await databaseManager.getGroupJoinKey(currentGroupId);
+            String username = await databaseManager.getUsername();
+            if(usernames[x] != username)
+            await databaseManager.updateServerLabel(usernames[x], joinKey);
+          }
+          if(usernames.length > 2){
+            String message = secp256k1EllipticCurve.generateRandomString(100);
+            String messageHash = sha256.convert(utf8.encode(message)).toString();
+            BigInt privateKey = await databaseManager.getPrivateKey(currentGroupId);
+            BigInt symmetricKey = await databaseManager.getSymmetricKey(currentGroupId);
+            Map signature = await secp256k1EllipticCurve.signMessage(messageHash, privateKey);
+            String encryptedMessage = await cryptor.encrypt(message, symmetricKey.toString());
+            String joinKey = await databaseManager.getGroupJoinKey(currentGroupId);
+            String username = await databaseManager.getUsername();            
+            Response response = await dio.get(currentServerUrl+"getgroupname", data: {
+              "encryptedMessage":encryptedMessage,
+              "signature": json.encode(signature),
+              "joinKey": joinKey,
+              "username": username
+            });
+            await databaseManager.updateServerLabel(json.encode(response.data), joinKey);            
+          }
         }
-    }  
-  */
-
-  ///Sends a sample request to the peer. returns true if a response is received
-  ///and a timeout otherwise
-  Future<Map> checkConnection(String ipAddress) async {
-    Response response;
-    try {
-      response = await dio.get(ipAddress + "?check=1");
-      return response.data;
-    } catch (err) {
-      return null;
-    }
-  }
-
-  ///Repeatedely send packets to the server until a conneciton is established
-  Future<bool> checkUntilConnected() async {
-    while (await connectToServer() == false) {
-      await Future.delayed(Duration(seconds: 5));
-    }
+        catch(err){
+          print(err);
+        }
+      }
     return true;
   }
 
-  Widget connectingWidget(bool connecting){
-    if(connecting){
-      return Row(
-        children: <Widget>[
-          GestureDetector(
-            onTap: () {
-              Navigator.pushNamed(context, '/profile');
-            },
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(
-                  server.ip,
-                  style: TextStyle(
-                    fontSize: 18,
-                  ),
-                ),
-                Text(
-                  "Connecting..",
-                  style: TextStyle(
-                    fontSize: 14,
-                  ),
-                )
-              ],
-            ),
-          ),
-        ],
-      );
+
+  Future<bool> sendMessage(String message) async {
+    try{
+      BigInt privateKey = await databaseManager.getPrivateKey(currentGroupId);
+      BigInt compositeKey = await databaseManager.getCompositeKey(currentGroupId);
+      BigInt symmetricKey = await databaseManager.getSymmetricKey(currentGroupId);
+      String hashedSymmetricKey = sha256.convert(utf8.encode(symmetricKey.toString())).toString();
+      String username = await databaseManager.getUsername();
+      String encryptedMessage = await cryptor.encrypt(message, hashedSymmetricKey);
+      String encryptedMessageHash = sha256.convert(utf8.encode(encryptedMessage)).toString();
+      Map signature = await secp256k1EllipticCurve.signMessage(encryptedMessageHash, privateKey);  
+      String joinKey = await databaseManager.getGroupJoinKey(currentGroupId);
+      await updateParticipants();
+      Response response = await dio.post(currentServerUrl+"/message", data: {
+        "encryptedMessage": encryptedMessage,
+        "signature": json.encode(signature),
+        "joinKey": joinKey,
+        "username": username,
+        "compositeKey": compositeKey
+      });
+      if(response.data == "false")
+        return false;
     }
-    return Row(
-      children: <Widget>[
-        GestureDetector(
-          onTap: () {
-            Navigator.pushNamed(context, '/profile');
-          },
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text(
-                server.ip,
-                style: TextStyle(
-                  fontSize: 18,
-                ),
-              )
-            ],
-          ),
-        ),
-      ],
-    );
+    catch(err){
+      print(err);
+      return false;
+    }
+    return true;
+  }  
+
+  Future<Map> getNewMessages() async{
+      String message = secp256k1EllipticCurve.generateRandomString(100);
+      String messageHash = sha256.convert(utf8.encode(message)).toString();
+      BigInt privateKey = await databaseManager.getPrivateKey(currentGroupId);
+      BigInt symmetricKey = await databaseManager.getSymmetricKey(currentGroupId);
+      Map signature = await secp256k1EllipticCurve.signMessage(messageHash, privateKey);
+      String encryptedMessage = await cryptor.encrypt(message, symmetricKey.toString());
+      String joinKey = await databaseManager.getGroupJoinKey(currentGroupId);
+      String username = await databaseManager.getUsername();
+      int offset = await databaseManager.getLastMessageId(currentGroupId);
+      Response response;
+      try{
+        response = await dio.get(currentServerUrl+"/messages", data: {
+          "encryptedMessage":encryptedMessage,
+          "signature": json.encode(signature),
+          "joinKey": joinKey,
+          "username": username,
+          "offset": offset
+        });            
+      }
+      catch(err){
+        return {};
+      }
+      return json.decode(response.data);      
   }
 
-  bool loadMoreMessages = false;
+  Future<Map> getOlderMessages() async{
+    Map oldMessages = await databaseManager.getMessages(currentGroupId, offset: offsetForMessages);
+    List messageIds = oldMessages.keys.toList();
+    messageIds.sort();
+    offsetForMessages = int.parse(messageIds[messageIds.length - 1]);
+    return oldMessages;    
+  }
 
-  @override
+  Future<bool> newMessagesCheck() async{
+      try{
+        String randomMessage = secp256k1EllipticCurve.generateRandomString(100);
+        String messageHash = sha256.convert(utf8.encode(randomMessage)).toString();
+        BigInt privateKey = await databaseManager.getPrivateKey(currentGroupId);
+        Map signature = await secp256k1EllipticCurve.signMessage(messageHash, privateKey);
+        String username = await databaseManager.getUsername();
+        String joinKey = await databaseManager.getGroupJoinKey(currentGroupId);
+        int offset = await databaseManager.getLastMessageId(currentGroupId);
+        Response response = await dio.put(currentServerUrl+"/setgroupname", data: {
+          "encryptedMessage": randomMessage,
+          "signature": signature,
+          "joinKey": joinKey,
+          "username": username,
+          "offset": offset
+        });
+        if(response.data != "true")
+          return false;
+      }
+      catch(err){
+        return false;
+      }
+      return true;   
+  }  
+
+  Future<Map> getMessagesForInitialDisplaying() async{
+    int lastMessageId = await databaseManager.getLastMessageId(currentGroupId);
+    Map oldMessages = await databaseManager.getMessages(currentGroupId, offset: lastMessageId);
+    return oldMessages;
+  }
+
+  Map<String, bool> participantCheckboxIndicators = {};
+
+  bool passphrasePromptOpen = false;
+
+  Future<bool> newGroupConnector() async{
+    String username = await databaseManager.getUsername();
+    while(true){
+      try{
+        BigInt privateKey = await secp256k1EllipticCurve.generatePrivateKey();
+        Map publicKey = await secp256k1EllipticCurve.generatePublicKey(privateKey.toString());
+        Response response = await dio.post(currentServerUrl+"newgroup", data:{
+          "username": username,
+          "publicKey": publicKey["x2"],
+          "publicKey2": publicKey["x"],
+          "passphrase": passphrase
+        });
+        if(response.data == "0"){
+          if(passphrasePromptOpen == false)
+            showPrompt("Passphrase Required", context, passphraseFieldController, (){
+              passphrasePromptOpen = false;
+              setState(() {
+                passphrase = passphraseFieldController.text;                  
+              });
+            });
+          passphrasePromptOpen = true;
+        }
+        else{
+          if(response.data != "-1"){
+            //Connection Successful, New group created
+            String joinKey = json.encode(response.data);
+            await databaseManager.saveGroup(currentServer, currentPort, currentServer, privateKey.toString(), joinKey);
+            return true;
+          }
+        }
+      }
+      catch(err){
+        //Connection Timeout
+      }
+      await Future.delayed(Duration(seconds: 4));
+    }
+  }
+
+
+  Future<bool> oldGroupConnector() async{
+    while(true){
+      try{
+        String message = secp256k1EllipticCurve.generateRandomString(100);
+        String messageHash = sha256.convert(utf8.encode(message)).toString();              
+        BigInt privateKey = await databaseManager.getPrivateKey(currentGroupId);
+        Map publicKey = await secp256k1EllipticCurve.generatePublicKey(privateKey.toString());
+        BigInt symmetricKey = await databaseManager.getSymmetricKey(currentGroupId);
+        Map signature = await secp256k1EllipticCurve.signMessage(messageHash, privateKey);
+        String encryptedMessage = await cryptor.encrypt(message, symmetricKey.toString());
+        String username = await databaseManager.getUsername();        
+        Response response = await dio.get(currentServerUrl+"joingroup", data:{
+          "username": username,
+          "publicKey": publicKey["x2"],
+          "publicKey2": publicKey["x"],
+          "encryptedMessage": encryptedMessage,
+          "signature": signature
+        });
+        if(response.data == "-3"){
+          return true;
+        }
+      } 
+      catch(err){
+
+      }
+      await Future.delayed(Duration(seconds: 4));
+    }
+  }
+
+  @override 
   void initState() {
-    connectionRefresher();
+    databaseManager.getLastMessageId(currentGroupId).then((offsetVal){
+      offsetForMessages = offsetVal;
+    });
     super.initState();
   }
 
   @override
   Widget build(BuildContext context) {
+    dio.onHttpClientCreate = (HttpClient client) {
+      client.badCertificateCallback = (X509Certificate cert, String host, int port) {
+        return true;
+      };
+    };  
+    /*dio.get("https://wrong.host.badssl.com/").then((response){
+      print("THE RESPONSE IS: ");
+      print(response);
+    });  
+    HttpClient client = new HttpClient();
+    client.badCertificateCallback =((X509Certificate cert, String host, int port) => true);
+    client.postUrl(Uri.parse("https://wrong.host.badssl.com/")).then((response) async{
+      print(response);
+    });*/
+    var startConnection;
+    if(newGroupConnection){
+      startConnection = FutureBuilder<bool>(
+        future: newGroupConnector(), // a previously-obtained Future<String> or null
+        builder: (BuildContext context, AsyncSnapshot<bool> snapshot) {
+          Widget connectingIndicator = Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Text(currentServer),
+              Text(
+                "Connecting..",
+                style: TextStyle(
+                  fontSize: 12,
+                ),
+              )
+            ],
+          );
+          switch (snapshot.connectionState) {
+            case ConnectionState.none:
+              return connectingIndicator;
+            case ConnectionState.active:
+              return connectingIndicator;
+            case ConnectionState.waiting:
+              return connectingIndicator;
+            case ConnectionState.done:
+              if (snapshot.hasError)
+                return Text('Error: ${snapshot.error}');
+              return Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  Text(currentServer),
+                  Text(
+                    "Connected",
+                    style: TextStyle(
+                      fontSize: 12,
+                    ),
+                  )
+                ],
+              );              
+          }
+        },
+      );
+    }
+    else{
+      startConnection = FutureBuilder<bool>(
+        future: oldGroupConnector(), // a previously-obtained Future<String> or null
+        builder: (BuildContext context, AsyncSnapshot<bool> snapshot) {
+          Widget connectingIndicator = Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Text(pastGroupName),
+              Text(
+                "Connecting..",
+                style: TextStyle(
+                  fontSize: 12,
+                ),
+              )
+            ],
+          );
+          switch (snapshot.connectionState) {
+            case ConnectionState.none:
+              return connectingIndicator;
+            case ConnectionState.active:
+              return connectingIndicator;
+            case ConnectionState.waiting:
+              return connectingIndicator;
+            case ConnectionState.done:
+              if (snapshot.hasError)
+                return Text('Error: ${snapshot.error}');
+              return Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  Text(pastGroupName),
+                    Text(
+                      "Connected",
+                      style: TextStyle(
+                        fontSize: 12,
+                      ),
+                    )
+                  ],
+              );   
+          }
+          return null; // unreachable
+        },
+      );
+    }
 
+
+    FutureBuilder loadParticipants= FutureBuilder<Map>(
+      future: databaseManager.getParticipants(currentGroupId), // a previously-obtained Future<String> or null
+      builder: (BuildContext context, AsyncSnapshot<Map> snapshot) {
+        Widget loadingIndicator = Center(
+          child: new ListView(
+            shrinkWrap: true,
+              padding: const EdgeInsets.all(20.0),
+              children: [
+                SingleChildScrollView(
+                  child: Container(
+                    alignment: Alignment.center,
+                    padding: EdgeInsets.fromLTRB(0, 5, 0, 60),
+                    child: Column(
+                      children: <Widget>[
+                        CircularProgressIndicator(
+                          backgroundColor: themeColor,
+                          valueColor: AlwaysStoppedAnimation<Color>(Colors.blue),
+                        ),
+                      ],
+                    ),
+                  ),
+                )                    
+              ]
+          ),
+        );
+        switch (snapshot.connectionState) {
+          case ConnectionState.none:
+            return loadingIndicator;
+          case ConnectionState.active:
+            return loadingIndicator;      
+          case ConnectionState.waiting:
+            return loadingIndicator;
+          case ConnectionState.done:
+            if (snapshot.hasError)
+              return Text('Error: ${snapshot.error}');
+            Map result = snapshot.data;
+            List usernames = result.keys.toList();
+            List<Widget> users = [];
+            for(var x = 0; x < usernames.length; x++){
+              users.add(
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: <Widget>[
+                    Text(usernames[x]),
+                    Checkbox(
+                      value: participantCheckboxIndicators[usernames[x]],
+                      activeColor: materialGreen,
+                      onChanged: (val) async{
+                        await databaseManager.updateChatRecipient(currentGroupId, usernames[x], val);
+                        setState(() {
+                          participantCheckboxIndicators[usernames[x]] = val;                   
+                        });
+                      },
+                    )
+                  ],
+                )
+              );
+            }
+            return ListView(
+              shrinkWrap: true,
+              padding: const EdgeInsets.fromLTRB(30, 20, 23, 40),
+              children: [
+                Column(
+                  children: users,
+                ),
+              ],
+            );    
+        }
+      },
+    );
+    
     /*client.receivedMessages = [
       generateSentMessageWidget(
           "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.",
@@ -498,7 +589,31 @@ class ChatState extends State<Chat> {
           "d")
     ];*/
 
-    
+    /*
+    secp256k1EllipticCurve.generatePrivateKey().then((prkey1) {
+      secp256k1EllipticCurve.generatePrivateKey().then((prkey2) {
+        secp256k1EllipticCurve.generatePrivateKey().then((prkey3) async{
+          print("THE Private KEY 1 IS :");
+          print(prkey1);
+          print("THE Private KEY 2 IS :");
+          print(prkey2);
+          print("THE Private KEY 3 IS :");
+          print(prkey3);
+          var pubKey1 = await secp256k1EllipticCurve.generatePublicKey(prkey1.toString());
+          var pubKey2 = await secp256k1EllipticCurve.generatePublicKey(prkey2.toString());
+          var pubKey3 = await secp256k1EllipticCurve.generatePublicKey(prkey3.toString());
+          String pubk1 = pubKey1["x2"];
+          String pubk2 = pubKey2["x2"];
+          String pubk3 = pubKey3["x2"];
+          print("THE SYMMETRIC KEY A IS :");
+          print(await secp256k1EllipticCurve.generateSymmetricKey(prkey1, [BigInt.parse(pubk2), BigInt.parse(pubk3)]));
+          print("THE SYMMETRIC KEY B IS :");
+          print(await secp256k1EllipticCurve.generateSymmetricKey(prkey2, [BigInt.parse(pubk1), BigInt.parse(pubk3)]));
+          print("THE SYMMETRIC KEY C IS :");
+          print(await secp256k1EllipticCurve.generateSymmetricKey(prkey3, [BigInt.parse(pubk1), BigInt.parse(pubk2)]));
+        });
+      });
+    });    */    
 
     var loadMessages;
     /*
@@ -603,8 +718,7 @@ class ChatState extends State<Chat> {
       );
     }*/
 
-
-
+    /*
     loadMessages = FutureBuilder<List>(
       future: databaseManager.getMessages(server.ip, messages.keys.toList(), loadMoreMessages),
       builder: (BuildContext context, AsyncSnapshot<List> snapshot) {
@@ -647,119 +761,234 @@ class ChatState extends State<Chat> {
             return connectingWidget(false);
         }
       },
-    );
+    );*/
 
-    return Scaffold(
+
+    return DefaultTabController(
+      length: 2,
+      child: Scaffold(
       appBar: AppBar(
+        backgroundColor: themeColor,
         leading: IconButton(
           icon: Icon(
             Icons.arrow_back,
           ),
           onPressed: () async {
-            disconnectFromServer();
-            Navigator.pop(context);
+            //muteChat();
+            //Navigator.pushReplacementNamed(context, "/honme")
           },
         ),
-        title: startConnectionChecker,
-        backgroundColor: themeColor,
+        title: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            Text("192.168.0.1"),
+            Text(
+              "Connecting..",
+              style: TextStyle(
+                fontSize: 12,
+              ),
+            )
+          ],
+        ),
+        actions: <Widget>[
+          IconButton(
+            icon: Icon(Icons.share, color: appBarTextColor,),
+            onPressed: (){
+
+            },
+          )
+        ],
       ),
-      body: Stack(
-        children: <Widget>[
-          Container(
-            child: loadMessages,
-          ),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            mainAxisSize: MainAxisSize.max,
-            mainAxisAlignment: MainAxisAlignment.end,
-            children: <Widget>[
-              Container(
-                padding: EdgeInsets.fromLTRB(10, 5, 5, 5),
-                alignment: Alignment.bottomCenter,
-                constraints: BoxConstraints(
-                  maxHeight: 180,
-                ),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: <Widget>[
-                    Flexible(
-                      flex: 1,
-                      child: Container(
-                        padding: EdgeInsets.fromLTRB(13, 3, 13, 3),
-                        margin: EdgeInsets.fromLTRB(0, 0, 0, 0),
-                        decoration: BoxDecoration(
-                          color: appBarTextColor,
-                          border: Border.all(
-                            color: themeColor,
-                          ),
-                          borderRadius: BorderRadius.circular(30),
+      body: TabBarView(
+            children: [
+              Stack(
+                children: <Widget>[
+                  Container(
+                    child: loadMessages,
+                  ),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    mainAxisSize: MainAxisSize.max,
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: <Widget>[
+                      Container(
+                        padding: EdgeInsets.fromLTRB(10, 5, 5, 5),
+                        alignment: Alignment.bottomCenter,
+                        constraints: BoxConstraints(
+                          maxHeight: 180,
                         ),
-                        child: SingleChildScrollView(
-                          child: Theme(
-                            data: ThemeData(cursorColor: materialGreen),
-                            child: TextField(
-                              maxLines: null,
-                              obscureText: false,
-                              controller: messageTextController,
-                              autofocus: false,
-                              decoration: InputDecoration(
-                                enabledBorder: UnderlineInputBorder(
-                                  borderSide: BorderSide(
-                                    color: Colors.transparent,
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: <Widget>[
+                            Flexible(
+                              flex: 1,
+                              child: Container(
+                                padding: EdgeInsets.fromLTRB(13, 3, 13, 3),
+                                margin: EdgeInsets.fromLTRB(0, 0, 0, 0),
+                                decoration: BoxDecoration(
+                                  color: appBarTextColor,
+                                  border: Border.all(
+                                    color: themeColor,
+                                  ),
+                                  borderRadius: BorderRadius.circular(30),
+                                ),
+                                child: SingleChildScrollView(
+                                  child: Theme(
+                                    data: ThemeData(cursorColor: materialGreen),
+                                    child: TextField(
+                                      maxLines: null,
+                                      obscureText: false,
+                                      controller: messageTextController,
+                                      autofocus: false,
+                                      decoration: InputDecoration(
+                                        enabledBorder: UnderlineInputBorder(
+                                          borderSide: BorderSide(
+                                            color: Colors.transparent,
+                                          ),
+                                        ),
+                                        focusedBorder: UnderlineInputBorder(
+                                          borderSide: BorderSide(
+                                            color: Colors.transparent,
+                                            width: 2.0,
+                                          ),
+                                          borderRadius: BorderRadius.circular(50),
+                                        ),
+                                        hintText: "type your message here..",
+                                        border: new UnderlineInputBorder(
+                                            borderSide:
+                                                new BorderSide(color: Colors.red)),
+                                        labelStyle: Theme.of(context)
+                                            .textTheme
+                                            .caption
+                                            .copyWith(
+                                                color: materialGreen, fontSize: 16),
+                                        errorText: null,
+                                      ),
+                                      style: TextStyle(
+                                        color: Colors.black87,
+                                        fontSize: 16,
+                                      ),
+                                    ),
                                   ),
                                 ),
-                                focusedBorder: UnderlineInputBorder(
-                                  borderSide: BorderSide(
-                                    color: Colors.transparent,
-                                    width: 2.0,
-                                  ),
-                                  borderRadius: BorderRadius.circular(50),
-                                ),
-                                hintText: "type your message here..",
-                                border: new UnderlineInputBorder(
-                                    borderSide:
-                                        new BorderSide(color: Colors.red)),
-                                labelStyle: Theme.of(context)
-                                    .textTheme
-                                    .caption
-                                    .copyWith(
-                                        color: materialGreen, fontSize: 16),
-                                errorText: null,
                               ),
+                            ),
+                            Container(
+                              margin: EdgeInsets.fromLTRB(10, 0, 0, 0),
+                              padding: EdgeInsets.fromLTRB(3, 0, 0, 0),
+                              width: 50,
+                              height: 50,
+                              decoration: BoxDecoration(
+                                  color: themeColor,
+                                  borderRadius: BorderRadius.circular(30)),
+                              child: IconButton(
+                                icon: Icon(
+                                  Icons.send,
+                                ),
+                                color: appBarTextColor,
+                                onPressed: () {
+                                  //sendMessage(messageTextController.text);
+                                },
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+              Column(
+                children: <Widget>[
+                  Container(
+                    alignment: Alignment.topLeft,
+                    height: 60,
+                    padding: EdgeInsets.fromLTRB(10, 20, 0, 0),
+                    child: SizedBox.expand(
+                      child: Column(
+                        children: <Widget>[
+                          Container(
+                            alignment: Alignment.topLeft,
+                            child: Text(
+                              "Participants",
                               style: TextStyle(
-                                color: Colors.black87,
-                                fontSize: 16,
+                                color: themeColor,
+                                fontSize: 20,
                               ),
                             ),
                           ),
-                        ),
+                          Container(
+                            alignment: Alignment.topRight,
+                            padding: EdgeInsets.fromLTRB(0, 0, 10, 0),
+                            child: Text(
+                              "Recipients",
+                              style: TextStyle(
+                                color: themeColor,
+                                fontSize: 14,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                    Container(
-                      margin: EdgeInsets.fromLTRB(10, 0, 0, 0),
-                      padding: EdgeInsets.fromLTRB(3, 0, 0, 0),
-                      width: 50,
-                      height: 50,
-                      decoration: BoxDecoration(
-                          color: themeColor,
-                          borderRadius: BorderRadius.circular(30)),
-                      child: IconButton(
-                        icon: Icon(
-                          Icons.send,
-                        ),
-                        color: appBarTextColor,
-                        onPressed: () {
-                          sendMessage(messageTextController.text);
-                        },
-                      ),
+                  ),
+                  Flexible(
+                    flex: 10,
+                    fit: FlexFit.tight,
+                    child: ListView(
+                      shrinkWrap: true,
+                      padding: const EdgeInsets.fromLTRB(30, 20, 23, 40),
+                      children: [
+                        Column(
+                          children: <Widget>[
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: <Widget>[
+                                Text("Username"),
+                                Checkbox(
+                                  value: true,
+                                  activeColor: materialGreen,
+                                  onChanged: (val){
+
+                                  },
+                                )
+                              ],
+                            )
+                          ],
+                        )
+                      ],
                     ),
-                  ],
+                    /*Center(
+                child: new ListView(
+                  shrinkWrap: true,
+                    padding: const EdgeInsets.all(20.0),
+                    children: [
+                      SingleChildScrollView(
+                        child: Container(
+                          alignment: Alignment.center,
+                          padding: EdgeInsets.fromLTRB(0, 5, 0, 60),
+                          child: Column(
+                            children: <Widget>[
+                              CircularProgressIndicator(
+                                backgroundColor: themeColor,
+                                valueColor: AlwaysStoppedAnimation<Color>(Colors.blue),
+                              ),
+                            ],
+                          ),
+                        ),
+                      )                    
+                    ]
                 ),
-              ),
+              );*/
+                  ),
+          
+                ],
+              )
             ],
           ),
-        ],
-      ),
+    ),
+  
     );
   }
 }

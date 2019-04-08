@@ -10,10 +10,9 @@ class ProfileState extends State<Profile> {
   @override
   Widget build(BuildContext context) {
     // TODO: implement build
-
+  
     FutureBuilder username = FutureBuilder<Map>(
-      future: databaseManager
-          .getCurrentUserInfo(), // a previously-obtained Future<String> or null
+      future: null, // a previously-obtained Future<String> or null
       builder: (BuildContext context, AsyncSnapshot<Map> snapshot) {
         switch (snapshot.connectionState) {
           case ConnectionState.none:
@@ -38,8 +37,7 @@ class ProfileState extends State<Profile> {
     );
 
     FutureBuilder profilePic = FutureBuilder<Map>(
-      future: databaseManager
-          .getCurrentUserInfo(), // a previously-obtained Future<String> or null
+      future: null, // a previously-obtained Future<String> or null
       builder: (BuildContext context, AsyncSnapshot<Map> snapshot) {
         switch (snapshot.connectionState) {
           case ConnectionState.none:

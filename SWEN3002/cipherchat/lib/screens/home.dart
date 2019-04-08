@@ -3,14 +3,16 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:cipherchat/main.dart';
 import 'package:file_picker/file_picker.dart';
-import 'package:pointycastle/pointycastle.dart';
 import 'package:flutter/material.dart';
-import 'package:pointycastle/key_generators/ec_key_generator.dart';
 import 'package:share/share.dart';
 import '../main.dart';
 
 class Home extends StatefulWidget {
   HomeState createState() => HomeState();
+}
+
+class Conversation {
+  int timestamp;
 }
 
 class HomeState extends State<Home> {
@@ -22,8 +24,24 @@ class HomeState extends State<Home> {
 
   bool loadMoreChats = false;
 
-  Widget generateRecentConvoCard(
-      String username, String profilePic, String timestamp) {
+  Widget generateRecentConvoCard(String username, String profilePic,
+      int timestamp, String lastMessage, String lastSender) {
+    try {
+      base64ToImageConverter(profilePic);
+    } catch (err) {
+      profilePic = databaseManager.defaultProfilePicBase64;
+    }
+    String date = "";
+    int timeDiff = DateTime.now().millisecondsSinceEpoch - timestamp;
+    if(timeDiff < 8640000){
+      String hour = DateTime.fromMillisecondsSinceEpoch(timestamp).hour.toString();
+      if(int.parse(hour) < 10)
+        hour = "0"+hour;
+      date = hour+":"+DateTime.fromMillisecondsSinceEpoch(timestamp).minute.toString();
+    }
+    else{
+      date = DateTime.fromMillisecondsSinceEpoch(timestamp).day.toString()+"/"+DateTime.fromMillisecondsSinceEpoch(timestamp).month.toString()+"/"+DateTime.fromMillisecondsSinceEpoch(timestamp).year.toString();
+    }
     return Card(
       color: cardColor,
       child: SizedBox(
@@ -33,6 +51,7 @@ class HomeState extends State<Home> {
           child: InkWell(
             onTap: () {
               //Navigate to chat screen and show previous messages
+              newGroupConnection = false;
               Navigator.pushNamed(context, "/chat");
             },
             child: Container(
@@ -63,18 +82,35 @@ class HomeState extends State<Home> {
                           Text(
                             username,
                             style: TextStyle(
-                                fontSize: 18, color: Colors.grey[500]),
+                                fontSize: 18, color: Colors.grey[700]),
                             overflow: TextOverflow.ellipsis,
                             maxLines: 1,
                           ),
-                          Text(
-                            timestamp,
-                            style: TextStyle(
-                                fontSize: 16, color: Colors.grey[500]),
-                            textAlign: TextAlign.left,
-                            overflow: TextOverflow.ellipsis,
-                            maxLines: 1,
+                          Row(
+                            children: <Widget>[
+                              ConstrainedBox(
+                                constraints: BoxConstraints(
+                                  maxWidth: 80
+                                ), 
+                                child: Text("author lex", maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: Colors.grey[600],),),
+                              ),
+                              Text(": ", maxLines: 1),
+                              Text("Message", maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: Colors.grey[600],),),                              
+                            ],
                           ),
+                          Container(
+                            alignment: Alignment.bottomRight,
+                            child: Text(
+                              date,
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: Colors.grey[500],
+                              ),
+                              textAlign: TextAlign.left,
+                              overflow: TextOverflow.ellipsis,
+                              maxLines: 1,
+                            ),
+                          )
                         ],
                       ),
                     ),
@@ -93,492 +129,190 @@ class HomeState extends State<Home> {
     );
   }
 
-  ///Fetches public CipherChat Servers from the issues page
-  ///on GitHub
-  Future<List> getPublicServers() async{
-    // TODO: implement
-  }
-
-
-Future<void> showAccountSettings(
-    String title,
-    BuildContext context,
-    TextEditingController usernameController,
-    TextEditingController ipController,
-    TextEditingController portController,
-    FutureBuilder loadProfilePicFromDatabase,
-    Future<dynamic> callback()) {
-  Widget alert = AlertDialog(
-    title: Text(
-      title,
-    ),
-    content: SingleChildScrollView(
-      child: Column(
-        children: <Widget>[
-          GestureDetector(
-            onTap: () async {
-              try {
-                File image = await FilePicker.getFile(type: FileType.IMAGE);
-                //print("THE IMAGE PATH IS: ");
-                //print(imagePath.toString());
-                String base64ProfilePic =
-                    base64.encode(await image.readAsBytes());
-                await databaseManager.updateProfilePicture(base64ProfilePic);
-                Navigator.pop(context);
-                setState(() {});
-                toastMessageBottomShort("Profile Updated", context);
-                
-              } catch (err) {
-                print(err);
-              }
-            },
-            child: Container(
-              width: 70,
-              height: 70,
-              alignment: Alignment.bottomLeft,
-              decoration: BoxDecoration(
-                border: Border.all(
-                  color: Colors.black12,
-                ),
-                borderRadius: BorderRadius.circular(100),
-              ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(30),
-                child: SizedBox.expand(
-                  child: loadProfilePicFromDatabase,
-                ),
-              ),
-            ),
-          ),
-          Container(
-            height: 10,
-          ),
-          Container(
-            height: 0,
-            alignment: Alignment.bottomLeft,
-            child: Text(
-              "Username",
-              style: TextStyle(
-                color: themeColor,
-              ),
-            ),
-          ),
-          Row(
-            children: <Widget>[
-              Container(
-                width: 20,
-              ),
-              Flexible(
-                child: Theme(
-                  data: ThemeData(
-                    cursorColor: materialGreen,
-                  ),
-                  child: TextField(
-                    obscureText: false,
-                    controller: usernameController,
-                    autofocus: false,
-                    decoration: InputDecoration(
-                      enabledBorder: UnderlineInputBorder(
-                        borderSide: BorderSide(color: materialGreen),
-                      ),
-                      focusedBorder: UnderlineInputBorder(
-                        borderSide:
-                            BorderSide(color: materialGreen, width: 2.0),
-                      ),
-                      //labelText: "(eg.) https://steemit.com/blog/@username/blog-title",
-                      border: new UnderlineInputBorder(
-                          borderSide: new BorderSide(color: Colors.red)),
-                      labelStyle: Theme.of(context).textTheme.caption.copyWith(
-                            color: materialGreen,
-                            fontSize: 16,
-                          ),
-                      errorText: null,
-                    ),
-                    style: TextStyle(
-                      color: materialGreen,
-                      fontSize: 16,
-                    ),
-                    onEditingComplete: () {
-                      //UPDATE USERNAME
-                    },
-                  ),
-                ),
-              ),
-              Container(
-                height: 80,
-                width: 0,
-              ),
-            ],
-          ),
-          Container(
-            height: 10,
-            padding: EdgeInsets.fromLTRB(0, 5, 0, 0),
-            alignment: Alignment.bottomLeft,
-            child: Text(
-              "IP",
-              style: TextStyle(color: themeColor),
-            ),
-          ),
-          Row(
-            children: <Widget>[
-              Container(
-                width: 20,
-              ),
-              Flexible(
-                child: Theme(
-                  data: ThemeData(cursorColor: materialGreen),
-                  child: TextField(
-                    enabled: true,
-                    obscureText: false,
-                    controller: ipController,
-                    autofocus: false,
-                    decoration: InputDecoration(
-                      enabledBorder: UnderlineInputBorder(
-                        borderSide: BorderSide(color: materialGreen),
-                      ),
-                      focusedBorder: UnderlineInputBorder(
-                        borderSide:
-                            BorderSide(color: materialGreen, width: 2.0),
-                      ),
-                      disabledBorder: UnderlineInputBorder(
-                        borderSide:
-                            BorderSide(color: Colors.transparent, width: 2.0),
-                      ),
-                      //labelText: "(eg.) https://steemit.com/blog/@username/blog-title",
-                      border: new UnderlineInputBorder(
-                          borderSide: new BorderSide(color: Colors.red)),
-                      labelStyle: Theme.of(context).textTheme.caption.copyWith(
-                            color: materialGreen,
-                            fontSize: 16,
-                          ),
-                      errorText: null,
-                    ),
-                    style: TextStyle(
-                      color: materialGreen,
-                      fontSize: 16,
-                    ),
-                  ),
-                ),
-              ),
-              Container(
-                width: 0,
-              ),
-              IconButton(
-                icon: Icon(
-                  Icons.share,
-                ),
-                color: themeColor,
-                onPressed: () async {
-                  try {
-                    String completeIpAddress =
-                        await server.getCompleteIpAddress();
-                    Share.share(completeIpAddress);
-                  } catch (err) {
-                    print(err);
-                  }
-                },
-              )
-            ],
-          ),
-          Container(
-            height: 20,
-            padding: EdgeInsets.fromLTRB(0, 5, 0, 0),
-            alignment: Alignment.bottomLeft,
-            child: Text(
-              "Port",
-              style: TextStyle(color: themeColor),
-            ),
-          ),
-          Row(
-            children: <Widget>[
-              Container(
-                width: 20,
-              ),
-              Flexible(
-                child: Theme(
-                  data: ThemeData(cursorColor: materialGreen),
-                  child: TextField(
-                    enabled: false,
-                    obscureText: false,
-                    controller: portController,
-                    autofocus: false,
-                    decoration: InputDecoration(
-                      enabledBorder: UnderlineInputBorder(
-                        borderSide: BorderSide(color: materialGreen),
-                      ),
-                      focusedBorder: UnderlineInputBorder(
-                        borderSide:
-                            BorderSide(color: materialGreen, width: 2.0),
-                      ),
-                      disabledBorder: UnderlineInputBorder(
-                        borderSide:
-                            BorderSide(color: Colors.transparent, width: 2.0),
-                      ),
-                      //labelText: "(eg.) https://steemit.com/blog/@username/blog-title",
-                      border: new UnderlineInputBorder(
-                          borderSide: new BorderSide(color: Colors.red)),
-                      labelStyle: Theme.of(context).textTheme.caption.copyWith(
-                            color: materialGreen,
-                            fontSize: 16,
-                          ),
-                      errorText: null,
-                    ),
-                    style: TextStyle(
-                      color: materialGreen,
-                      fontSize: 16,
-                    ),
-                  ),
-                ),
-              ),
-              Flexible(
-                flex: 1,
-                child: Container(),
-              ),
-              Container(
-                width: 0,
-              ),
-            ],
-          ),
-          Container(
-            height: 5,
-          )
-        ],
+  Future<void> showAccountSettings(
+      String title,
+      BuildContext context,
+      TextEditingController usernameController,
+      TextEditingController ipController,
+      TextEditingController portController,
+      Future<dynamic> callback()) {
+    databaseManager.getUsername().then((username) {
+      accountUsernameInputController.text = username;
+    });
+    Widget alert = AlertDialog(
+      title: Text(
+        title,
       ),
-    ),
-    actions: <Widget>[
-      FlatButton(
+      content: SingleChildScrollView(
+        child: Column(
+          children: <Widget>[
+            Theme(
+              data: ThemeData(cursorColor: materialGreen),
+              child: TextField(
+                obscureText: false,
+                controller: accountUsernameInputController,
+                autofocus: true,
+                decoration: InputDecoration(
+                  enabledBorder: UnderlineInputBorder(
+                    borderSide: BorderSide(color: materialGreen),
+                  ),
+                  focusedBorder: UnderlineInputBorder(
+                    borderSide: BorderSide(color: materialGreen, width: 2.0),
+                  ),
+                  labelText: "Username",
+                  border: new UnderlineInputBorder(
+                      borderSide: new BorderSide(color: Colors.red)),
+                  labelStyle: Theme.of(context).textTheme.caption.copyWith(
+                        color: materialGreen,
+                        fontSize: 16,
+                      ),
+                  errorText: null,
+                ),
+                style: TextStyle(
+                  color: materialGreen,
+                  fontSize: 16,
+                ),
+                onEditingComplete: () async {
+                  //UPDATE USERNAME
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
+      actions: <Widget>[
+        /*FlatButton(
         child: Text("SUPPORT", style: TextStyle(color: materialGreen)),
         onPressed: () async {
           Navigator.pop(context);
           await Future.delayed(Duration(seconds: 2));
-          showDonationAlert(context);
+          //showDonationAlert(context);
         },
-      ),
-      FlatButton(
-        child: Text("SAVE", style: TextStyle(color: materialGreen)),
-        onPressed: () {
-          //Update account information
-          Navigator.pop(context);
-          if (usernameController.text.length > 0)
-            databaseManager.updateUsername(usernameController.text);
-          else
-            toastMessageBottomShort("Invalid Username", context);
-          if (ipController.text.split(".").length == 4)
-            server.ip = ipController.text;
-          else
-            toastMessageBottomShort("Invalid Ip", context);
-          setState(() {});
-          callback();
-        },
-      )
-    ],
-  );
-  showDialog(context: context, barrierDismissible: true, child: alert);
-  Completer<Null> completer = Completer();
-  completer.complete();
-  return completer.future;
-}
+      ),*/
+        FlatButton(
+          child: Text("SAVE", style: TextStyle(color: materialGreen)),
+          onPressed: () {
+            callback();
+          },
+        )
+      ],
+    );
+    showDialog(context: context, barrierDismissible: true, child: alert);
+    Completer<Null> completer = Completer();
+    completer.complete();
+    return completer.future;
+  }
 
   var loadProfilePicForSettingsMenu;
 
+  TextEditingController usernameFieldController = TextEditingController();
+  TextEditingController ipFieldController = TextEditingController();
+  TextEditingController portFieldController = TextEditingController();
+
+  int groupsOffset = -1;
+  List<Widget> loadedConversations = [];
+
   @override
   void initState() {
-    isConnected().then((connection) async {
-      if (connection) {
-        server.getPublicIpAddress().then((ip) {
-          accountIpInputController.text = ip;
-        });
-        accountPortInputController.text = server.port.toString();
-      } else {
-        toastMessageBottomShort("Connection Unavailable", context);
-      } 
-      var currentUserInfo = await databaseManager.getCurrentUserInfo();
-      accountUsernameInputController.text = await currentUserInfo["username"];
+    databaseManager.getUsername().then((username) {
+      accountUsernameInputController.text = username;
+    });
+    databaseManager.getLastPageChecked().then((int lastPage) async {
+      while (true) {
+        int offset = await databaseManager.getServerPageOffset(lastPage);
+        Map servers = await getPublicServers(offset, lastPage);
+        List serverDomains = servers.keys.toList();
+        if (serverDomains.length == 0) break;
+        for (var x = 0; x < serverDomains.length; x++) {
+          await databaseManager.saveServer(servers[serverDomains[x]]["ip"],
+              servers[serverDomains[x]]["port"], lastPage);
+        }
+        lastPage++;
+        await Future.delayed(Duration(seconds: 3));
+      }
     });
     super.initState();
   }
- 
-  @override  
+
+  @override
   Widget build(BuildContext context) {
-    //Secp256k1 secp256k1EllipticCurve = Secp256k1();
-    //print("THE KEYPAIR IS "+secp256k1EllipticCurve.keypair.toString());
-
-    accountIpInputController.text = server.ip;
-    accountPortInputController.text = server.port.toString();
-    ECKeyGenerator keygen = ECKeyGenerator();
-    KeyGenerator params = KeyGenerator("EC");
-    ECDomainParameters domain = ECDomainParameters("secp256k1");
-    ECKeyGeneratorParameters dd = ECKeyGeneratorParameters(domain);
-
-    keygen.init(dd);
-
-    print("ELLIPTIC CURVE: "+keygen.generateKeyPair().toString());
-  /*
-    secp256k1EllipticCurve.generatePrivateKey().then((prkey1) {
-      secp256k1EllipticCurve.generatePrivateKey().then((prkey2) {
-        secp256k1EllipticCurve.generatePrivateKey().then((prkey3) {
-          print("THE Private KEY 1 IS :");
-          print(prkey1);
-          print("THE Private KEY 2 IS :");
-          print(prkey2);
-          print("THE Private KEY 3 IS :");
-          print(prkey3);
-          BigInt pubKey1 = secp256k1EllipticCurve2.generatePublicKey(prkey1);
-          BigInt pubKey2 = secp256k1EllipticCurve2.generatePublicKey(prkey2);
-          BigInt pubKey3 = secp256k1EllipticCurve2.generatePublicKey(prkey3);
-          print("THE SYMMETRIC KEY A IS :");
-          print((prkey1*pubKey2*pubKey3)%secp256k1EllipticCurve.p);
-          print("THE SYMMETRIC KEY B IS :");
-          print((prkey2*pubKey1*pubKey3)%secp256k1EllipticCurve.p);
-          print("THE SYMMETRIC KEY C IS :");
-          print((prkey3*pubKey1*pubKey2)%secp256k1EllipticCurve.p);
-        });
-      });
-    });*/
-
-    FutureBuilder loadPastConversations = FutureBuilder<List>(
-      future: databaseManager.getPreviousConversations(),
+    FutureBuilder loadRecentConversations = FutureBuilder<List>(
+      future: databaseManager.getAllGroups(
+          groupsOffset), // a previously-obtained Future<String> or null
       builder: (BuildContext context, AsyncSnapshot<List> snapshot) {
         switch (snapshot.connectionState) {
           case ConnectionState.none:
-            break;
+            return Text('Press button to start.');
           case ConnectionState.active:
-            return Container();
           case ConnectionState.waiting:
-            return Container();
+            return Text('Awaiting result...');
           case ConnectionState.done:
-            if (loadMoreChats) loadMoreChats = false;
-            if (snapshot.hasError) {
-              print(snapshot.error);
-              return Text('Error: ${snapshot.error}');
-            }
-            List convos = snapshot.data;
-            List results = [];
-            bool allChatsLoaded = true;
-            if (loadedChatIds.keys.length < convos.length)
-              allChatsLoaded = false;
-            for (var x = 0; x < convos.length; x++) {
-              results.add(generateRecentConvoCard(convos[x]["username"],
-                  convos[x]["profilePic"], convos[x]["ts"]));
-              loadedChatIds[convos[x]["cid"].toString()] = true;
-            }
-            if (results.length == 0) {
+            if (snapshot.hasError) return Text('Error: ${snapshot.error}');
+            //return Text('Result: ${snapshot.data}');
+            List pastConvos = snapshot.data;
+            groupsOffset = pastConvos[pastConvos.length - 1]["gid"];
+            if (pastConvos.length == 0) {
               return Center(
                 child: ListView(
                   shrinkWrap: true,
-                  padding: const EdgeInsets.all(20.0),
+                  padding: EdgeInsets.fromLTRB(20, 15, 20, 40),
                   children: [
                     Center(
                       child: Text(
-                        'Your Chats will Appear Here',
+                        'Your past conversations will show here',
                         style: TextStyle(
                           color: themeColor,
                         ),
                       ),
-                    ),
+                    )
                   ],
                 ),
               );
             }
-            if (allChatsLoaded == false) {
-              results.insert(
-                0,
-                RaisedButton(
-                  color: themeColor,
-                  child: Text(
-                    "Load More",
-                    style: TextStyle(
-                      color: appBarTextColor,
-                    ),
-                  ),
-                  onPressed: () async {
-                    setState(() {
-                      loadMoreChats = true;
-                    });
-                  },
-                ),
-              );
+            for (var x = 0; x < pastConvos.length; x++) {
+              //loadedConversations.add();
             }
-            return ListView(
-              shrinkWrap: true,
-              padding: const EdgeInsets.all(20.0),
-              children: results,
-            );
+          //loadedConversations.addAll(pastConvos);
         }
-      },
-    );
- 
- 
-    FutureBuilder loadProfilePicFromDatabase = FutureBuilder<Map>(
-      future: databaseManager.getCurrentUserInfo(),
-      builder: (BuildContext context, AsyncSnapshot<Map> snapshot) {
-        switch (snapshot.connectionState) {
-          case ConnectionState.none:
-            break;
-          case ConnectionState.active:
-            return Container();
-          case ConnectionState.waiting:
-            return Container();
-          case ConnectionState.done:
-            if (loadMoreChats) loadMoreChats = false;
-            if (snapshot.hasError) {
-              print(snapshot.error);
-              return Text('Error: ${snapshot.error}');
-            }
-            accountUsernameInputController.text = snapshot.data["username"];
-            return base64ToImageConverter(snapshot.data["profilePic"]);
-        }
+        return null; // unreachable
       },
     );
 
     return Scaffold(
       appBar: AppBar(
         backgroundColor: themeColor,
-        title: Text(
-          "CipherChat",
-          style: TextStyle(
-            color: appBarTextColor,
-          ),
-        ),
+        title: Text("CipherChat"),
         actions: <Widget>[
           IconButton(
             icon: Icon(
-              Icons.vpn_key,
+              Icons.settings,
             ),
+            color: Colors.white,
             onPressed: () {
-              showAccountSettings(
-                "Account",
-                context,
-                accountUsernameInputController,
-                accountIpInputController,
-                accountPortInputController,
-                loadProfilePicFromDatabase,
-                null,
-              );
+              showAccountSettings("Settings", context, usernameFieldController,
+                  ipFieldController, portFieldController, () async {
+                if (accountUsernameInputController.text.length > 0) if (await databaseManager
+                    .updateUsername(accountUsernameInputController.text))
+                  toastMessageBottomShort("Updated Successfully", context);
+              });
             },
           )
         ],
       ),
-      body: loadPastConversations,
+      body: ListView(
+        shrinkWrap: true,
+        padding: EdgeInsets.fromLTRB(4, 4, 4, 4),
+        children: [
+          generateRecentConvoCard("username", "", 1554644990130, "hello", "me")
+        ],
+      ),
       floatingActionButton: FloatingActionButton(
         backgroundColor: themeColor,
-        child: Icon(
-          Icons.add,
-        ),
         onPressed: () {
-          showPrompt("Enter Peer IP", context, peerIpInputController, () async {
-            String ip = peerIpInputController.text;
-            if (ip.split(".").length == 4 &&
-                ip != server.ip) {
-              //peerIpAddress = ip;
-              peerIpInputController.text = "";
-              Navigator.pushNamed(context, "/chat");
-            } else {
-              peerIpInputController.text = "";
-              await toastMessageBottomShort("Invalid IP", context);
-            }
-          });
+          Navigator.pushNamed(context, '/start');
         },
+        tooltip: 'Increment',
+        child: Icon(Icons.add),
       ),
     );
   }

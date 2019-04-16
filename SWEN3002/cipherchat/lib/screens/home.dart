@@ -1,10 +1,9 @@
+
 import 'dart:async';
-import 'dart:convert';
 import 'dart:io';
 import 'package:cipherchat/main.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
-import 'package:share/share.dart';
 import '../main.dart';
 
 class Home extends StatefulWidget {
@@ -18,14 +17,10 @@ class Conversation {
 class HomeState extends State<Home> {
   TextEditingController accountIpInputController = TextEditingController();
   TextEditingController accountPortInputController = TextEditingController();
-  TextEditingController accountUsernameInputController =
-      TextEditingController();
+  TextEditingController accountUsernameInputController = TextEditingController();
   TextEditingController peerIpInputController = TextEditingController();
 
-  bool loadMoreChats = false;
-
-  Widget generateRecentConvoCard(String username, String profilePic,
-      int timestamp, String lastMessage, String lastSender) {
+  Widget generateRecentConvoCard(String label, String profilePic, int timestamp, String lastMessage, String lastSender, String serverIp, int port, bool isGroup, BigInt privateKey) {
     try {
       base64ToImageConverter(profilePic);
     } catch (err) {
@@ -42,91 +37,169 @@ class HomeState extends State<Home> {
     else{
       date = DateTime.fromMillisecondsSinceEpoch(timestamp).day.toString()+"/"+DateTime.fromMillisecondsSinceEpoch(timestamp).month.toString()+"/"+DateTime.fromMillisecondsSinceEpoch(timestamp).year.toString();
     }
-    return Card(
-      color: cardColor,
-      child: SizedBox(
-        width: double.infinity,
-        child: Material(
-          color: Colors.transparent,
-          child: InkWell(
-            onTap: () {
-              //Navigate to chat screen and show previous messages
-              newGroupConnection = false;
-              Navigator.pushNamed(context, "/chat");
-            },
-            child: Container(
-              padding: EdgeInsets.fromLTRB(10, 10, 10, 10),
-              child: Row(
-                children: <Widget>[
-                  Container(
-                    margin: EdgeInsets.fromLTRB(0, 0, 7, 0),
-                    height: 34,
-                    width: 34,
-                    decoration: BoxDecoration(
-                      border: Border.all(
-                        color: Colors.white,
+    if(isGroup){
+      return Card(
+        color: cardColor,
+        child: SizedBox(
+          width: double.infinity,
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: () {
+                //Navigate to chat screen and show previous messages
+                newGroupConnection = false;
+                currentServer = serverIp;
+                currentPort = port;
+                currentPrivateKey = privateKey;
+                Navigator.pushNamed(context, "/chat");
+              },
+              child: Container(
+                padding: EdgeInsets.fromLTRB(10, 10, 10, 10),
+                child: Row(
+                  children: <Widget>[
+                    Container(
+                      margin: EdgeInsets.fromLTRB(0, 0, 7, 0),
+                      height: 34,
+                      width: 34,
+                      decoration: BoxDecoration(
+                        border: Border.all(
+                          color: Colors.white,
+                        ),
+                        borderRadius: BorderRadius.circular(30),
                       ),
-                      borderRadius: BorderRadius.circular(30),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(30),
+                        child: base64ToImageConverter(profilePic),
+                      ),
                     ),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(30),
-                      child: base64ToImageConverter(profilePic),
-                    ),
-                  ),
-                  Expanded(
-                    child: Container(
-                      padding: EdgeInsets.fromLTRB(10, 0, 10, 0),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: <Widget>[
-                          Text(
-                            username,
-                            style: TextStyle(
-                                fontSize: 18, color: Colors.grey[700]),
-                            overflow: TextOverflow.ellipsis,
-                            maxLines: 1,
-                          ),
-                          Row(
-                            children: <Widget>[
-                              ConstrainedBox(
-                                constraints: BoxConstraints(
-                                  maxWidth: 80
-                                ), 
-                                child: Text("author lex", maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: Colors.grey[600],),),
-                              ),
-                              Text(": ", maxLines: 1),
-                              Text("Message", maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: Colors.grey[600],),),                              
-                            ],
-                          ),
-                          Container(
-                            alignment: Alignment.bottomRight,
-                            child: Text(
-                              date,
+                    Expanded(
+                      child: Container(
+                        padding: EdgeInsets.fromLTRB(10, 0, 10, 0),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: <Widget>[
+                            Text(
+                              label,
                               style: TextStyle(
-                                fontSize: 14,
-                                color: Colors.grey[500],
-                              ),
-                              textAlign: TextAlign.left,
+                                  fontSize: 18, color: Colors.grey[700]),
                               overflow: TextOverflow.ellipsis,
                               maxLines: 1,
                             ),
-                          )
-                        ],
+                            Row(
+                              children: <Widget>[
+                                ConstrainedBox(
+                                  constraints: BoxConstraints(
+                                    maxWidth: 80
+                                  ), 
+                                  child: Text(lastSender, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: Colors.grey[600],),),
+                                ),
+                                Text(": ", maxLines: 1),
+                                Text(lastMessage, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: Colors.grey[600],),),                              
+                              ],
+                            ),
+                            Container(
+                              alignment: Alignment.bottomRight,
+                              child: Text(
+                                date,
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  color: Colors.grey[500],
+                                ),
+                                textAlign: TextAlign.left,
+                                overflow: TextOverflow.ellipsis,
+                                maxLines: 1,
+                              ),
+                            )
+                          ],
+                        ),
                       ),
                     ),
-                  ),
-                  /*
-                  Container(
-                    padding: EdgeInsets.fromLTRB(0, 0, 0, 15),
-                    child: this.statusIndicator,
-                  ),*/
-                ],
+                  ],
+                ),
               ),
             ),
           ),
         ),
-      ),
-    );
+      );
+    }
+    else{
+      return Card(
+        color: cardColor,
+        child: SizedBox(
+          width: double.infinity,
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: () {
+                //Navigate to chat screen and show previous messages
+                newGroupConnection = false;
+                currentServer = serverIp;
+                currentPort = port;      
+                currentPrivateKey = privateKey;          
+                Navigator.pushNamed(context, "/chat");
+              },
+              child: Container(
+                padding: EdgeInsets.fromLTRB(10, 10, 10, 10),
+                child: Row(
+                  children: <Widget>[
+                    Container(
+                      margin: EdgeInsets.fromLTRB(0, 0, 7, 0),
+                      height: 34,
+                      width: 34,
+                      decoration: BoxDecoration(
+                        border: Border.all(
+                          color: Colors.white,
+                        ),
+                        borderRadius: BorderRadius.circular(30),
+                      ),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(30),
+                        child: base64ToImageConverter(profilePic),
+                      ),
+                    ),
+                    Expanded(
+                      child: Container(
+                        padding: EdgeInsets.fromLTRB(10, 0, 10, 0),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: <Widget>[
+                            Text(
+                              lastSender,
+                              style: TextStyle(
+                                  fontSize: 18, color: Colors.grey[700]),
+                              overflow: TextOverflow.ellipsis,
+                              maxLines: 1,
+                            ),
+                            Row(
+                              children: <Widget>[
+                                Text(lastMessage, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: Colors.grey[600],),),                              
+                              ],
+                            ),
+                            Container(
+                              alignment: Alignment.bottomRight,
+                              child: Text(
+                                date,
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  color: Colors.grey[500],
+                                ),
+                                textAlign: TextAlign.left,
+                                overflow: TextOverflow.ellipsis,
+                                maxLines: 1,
+                              ),
+                            )
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+    }
   }
 
   Future<void> showAccountSettings(
@@ -203,59 +276,88 @@ class HomeState extends State<Home> {
     return completer.future;
   }
 
+  Future<List> loadConversations(int offset) async{
+    List queryResults = await databaseManager.getAllGroups(offset, searchFieldController.text);
+    List results = [];
+    for (var x = 0; x < queryResults.length; x++) {
+      if(results[x]["members"] < 2){
+        results.add(generateRecentConvoCard(queryResults[x]["label"], queryResults[x]["profilePic"], queryResults[x]["ts"], queryResults[x]["msg"], queryResults[x]["username"], queryResults[x]["serverIp"], queryResults[x]["serverPort"], false, queryResults[x]["privateKey"]));
+      }
+      else{
+        results.add(generateRecentConvoCard(queryResults[x]["label"], queryResults[x]["profilePic"], queryResults[x]["ts"], queryResults[x]["msg"], queryResults[x]["username"], queryResults[x]["serverIp"], queryResults[x]["serverPort"], true, queryResults[x]["privateKey"]));
+      }
+    }
+    try{   
+      results.sort((a, b) => b.gid.compareTo(a.gid));
+      groupsOffset = results[0]["gid"];
+      for(var x = 0; x < results.length; x++){
+        loadedConversations.add(results[x]);
+      }
+      if(searchFieldController.text.length == 0){
+        Widget loadMoreButton = RaisedButton(
+          color: themeColor,
+          textColor: Colors.white,
+          child: Text("Load More"),
+          onPressed: () async{
+            await loadConversations(groupsOffset);
+            setState(() {});                             
+          },
+        );   
+        results.add(loadMoreButton); 
+      }
+    }
+    catch(err){
+      //No more conversations to load
+    }      
+    return results; 
+  }
+
   var loadProfilePicForSettingsMenu;
 
   TextEditingController usernameFieldController = TextEditingController();
   TextEditingController ipFieldController = TextEditingController();
   TextEditingController portFieldController = TextEditingController();
+  TextEditingController searchFieldController = TextEditingController();
 
   int groupsOffset = -1;
   List<Widget> loadedConversations = [];
+  
 
   @override
   void initState() {
     databaseManager.getUsername().then((username) {
       accountUsernameInputController.text = username;
     });
-    databaseManager.getLastPageChecked().then((int lastPage) async {
-      while (true) {
-        int offset = await databaseManager.getServerPageOffset(lastPage);
-        Map servers = await getPublicServers(offset, lastPage);
-        List serverDomains = servers.keys.toList();
-        if (serverDomains.length == 0) break;
-        for (var x = 0; x < serverDomains.length; x++) {
-          await databaseManager.saveServer(servers[serverDomains[x]]["ip"],
-              servers[serverDomains[x]]["port"], lastPage);
-        }
-        lastPage++;
-        await Future.delayed(Duration(seconds: 3));
-      }
-    });
     super.initState();
   }
 
   @override
   Widget build(BuildContext context) {
+    dio.onHttpClientCreate = (HttpClient client) {
+      client.badCertificateCallback = (X509Certificate cert, String host, int port) {
+        return true;
+      };
+    };
+
     FutureBuilder loadRecentConversations = FutureBuilder<List>(
-      future: databaseManager.getAllGroups(
-          groupsOffset), // a previously-obtained Future<String> or null
+      future: loadConversations(groupsOffset),
       builder: (BuildContext context, AsyncSnapshot<List> snapshot) {
         switch (snapshot.connectionState) {
           case ConnectionState.none:
-            return Text('Press button to start.');
+            return loadingIndicator;
           case ConnectionState.active:
+            return loadingIndicator;
           case ConnectionState.waiting:
-            return Text('Awaiting result...');
+            return loadingIndicator;
           case ConnectionState.done:
-            if (snapshot.hasError) return Text('Error: ${snapshot.error}');
-            //return Text('Result: ${snapshot.data}');
+            if (snapshot.hasError) 
+              return Text('Error: ${snapshot.error}');
             List pastConvos = snapshot.data;
-            groupsOffset = pastConvos[pastConvos.length - 1]["gid"];
-            if (pastConvos.length == 0) {
+            if (pastConvos.length == 0 && loadedConversations.length == 0) {
               return Center(
                 child: ListView(
                   shrinkWrap: true,
-                  padding: EdgeInsets.fromLTRB(20, 15, 20, 40),
+                  padding: EdgeInsets.fromLTRB(20, 15, 20, 30),
                   children: [
                     Center(
                       child: Text(
@@ -264,17 +366,17 @@ class HomeState extends State<Home> {
                           color: themeColor,
                         ),
                       ),
-                    )
+                    ),
                   ],
                 ),
               );
-            }
-            for (var x = 0; x < pastConvos.length; x++) {
-              //loadedConversations.add();
-            }
-          //loadedConversations.addAll(pastConvos);
+            }           
+            return ListView(
+              shrinkWrap: true,
+              padding: EdgeInsets.fromLTRB(4, 4, 4, 4),
+              children: pastConvos,
+            );
         }
-        return null; // unreachable
       },
     );
 
@@ -283,6 +385,17 @@ class HomeState extends State<Home> {
         backgroundColor: themeColor,
         title: Text("CipherChat"),
         actions: <Widget>[
+          IconButton(
+            icon: Icon(
+              Icons.search,
+            ),
+            color: Colors.white,
+            onPressed: () {
+              showPrompt("Enter Filter", context, searchFieldController, (){
+                setState(() {});
+              });
+            },
+          ),
           IconButton(
             icon: Icon(
               Icons.settings,
@@ -299,19 +412,12 @@ class HomeState extends State<Home> {
           )
         ],
       ),
-      body: ListView(
-        shrinkWrap: true,
-        padding: EdgeInsets.fromLTRB(4, 4, 4, 4),
-        children: [
-          generateRecentConvoCard("username", "", 1554644990130, "hello", "me")
-        ],
-      ),
+      body: loadRecentConversations,
       floatingActionButton: FloatingActionButton(
         backgroundColor: themeColor,
         onPressed: () {
           Navigator.pushNamed(context, '/start');
         },
-        tooltip: 'Increment',
         child: Icon(Icons.add),
       ),
     );

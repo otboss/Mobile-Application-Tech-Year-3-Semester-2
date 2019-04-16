@@ -1,5 +1,4 @@
-import 'dart:convert';
-
+import 'dart:io';
 import 'package:cipherchat/screens/chat.dart';
 import 'package:flutter/material.dart';
 import '../custom_expansion_tile.dart' as custom;
@@ -21,7 +20,11 @@ class StartState extends State<Start> {
 
   @override
   Widget build(BuildContext context) {
-    // TODO: implement build
+    dio.onHttpClientCreate = (HttpClient client) {
+      client.badCertificateCallback = (X509Certificate cert, String host, int port) {
+        return true;
+      };
+    };
     
     portFieldController.text = "6333";
 
@@ -53,15 +56,18 @@ class StartState extends State<Start> {
               children: <Widget>[
                 Container(
                   padding: EdgeInsets.fromLTRB(20, 0, 0, 5),
-                  child: Icon(Icons.mail_outline, size: 70, color: themeColor,),
+                  child: Opacity(
+                    child: Icon(Icons.chat, size: 70, color: themeColor,),
+                    opacity: 0.9,
+                  )
                 ),
                 Container(
-                  padding: EdgeInsets.fromLTRB(20, 0, 0, 5),
-                  alignment: Alignment.topLeft,
+                  padding: EdgeInsets.fromLTRB(20, 0, 0, 20),
+                  alignment: Alignment.center,
                   child: Text(
                     "Connect to Secure CipherChat Server",
                     style: TextStyle(
-                      color: Colors.black87,
+                      color: themeColor,
                     ), 
                   ),
                 ),
@@ -74,7 +80,7 @@ class StartState extends State<Start> {
                     child: TextField(
                       obscureText: false,
                       controller: ipFieldController,
-                      autofocus: true,
+                      autofocus: false,
                       decoration: InputDecoration(
                         enabledBorder: UnderlineInputBorder(
                           borderSide: BorderSide(color: Colors.black87),
@@ -160,8 +166,46 @@ class StartState extends State<Start> {
                           color: Colors.white,
                         ),
                       ),
-                      onPressed: () {
+                      onPressed: () async{
                         newGroupConnection = true;
+                        if(ipFieldController.text.length < 4){
+                          toastMessageBottomShort("Invalid IP Provided", context);
+                        }
+                        else if(portFieldController.text.length < 3){
+                          toastMessageBottomShort("Invalid Port Provided", context);
+                        }
+                        else{
+                          try{
+                            int port = int.parse(portFieldController.text);
+                            try{
+                              showCustomProcessDialog("Preparing", context);
+                              await dio.get("https://"+ipFieldController.text+":"+portFieldController.text+"/");
+                              await dio.get("https://"+ipFieldController.text+":"+portFieldController.text+"/ads");
+                              await dio.post("https://"+ipFieldController.text+":"+portFieldController.text+"/newgroup");
+                              await dio.post("https://"+ipFieldController.text+":"+portFieldController.text+"/joingroup");
+                              await dio.put("https://"+ipFieldController.text+":"+portFieldController.text+"/setgroupname");
+                              await dio.post("https://"+ipFieldController.text+":"+portFieldController.text+"/message");
+                              await dio.get("https://"+ipFieldController.text+":"+portFieldController.text+"/messages");
+                              await dio.get("https://"+ipFieldController.text+":"+portFieldController.text+"/anynewmessages");
+                              await dio.get("https://"+ipFieldController.text+":"+portFieldController.text+"/participants"); 
+                              currentServer = ipFieldController.text;
+                              currentPort = port;
+                              currentPrivateKey = await secp256k1EllipticCurve.generatePrivateKey();
+                              currentPublicKey = await secp256k1EllipticCurve.generatePublicKey(currentPrivateKey.toString());
+                              Navigator.pop(context);
+                              await Future.delayed(Duration(seconds: 2));
+                              Navigator.pushNamed(context, '/chat');
+                            }
+                            catch(err){
+                              Navigator.pop(context);
+                              print(err);
+                              toastMessageBottomShort("Error while Connecting", context);
+                            }                            
+                          }
+                          catch(err){
+                            toastMessageBottomShort("Invalid Port Provided", context);
+                          }
+                        }
                       },
                     ),
                   ),
@@ -191,8 +235,26 @@ class StartState extends State<Start> {
                           color: Colors.white,
                         ),
                       ),
-                      onPressed: () {
-                        newGroupConnection = true;
+                      onPressed: () async{
+                        if(await isConnected() == false){
+                          toastMessageBottomShort("Connection Error", context);
+                        }
+                        else{
+                          newGroupConnection = true;
+                          showCustomProcessDialog("Finding Server", context);
+                          Map server = await selectRandomServerFromGithub();
+                          if(server == null){
+                            Navigator.pop(context);
+                            toastMessageBottomShort("Try again later", context);
+                          }
+                          else{
+                            currentServer = server["ip"];
+                            currentPort = server["port"];
+                            Navigator.pop(context);
+                            await Future.delayed(Duration(seconds: 1));
+                            Navigator.pushNamed(context, '/chat');
+                          }
+                        }
                       },
                     ),
                   ),
@@ -209,7 +271,7 @@ class StartState extends State<Start> {
                       minWidth: double.infinity,
                     ),
                     child: Divider(
-                      color: themeColor,
+                      color: Colors.grey[400],
                     ),
                   ),
                 ),

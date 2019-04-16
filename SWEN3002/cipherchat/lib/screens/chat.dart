@@ -4,6 +4,7 @@ import 'package:dio/dio.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:crypto/crypto.dart';
+import 'package:share/share.dart';
 import '../main.dart';
 import 'dart:convert';
 
@@ -11,18 +12,16 @@ class Chat extends StatefulWidget {
   ChatState createState() => ChatState();
 }
 
-class ChatState extends State<Chat> {
-  TextEditingController messageTextController = TextEditingController();
+class ChatState extends State<Chat> {    
 
-  //bool publicKeySent = false;
-  //bool publicKeyReceived = false;
-  
+  TextEditingController messageTextController = TextEditingController();
   Map participants = {};
   Map messages = {};
   String passphrase = "";
   TextEditingController passphraseFieldController = TextEditingController();
   int offsetForMessages;
   String currentServerUrl = "https://"+currentServer+":"+currentPort.toString()+"/";
+  bool connected = false;
 
 
   Future<bool> updateProfilePic(int participantId) async{
@@ -35,8 +34,9 @@ class ChatState extends State<Chat> {
       toastMessageBottomShort("Profile Updated", context); 
     }
     catch(err){
-
+      return false;
     }
+    return true;
   }
 
   Future<bool> createNewGroup(String username, String publicKey) async{
@@ -53,8 +53,6 @@ class ChatState extends State<Chat> {
         String joinKey = response.data;
         String privateKey = secp256k1EllipticCurve.generatePrivateKey().toString();
         await databaseManager.saveGroup(currentServer, currentPort, currentServer, privateKey, joinKey);
-        //int insertId = await databaseManager.getLatestGroup();
-        //await databaseManager.saveParticipant(insertId, username, databaseManager.defaultProfilePicBase64);
         await updateParticipants();
         return true;
       }
@@ -67,7 +65,7 @@ class ChatState extends State<Chat> {
 
   Future<Map> joinGroup(String joinKey, String username, String publicKey, String publicKey2, String encryptedMessage, String signature) async{
       try{
-        Response response = await dio.post(currentServerUrl+"/newgroup", data: {
+        Response response = await dio.post(currentServerUrl+"joingroup", data: {
           "username": username,
           "publicKey": publicKey,
           "publicKey2": publicKey2,
@@ -84,18 +82,32 @@ class ChatState extends State<Chat> {
 
   ///Creates a base64 encoded Map of the required credentials to join a server
   Future<String> generateJoinKey() async{
-    Map groupInfo = await databaseManager.getGroupInfo(currentGroupId);
-    Map completeJoinKey = {};
-    completeJoinKey["ip"] = groupInfo["serverIp"];
-    completeJoinKey["port"] = groupInfo["serverPort"];    
-    completeJoinKey["joinKey"] = groupInfo["joinKey"];    
-    completeJoinKey["encryptedMessage"] = cryptor.encrypt(secp256k1EllipticCurve.generateRandomString(100), groupInfo["privateKey"]);
-    return base64.encode(utf8.encode(json.encode(completeJoinKey)));
+    try{
+      Map groupInfo = await databaseManager.getGroupInfo(currentGroupId);
+      Map completeJoinKey = {};
+      completeJoinKey["ip"] = groupInfo["serverIp"];
+      completeJoinKey["port"] = groupInfo["serverPort"];    
+      completeJoinKey["joinKey"] = groupInfo["joinKey"];
+      completeJoinKey["encryptedMessage"] = secp256k1EllipticCurve.generateRandomString(100);
+      String messageHash = sha256.convert(utf8.encode(completeJoinKey["encryptedMessage"])).toString();
+      completeJoinKey["signature"] = await secp256k1EllipticCurve.signMessage(messageHash, currentPrivateKey);
+      return base64.encode(utf8.encode(json.encode(completeJoinKey))).toString();
+    }
+    catch(err){
+      print("ERROR OCCURRED");
+      print(err);
+    }
+    return "";
   }
   
   ///Parses a join key received from another peer (join keys are base64 encoded)
   Map parseJoinKey(String joinKey) {
-    return json.decode(utf8.decode(base64.decode(joinKey)));
+    try{
+      return json.decode(utf8.decode(json.decode(utf8.decode(base64.decode(joinKey)))));
+    }
+    catch(err){
+      return null;
+    }
   }
 
   Future<Map> getPrivateKey() async{
@@ -119,25 +131,25 @@ class ChatState extends State<Chat> {
   }
 
   Future<String> getGroupName() async{
-      try{
-        String randomMessage = secp256k1EllipticCurve.generateRandomString(100);
-        String username = await databaseManager.getUsername();
-        String messageHash = sha256.convert(utf8.encode(randomMessage)).toString();
-        BigInt privateKey = await databaseManager.getPrivateKey(currentGroupId);
-        Map signature = await secp256k1EllipticCurve.signMessage(messageHash, privateKey);
-        String joinKey = await databaseManager.getGroupJoinKey(currentGroupId);
-        Response response = await dio.get(currentServerUrl+"/getgroupname", data: {
-          "encryptedMessage": randomMessage,
-          "signature": signature,
-          "username": username,
-          "joinKey": joinKey
-        });
-        return response.data;
-      }
-      catch(err){
-
-      }
-      await Future.delayed(Duration(seconds: 4));    
+    try{
+      String randomMessage = secp256k1EllipticCurve.generateRandomString(100);
+      String username = await databaseManager.getUsername();
+      String messageHash = sha256.convert(utf8.encode(randomMessage)).toString();
+      BigInt privateKey = await databaseManager.getPrivateKey(currentGroupId);
+      Map signature = await secp256k1EllipticCurve.signMessage(messageHash, privateKey);
+      String joinKey = await databaseManager.getGroupJoinKey(currentGroupId);
+      Response response = await dio.get(currentServerUrl+"getgroupname", data: {
+        "encryptedMessage": randomMessage,
+        "signature": signature,
+        "username": username,
+        "joinKey": joinKey
+      });
+      return response.data;
+    }
+    catch(err){
+      print(err);
+    }
+    await Future.delayed(Duration(seconds: 4));    
   }
 
   Future<bool> setGroupName(String groupName) async{
@@ -147,7 +159,7 @@ class ChatState extends State<Chat> {
         BigInt privateKey = await databaseManager.getPrivateKey(currentGroupId);
         Map signature = await secp256k1EllipticCurve.signMessage(messageHash, privateKey);
         String joinKey = await databaseManager.getGroupJoinKey(currentGroupId);
-        Response response = await dio.put(currentServerUrl+"/setgroupname", data: {
+        Response response = await dio.put(currentServerUrl+"setgroupname", data: {
           "encryptedMessage": randomMessage,
           "signature": signature,
           "joinKey": joinKey
@@ -166,13 +178,11 @@ class ChatState extends State<Chat> {
       String message = secp256k1EllipticCurve.generateRandomString(100);
       String messageHash = sha256.convert(utf8.encode(message)).toString();
       BigInt privateKey = await databaseManager.getPrivateKey(currentGroupId);
-      BigInt symmetricKey = await databaseManager.getSymmetricKey(currentGroupId);
       Map signature = await secp256k1EllipticCurve.signMessage(messageHash, privateKey);
-      String encryptedMessage = await cryptor.encrypt(message, symmetricKey.toString());
       String joinKey = await databaseManager.getGroupJoinKey(currentGroupId);
       String username = await databaseManager.getUsername();
-      Response response = await dio.get(currentServerUrl+"/participants", data: {
-        "encryptedMessage":encryptedMessage,
+      Response response = await dio.get(currentServerUrl+"participants", data: {
+        "encryptedMessage":message,
         "signature": json.encode(signature),
         "joinKey": joinKey,
         "username": username
@@ -205,13 +215,11 @@ class ChatState extends State<Chat> {
             String message = secp256k1EllipticCurve.generateRandomString(100);
             String messageHash = sha256.convert(utf8.encode(message)).toString();
             BigInt privateKey = await databaseManager.getPrivateKey(currentGroupId);
-            BigInt symmetricKey = await databaseManager.getSymmetricKey(currentGroupId);
             Map signature = await secp256k1EllipticCurve.signMessage(messageHash, privateKey);
-            String encryptedMessage = await cryptor.encrypt(message, symmetricKey.toString());
             String joinKey = await databaseManager.getGroupJoinKey(currentGroupId);
             String username = await databaseManager.getUsername();            
             Response response = await dio.get(currentServerUrl+"getgroupname", data: {
-              "encryptedMessage":encryptedMessage,
+              "encryptedMessage": message,
               "signature": json.encode(signature),
               "joinKey": joinKey,
               "username": username
@@ -227,59 +235,63 @@ class ChatState extends State<Chat> {
   }
 
 
-  Future<bool> sendMessage(String message) async {
+  Future<int> sendMessage(String message) async {
     try{
+      Map participants = await databaseManager.getParticipants(currentGroupId);
+      if(participants.keys.length > 0){
+        return 0;
+      }
       BigInt privateKey = await databaseManager.getPrivateKey(currentGroupId);
       BigInt compositeKey = await databaseManager.getCompositeKey(currentGroupId);
       BigInt symmetricKey = await databaseManager.getSymmetricKey(currentGroupId);
-      String hashedSymmetricKey = sha256.convert(utf8.encode(symmetricKey.toString())).toString();
       String username = await databaseManager.getUsername();
-      String encryptedMessage = await cryptor.encrypt(message, hashedSymmetricKey);
+      String encryptedMessage = await secp256k1EllipticCurve.encryptMessage(message, symmetricKey);
       String encryptedMessageHash = sha256.convert(utf8.encode(encryptedMessage)).toString();
       Map signature = await secp256k1EllipticCurve.signMessage(encryptedMessageHash, privateKey);  
       String joinKey = await databaseManager.getGroupJoinKey(currentGroupId);
       await updateParticipants();
-      Response response = await dio.post(currentServerUrl+"/message", data: {
+      Response response = await dio.post(currentServerUrl+"message", data: {
         "encryptedMessage": encryptedMessage,
         "signature": json.encode(signature),
         "joinKey": joinKey,
         "username": username,
         "compositeKey": compositeKey
       });
+      if(response.data == "true"){
+        
+      }
       if(response.data == "false")
-        return false;
+        return -1;
     }
     catch(err){
       print(err);
-      return false;
+      return -2;
     }
-    return true;
+    return 1;
   }  
 
   Future<Map> getNewMessages() async{
-      String message = secp256k1EllipticCurve.generateRandomString(100);
-      String messageHash = sha256.convert(utf8.encode(message)).toString();
-      BigInt privateKey = await databaseManager.getPrivateKey(currentGroupId);
-      BigInt symmetricKey = await databaseManager.getSymmetricKey(currentGroupId);
-      Map signature = await secp256k1EllipticCurve.signMessage(messageHash, privateKey);
-      String encryptedMessage = await cryptor.encrypt(message, symmetricKey.toString());
-      String joinKey = await databaseManager.getGroupJoinKey(currentGroupId);
-      String username = await databaseManager.getUsername();
-      int offset = await databaseManager.getLastMessageId(currentGroupId);
-      Response response;
-      try{
-        response = await dio.get(currentServerUrl+"/messages", data: {
-          "encryptedMessage":encryptedMessage,
-          "signature": json.encode(signature),
-          "joinKey": joinKey,
-          "username": username,
-          "offset": offset
-        });            
-      }
-      catch(err){
-        return {};
-      }
-      return json.decode(response.data);      
+    String message = secp256k1EllipticCurve.generateRandomString(100);
+    String messageHash = sha256.convert(utf8.encode(message)).toString();
+    BigInt privateKey = await databaseManager.getPrivateKey(currentGroupId);
+    Map signature = await secp256k1EllipticCurve.signMessage(messageHash, privateKey);
+    String joinKey = await databaseManager.getGroupJoinKey(currentGroupId);
+    String username = await databaseManager.getUsername();
+    int offset = await databaseManager.getLastMessageId(currentGroupId);
+    Response response;
+    try{
+      response = await dio.get(currentServerUrl+"messages", data: {
+        "encryptedMessage": message,
+        "signature": json.encode(signature),
+        "joinKey": joinKey,
+        "username": username,
+        "offset": offset
+      });            
+    }
+    catch(err){
+      return {};
+    }
+    return json.decode(response.data);      
   }
 
   Future<Map> getOlderMessages() async{
@@ -291,28 +303,28 @@ class ChatState extends State<Chat> {
   }
 
   Future<bool> newMessagesCheck() async{
-      try{
-        String randomMessage = secp256k1EllipticCurve.generateRandomString(100);
-        String messageHash = sha256.convert(utf8.encode(randomMessage)).toString();
-        BigInt privateKey = await databaseManager.getPrivateKey(currentGroupId);
-        Map signature = await secp256k1EllipticCurve.signMessage(messageHash, privateKey);
-        String username = await databaseManager.getUsername();
-        String joinKey = await databaseManager.getGroupJoinKey(currentGroupId);
-        int offset = await databaseManager.getLastMessageId(currentGroupId);
-        Response response = await dio.put(currentServerUrl+"/setgroupname", data: {
-          "encryptedMessage": randomMessage,
-          "signature": signature,
-          "joinKey": joinKey,
-          "username": username,
-          "offset": offset
-        });
-        if(response.data != "true")
-          return false;
-      }
-      catch(err){
+    try{
+      String randomMessage = secp256k1EllipticCurve.generateRandomString(100);
+      String messageHash = sha256.convert(utf8.encode(randomMessage)).toString();
+      BigInt privateKey = await databaseManager.getPrivateKey(currentGroupId);
+      Map signature = await secp256k1EllipticCurve.signMessage(messageHash, privateKey);
+      String username = await databaseManager.getUsername();
+      String joinKey = await databaseManager.getGroupJoinKey(currentGroupId);
+      int offset = await databaseManager.getLastMessageId(currentGroupId);
+      Response response = await dio.put(currentServerUrl+"setgroupname", data: {
+        "encryptedMessage": randomMessage,
+        "signature": signature,
+        "joinKey": joinKey,
+        "username": username,
+        "offset": offset
+      });
+      if(response.data != "true")
         return false;
-      }
-      return true;   
+    }
+    catch(err){
+      return false;
+    }
+    return true;   
   }  
 
   Future<Map> getMessagesForInitialDisplaying() async{
@@ -325,16 +337,14 @@ class ChatState extends State<Chat> {
 
   bool passphrasePromptOpen = false;
 
-  Future<bool> newGroupConnector() async{
+  Future<bool> newGroupConnector() async{ 
     String username = await databaseManager.getUsername();
     while(true){
       try{
-        BigInt privateKey = await secp256k1EllipticCurve.generatePrivateKey();
-        Map publicKey = await secp256k1EllipticCurve.generatePublicKey(privateKey.toString());
         Response response = await dio.post(currentServerUrl+"newgroup", data:{
           "username": username,
-          "publicKey": publicKey["x2"],
-          "publicKey2": publicKey["x"],
+          "publicKey": currentPublicKey["x2"],
+          "publicKey2": currentPublicKey["x"],
           "passphrase": passphrase
         });
         if(response.data == "0"){
@@ -342,22 +352,25 @@ class ChatState extends State<Chat> {
             showPrompt("Passphrase Required", context, passphraseFieldController, (){
               passphrasePromptOpen = false;
               setState(() {
-                passphrase = passphraseFieldController.text;                  
+               passphrase = passphraseFieldController.text;                  
               });
+              passphrase = passphraseFieldController.text;
             });
           passphrasePromptOpen = true;
         }
         else{
           if(response.data != "-1"){
             //Connection Successful, New group created
-            String joinKey = json.encode(response.data);
-            await databaseManager.saveGroup(currentServer, currentPort, currentServer, privateKey.toString(), joinKey);
+            String joinKey = json.encode(response.data);  
+            await databaseManager.saveGroup(currentServer, currentPort, currentServer, currentPrivateKey.toString(), joinKey);
+            currentGroupId = await databaseManager.getLastGroupId();
+            connected = true;
             return true;
           }
         }
       }
       catch(err){
-        //Connection Timeout
+        print(err);
       }
       await Future.delayed(Duration(seconds: 4));
     }
@@ -365,24 +378,23 @@ class ChatState extends State<Chat> {
 
 
   Future<bool> oldGroupConnector() async{
+    String username = await databaseManager.getUsername();
     while(true){
       try{
         String message = secp256k1EllipticCurve.generateRandomString(100);
         String messageHash = sha256.convert(utf8.encode(message)).toString();              
         BigInt privateKey = await databaseManager.getPrivateKey(currentGroupId);
         Map publicKey = await secp256k1EllipticCurve.generatePublicKey(privateKey.toString());
-        BigInt symmetricKey = await databaseManager.getSymmetricKey(currentGroupId);
         Map signature = await secp256k1EllipticCurve.signMessage(messageHash, privateKey);
-        String encryptedMessage = await cryptor.encrypt(message, symmetricKey.toString());
-        String username = await databaseManager.getUsername();        
         Response response = await dio.get(currentServerUrl+"joingroup", data:{
           "username": username,
           "publicKey": publicKey["x2"],
           "publicKey2": publicKey["x"],
-          "encryptedMessage": encryptedMessage,
+          "encryptedMessage": message,
           "signature": signature
         });
-        if(response.data == "-3"){
+        if(response.data == "-3" || response.data == "1"){
+          connected = true;
           return true;
         }
       } 
@@ -400,6 +412,7 @@ class ChatState extends State<Chat> {
     });
     super.initState();
   }
+  
 
   @override
   Widget build(BuildContext context) {
@@ -407,7 +420,7 @@ class ChatState extends State<Chat> {
       client.badCertificateCallback = (X509Certificate cert, String host, int port) {
         return true;
       };
-    };  
+    };    
     /*dio.get("https://wrong.host.badssl.com/").then((response){
       print("THE RESPONSE IS: ");
       print(response);
@@ -508,32 +521,30 @@ class ChatState extends State<Chat> {
       );
     }
 
+    Widget generateRecipientRow(String username){
+      if(participantCheckboxIndicators[username] == null)
+        participantCheckboxIndicators[username] = false;
+      return Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: <Widget>[
+          Text(username),
+          Checkbox(
+            value: participantCheckboxIndicators[username],
+            activeColor: materialGreen,
+            onChanged: (val) async{
+              await databaseManager.updateChatRecipient(currentGroupId, username, val);
+              setState(() {
+                participantCheckboxIndicators[username] = val;
+              });
+            },
+          )
+        ],
+      );      
+    }
 
-    FutureBuilder loadParticipants= FutureBuilder<Map>(
+    FutureBuilder loadParticipants = FutureBuilder<Map>(
       future: databaseManager.getParticipants(currentGroupId), // a previously-obtained Future<String> or null
       builder: (BuildContext context, AsyncSnapshot<Map> snapshot) {
-        Widget loadingIndicator = Center(
-          child: new ListView(
-            shrinkWrap: true,
-              padding: const EdgeInsets.all(20.0),
-              children: [
-                SingleChildScrollView(
-                  child: Container(
-                    alignment: Alignment.center,
-                    padding: EdgeInsets.fromLTRB(0, 5, 0, 60),
-                    child: Column(
-                      children: <Widget>[
-                        CircularProgressIndicator(
-                          backgroundColor: themeColor,
-                          valueColor: AlwaysStoppedAnimation<Color>(Colors.blue),
-                        ),
-                      ],
-                    ),
-                  ),
-                )                    
-              ]
-          ),
-        );
         switch (snapshot.connectionState) {
           case ConnectionState.none:
             return loadingIndicator;
@@ -548,24 +559,32 @@ class ChatState extends State<Chat> {
             List usernames = result.keys.toList();
             List<Widget> users = [];
             for(var x = 0; x < usernames.length; x++){
-              users.add(
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: <Widget>[
-                    Text(usernames[x]),
-                    Checkbox(
-                      value: participantCheckboxIndicators[usernames[x]],
-                      activeColor: materialGreen,
-                      onChanged: (val) async{
-                        await databaseManager.updateChatRecipient(currentGroupId, usernames[x], val);
-                        setState(() {
-                          participantCheckboxIndicators[usernames[x]] = val;                   
-                        });
-                      },
-                    )
-                  ],
-                )
-              );
+              if(result[usernames[x]] == true){
+                users.add(
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: <Widget>[
+                      Text(
+                        usernames[x], 
+                        style: TextStyle(
+                          color: materialGreen,
+                        ),
+                      ),
+                      Checkbox(
+                        value: true,
+                        activeColor: Colors.grey[400],
+                        onChanged: (val){
+
+                        },
+                      )
+                    ],
+                  )
+                );
+              }
+              else
+                users.add(
+                  generateRecipientRow(usernames[x])
+                );
             }
             return ListView(
               shrinkWrap: true,
@@ -579,6 +598,15 @@ class ChatState extends State<Chat> {
         }
       },
     );
+
+    Future<Widget> generateSentMessageWidget(String message){
+
+    }
+
+    Future<Widget> generateReceivedMessageWidget(String message){
+
+    }
+
     
     /*client.receivedMessages = [
       generateSentMessageWidget(
@@ -613,156 +641,11 @@ class ChatState extends State<Chat> {
           print(await secp256k1EllipticCurve.generateSymmetricKey(prkey3, [BigInt.parse(pubk1), BigInt.parse(pubk2)]));
         });
       });
-    });    */    
+    });    */   
 
     var loadMessages;
-    /*
-    if (peerUsername != "Anonymous") {
-      loadMessages = FutureBuilder<List>(
-        future: databaseManager.getMessages(peerIpAddress, peerUsername, false,
-            loadedMessagesIds.keys.toList(), loadMoreMessages),
-        builder: (BuildContext context, AsyncSnapshot<List> snapshot) {
-          switch (snapshot.connectionState) {
-            case ConnectionState.none:
-              break;
-            case ConnectionState.active:
-              return Container();
-            case ConnectionState.waiting:
-              return Container();
-            case ConnectionState.done:
-              if (loadMoreMessages) loadMoreMessages = false;
-              if (snapshot.hasError) {
-                print(snapshot.error);
-                return Text('Error: ${snapshot.error}');
-              }
-              bool allMessagesLoaded = true;
-              if (loadedMessagesIds.keys.length < snapshot.data.length)
-                allMessagesLoaded = false;
-              List messages = snapshot.data;
-              List<Widget> messagesContainer = [];
-              Widget messagesList = ListView(
-                shrinkWrap: true,
-                reverse: true,
-                padding: EdgeInsets.fromLTRB(2, 10, 2, 75),
-                children: messagesContainer,
-              );
-              for (var x = 0; x < messages.length; x++) {
-                if (messages[x]["inbound"] < 0) {
-                  //SENT MESSAGE
-                  messagesContainer.add(generateSentMessageWidget(
-                      messages[x]["inbound"], messages[x]["ts"]));
-                } else {
-                  //RECEIVED MESSAGE
-                  messagesContainer.add(generateReceivedMessageWidget(
-                      messages[x]["inbound"], messages[x]["ts"]));
-                }
-                loadedMessagesIds[messages[x]["mid"].toString()] = true;
-              }
-              if (messagesContainer.length == 0) {
-                return ListView(
-                  shrinkWrap: true,
-                  padding: const EdgeInsets.all(20.0),
-                  children: [
-                    Center(
-                      child: new Text(
-                        'No messages to here. Remember to ask Security Questions.',
-                      ),
-                    ),
-                    Center(
-                      child: new Text(
-                        'Happy Chatting!',
-                      ),
-                    ),
-                  ],
-                );
-              }
-              if (allMessagesLoaded == false) {
-                messagesContainer.insert(
-                  0,
-                  RaisedButton(
-                    color: themeColor,
-                    child: Text(
-                      "Load More",
-                      style: TextStyle(
-                        color: appBarTextColor,
-                      ),
-                    ),
-                    onPressed: () async {
-                      setState(() {
-                        loadMoreMessages = true;
-                      });
-                    },
-                  ),
-                );
-              }
-              return messagesList;
-          }
-        },
-      );
-    } else {
-      loadMessages = ListView(
-        shrinkWrap: true,
-        padding: const EdgeInsets.all(20.0),
-        children: [
-          Center(
-            child: new Text(
-              'No messages to here. Remember to ask Security Questions.',
-            ),
-          ),
-          Center(
-            child: new Text(
-              'Happy Chatting!',
-            ),
-          ),
-        ],
-      );
-    }*/
 
-    /*
-    loadMessages = FutureBuilder<List>(
-      future: databaseManager.getMessages(server.ip, messages.keys.toList(), loadMoreMessages),
-      builder: (BuildContext context, AsyncSnapshot<List> snapshot) {
-        switch (snapshot.connectionState) {
-          case ConnectionState.none:
-            return connectingWidget(true);
-          case ConnectionState.active:
-            return connectingWidget(true);
-          case ConnectionState.waiting:
-            return connectingWidget(true);
-          case ConnectionState.done:
-            if (snapshot.hasError) {
-              toastMessageBottomShort("Error While Connecting", context);
-              print(snapshot.error);
-              return Text('Error: ${snapshot.error}');
-            }
-            if(loadMoreMessages)
-              loadMoreMessages = false;
-            return connectingWidget(false);
-        }
-      },
-    );
-
-    FutureBuilder startConnectionChecker = FutureBuilder<bool>(
-      future: checkUntilConnected(),
-      builder: (BuildContext context, AsyncSnapshot<bool> snapshot) {
-        switch (snapshot.connectionState) {
-          case ConnectionState.none:
-            return connectingWidget(true);
-          case ConnectionState.active:
-            return connectingWidget(true);
-          case ConnectionState.waiting:
-            return connectingWidget(true);
-          case ConnectionState.done:
-            if (snapshot.hasError) {
-              toastMessageBottomShort("Error While Connecting", context);
-              print(snapshot.error);
-              return Text('Error: ${snapshot.error}');
-            }
-            return connectingWidget(false);
-        }
-      },
-    );*/
-
+    print("NEW WIDGET BUILT");
 
     return DefaultTabController(
       length: 2,
@@ -774,28 +657,21 @@ class ChatState extends State<Chat> {
             Icons.arrow_back,
           ),
           onPressed: () async {
-            //muteChat();
-            //Navigator.pushReplacementNamed(context, "/honme")
+            Navigator.pop(context);
           },
         ),
-        title: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            Text("192.168.0.1"),
-            Text(
-              "Connecting..",
-              style: TextStyle(
-                fontSize: 12,
-              ),
-            )
-          ],
-        ),
+        title: startConnection,
         actions: <Widget>[
           IconButton(
             icon: Icon(Icons.share, color: appBarTextColor,),
-            onPressed: (){
-
+            onPressed: () async{
+              if(connected){
+                String joinKey = await generateJoinKey();
+                Share.share(joinKey);
+              }
+              else{
+                toastMessageBottomShort("Not Connected", context);
+              }
             },
           )
         ],
@@ -887,8 +763,28 @@ class ChatState extends State<Chat> {
                                   Icons.send,
                                 ),
                                 color: appBarTextColor,
-                                onPressed: () {
-                                  //sendMessage(messageTextController.text);
+                                onPressed: () async {
+                                  if(connected){
+                                    int deliveryStatus = await sendMessage(messageTextController.text);
+                                    switch(deliveryStatus){
+                                      case 0:
+                                        toastMessageBottomShort("No Recipients", context);
+                                        break;
+                                      case -1:
+                                        toastMessageBottomShort("Rejected By Server", context);
+                                        break;
+                                      case -2:
+                                        toastMessageBottomShort("Connection Error", context);
+                                        break;
+                                      default:
+                                        //Sent action
+                                        messageTextController.text = "";
+                                        break;
+                                    }
+                                  }
+                                  else{
+                                    toastMessageBottomShort("Not Connected", context);
+                                  }
                                 },
                               ),
                             ),
@@ -936,29 +832,7 @@ class ChatState extends State<Chat> {
                   Flexible(
                     flex: 10,
                     fit: FlexFit.tight,
-                    child: ListView(
-                      shrinkWrap: true,
-                      padding: const EdgeInsets.fromLTRB(30, 20, 23, 40),
-                      children: [
-                        Column(
-                          children: <Widget>[
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: <Widget>[
-                                Text("Username"),
-                                Checkbox(
-                                  value: true,
-                                  activeColor: materialGreen,
-                                  onChanged: (val){
-
-                                  },
-                                )
-                              ],
-                            )
-                          ],
-                        )
-                      ],
-                    ),
+                    child: loadParticipants
                     /*Center(
                 child: new ListView(
                   shrinkWrap: true,

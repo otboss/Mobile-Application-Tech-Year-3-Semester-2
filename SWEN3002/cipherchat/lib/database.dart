@@ -404,8 +404,6 @@ class DatabaseManager {
     try{
       String currentUser = await databaseManager.getUsername();
       query = await client.rawQuery("SELECT * FROM $participantsTable WHERE gid = '"+gid.toString()+"' ORDER BY username");
-      //print(json.decode(source).encode(query[0]));
-      //query.sort((a, b) => a.joined.compareTo(b.joined));
       for(var x = 0; x < query.length; x++){
         int joined = int.parse(query[x]["joined"].toString());
         if(query[x]["username"] != currentUser){ 
@@ -423,8 +421,6 @@ class DatabaseManager {
           };
         }
       }
-      print("THE PARTICIPANTS ARE");
-      print(result);
     }
     catch(err){
       print("ERROR IN databaseManager.getParticipants");

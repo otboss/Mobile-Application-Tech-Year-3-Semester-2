@@ -191,7 +191,7 @@ class ChatState extends State<Chat> {
       return false;
     }
     return true;
-  }
+  } 
 
   Future<Map> getParticipants() async {
     try {
@@ -206,8 +206,6 @@ class ChatState extends State<Chat> {
         "joinKey": joinKey,
         "username": username
       });
-      print("THE PARTICIPANTS ARE: ");
-      print(response.data);
       return json.decode(json.encode(response.data));
     } catch (err) {
       print(err);
@@ -497,226 +495,230 @@ class ChatState extends State<Chat> {
   }
 
 
-    Widget generateSentMessageWidget(String username, String message, int timestamp, String profilePic) {
-      return Container(
-        margin: EdgeInsets.fromLTRB(0, 5, 0, 5),
-        child: Stack(
-          overflow: Overflow.visible,
-          children: <Widget>[
-            GestureDetector(
-              child: Container(
-                width: 45,
-                height: 45,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(30),
-                  border: Border.all(color: sentMessageWidgetColor)
+  Widget generateSentMessageWidget(String username, String message, int timestamp, String profilePic) {
+    return Container(
+      margin: EdgeInsets.fromLTRB(0, 5, 0, 5),
+      child: Stack(
+        overflow: Overflow.visible,
+        children: <Widget>[
+          GestureDetector(
+            child: Container(
+              width: 45,
+              height: 45,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(30),
+                border: Border.all(color: sentMessageWidgetColor)
+              ),
+              margin: EdgeInsets.fromLTRB(0, 0, 5, 0),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(30),
+                child: base64ToImageConverter(profilePic),
+              ),
+            ),
+            onTap: () async{
+              File image = await FilePicker.getFile(type: FileType.ANY);
+              String base64profilePic = base64.encode(image.readAsBytesSync()).toString();
+              await databaseManager.updateProfilePicture(base64profilePic, true);
+              setState(() {});
+            },
+          ),
+          Container(
+            margin: EdgeInsets.fromLTRB(50, 20, 0, 0),
+            width: 7,
+            height: 10,
+            color: sentMessageWidgetColor,
+          ),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              ConstrainedBox(
+                constraints: BoxConstraints(
+                    maxWidth: 150,
                 ),
-                margin: EdgeInsets.fromLTRB(0, 0, 5, 0),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(30),
-                  child: base64ToImageConverter(profilePic),
+                child: Container(
+                  margin: EdgeInsets.fromLTRB(50, 2, 0, 2),
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    username,
+                    style: TextStyle(
+                      color: sentMessageWidgetColor,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
                 ),
               ),
-              onTap: () async{
-                File image = await FilePicker.getFile(type: FileType.ANY);
-                String base64profilePic = base64.encode(image.readAsBytesSync()).toString();
-                await databaseManager.updateProfilePicture(base64profilePic, true);
-                setState(() {});
-              },
-            ),
-            Container(
-              margin: EdgeInsets.fromLTRB(50, 20, 0, 0),
-              width: 7,
-              height: 10,
-              color: sentMessageWidgetColor,
-            ),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                ConstrainedBox(
-                  constraints: BoxConstraints(
-                      maxWidth: 150,
-                  ),
-                  child: Container(
-                    margin: EdgeInsets.fromLTRB(50, 2, 0, 2),
-                    alignment: Alignment.centerLeft,
-                    child: Text(
-                      username,
-                      style: TextStyle(
-                        color: sentMessageWidgetColor,
+              Container(
+                  padding: EdgeInsets.fromLTRB(10, 10, 10, 8),
+                  margin: EdgeInsets.fromLTRB(56, 0, 0, 0),
+                  decoration: BoxDecoration(
+                      color: sentMessageWidgetColor,
+                      borderRadius: BorderRadius.only(
+                        topRight: Radius.circular(5),
+                        bottomRight: Radius.circular(5),
+                        bottomLeft: Radius.circular(5),
                       ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
                   ),
-                ),
-                Container(
-                    padding: EdgeInsets.fromLTRB(10, 10, 10, 8),
-                    margin: EdgeInsets.fromLTRB(56, 0, 0, 0),
-                    decoration: BoxDecoration(
-                        color: sentMessageWidgetColor,
-                        borderRadius: BorderRadius.only(
-                          topRight: Radius.circular(5),
-                          bottomRight: Radius.circular(5),
-                          bottomLeft: Radius.circular(5),
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(
+                        maxWidth: MediaQuery.of(context).size.width * 0.6),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: <Widget>[
+                        Text(
+                          message,
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 17,
+                          ),
                         ),
-                    ),
-                    child: ConstrainedBox(
-                      constraints: BoxConstraints(
-                          maxWidth: MediaQuery.of(context).size.width * 0.6),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: <Widget>[
-                          Text(
-                            message,
+                        Container(
+                          width: 95,
+                          padding: EdgeInsets.fromLTRB(0, 5, 0, 0),
+                          alignment: Alignment.centerRight,
+                          child: Text(
+                            DateTime.fromMillisecondsSinceEpoch(timestamp).toUtc().toString().split(":")[0]+":"+DateTime.fromMillisecondsSinceEpoch(timestamp).toUtc().toString().split(":")[1],
                             style: TextStyle(
                               color: Colors.white,
-                              fontSize: 17,
+                              fontSize: 12,
                             ),
                           ),
-                          Container(
-                            width: 95,
-                            padding: EdgeInsets.fromLTRB(0, 5, 0, 0),
-                            alignment: Alignment.centerRight,
-                            child: Text(
-                              DateTime.fromMillisecondsSinceEpoch(timestamp).toUtc().toString().split(":")[0]+":"+DateTime.fromMillisecondsSinceEpoch(timestamp).toUtc().toString().split(":")[1],
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 12,
-                              ),
-                            ),
-                          )
-                        ],
-                      ),
-                    )),
-              ],
-            )
-          ],
-        ),
-      );
-    }
+                        )
+                      ],
+                    ),
+                  )),
+            ],
+          )
+        ],
+      ),
+    );
+  }
 
-    Widget generateReceivedMessageWidget(String username, String message, int timestamp, String profilePic, int userJoinNumber) {
-      return Container(
-        margin: EdgeInsets.fromLTRB(0, 5, 0, 5),
-        child: Stack(
-          alignment: Alignment.topRight,
-          overflow: Overflow.visible,
-          children: <Widget>[
-            GestureDetector(
-              child: Container(
-                width: 45,
-                height: 45,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(30),
-                  border: Border.all(color: receivedMessageUserIndicatorColor[userJoinNumber%receivedMessageUserIndicatorColor.length])
-                ),                                  
-                margin: EdgeInsets.fromLTRB(0, 0, 0, 0),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(30),
-                  child: base64ToImageConverter(profilePic),
+  Widget generateReceivedMessageWidget(String username, String message, int timestamp, String profilePic, int userJoinNumber) {
+    return Container(
+      margin: EdgeInsets.fromLTRB(0, 5, 0, 5),
+      child: Stack(
+        alignment: Alignment.topRight,
+        overflow: Overflow.visible,
+        children: <Widget>[
+          GestureDetector(
+            child: Container(
+              width: 45,
+              height: 45,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(30),
+                border: Border.all(color: receivedMessageUserIndicatorColor[userJoinNumber%receivedMessageUserIndicatorColor.length])
+              ),                                  
+              margin: EdgeInsets.fromLTRB(0, 0, 0, 0),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(30),
+                child: base64ToImageConverter(profilePic),
+              ),
+            ),
+            onTap: () async{
+              File image = await FilePicker.getFile(type: FileType.ANY);
+              String base64profilePic = base64.encode(image.readAsBytesSync()).toString();
+              Map userInfo = await databaseManager.getParticipants(currentGroupId);
+              await databaseManager.updateProfilePicture(base64profilePic, false, pid: userInfo[username]["pid"], gid: currentGroupId);
+              setState(() {});
+            },
+          ),
+          Container(
+            margin: EdgeInsets.fromLTRB(0, 20, 49, 0),
+            width: 7,
+            height: 10,
+            color: receivedMessageWidgetColor
+          ),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: <Widget>[
+              ConstrainedBox(
+                constraints: BoxConstraints(
+                    maxWidth: 150,
+                ),
+                child: Container(
+                  margin: EdgeInsets.fromLTRB(0, 2, 49, 2),
+                  alignment: Alignment.centerRight,
+                  child: Text(
+                    username,
+                    style: TextStyle(
+                      color: receivedMessageUserIndicatorColor[userJoinNumber%receivedMessageUserIndicatorColor.length],
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
                 ),
               ),
-              onTap: () async{
-               File image = await FilePicker.getFile(type: FileType.ANY);
-               String base64profilePic = base64.encode(image.readAsBytesSync()).toString();
-               Map userInfo = await databaseManager.getParticipants(currentGroupId);
-               await databaseManager.updateProfilePicture(base64profilePic, false, pid: userInfo[username]["pid"], gid: currentGroupId);
-               setState(() {});
-              },
-            ),
-            Container(
-              margin: EdgeInsets.fromLTRB(0, 20, 49, 0),
-              width: 7,
-              height: 10,
-              color: receivedMessageWidgetColor
-            ),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: <Widget>[
-                ConstrainedBox(
-                  constraints: BoxConstraints(
-                      maxWidth: 150,
-                  ),
-                  child: Container(
-                    margin: EdgeInsets.fromLTRB(0, 2, 49, 2),
-                    alignment: Alignment.centerRight,
-                    child: Text(
-                      username,
-                      style: TextStyle(
-                        color: receivedMessageUserIndicatorColor[userJoinNumber%receivedMessageUserIndicatorColor.length],
+              Container(
+                  padding: EdgeInsets.fromLTRB(10, 10, 10, 8),
+                  margin: EdgeInsets.fromLTRB(0, 0, 55, 0),
+                  decoration: BoxDecoration(
+                      color: receivedMessageWidgetColor,
+                      borderRadius: BorderRadius.only(
+                        topLeft: Radius.circular(5),
+                        bottomRight: Radius.circular(5),
+                        bottomLeft: Radius.circular(5),
                       ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
                   ),
-                ),
-                Container(
-                    padding: EdgeInsets.fromLTRB(10, 10, 10, 8),
-                    margin: EdgeInsets.fromLTRB(0, 0, 55, 0),
-                    decoration: BoxDecoration(
-                        color: receivedMessageWidgetColor,
-                        borderRadius: BorderRadius.only(
-                          topLeft: Radius.circular(5),
-                          bottomRight: Radius.circular(5),
-                          bottomLeft: Radius.circular(5),
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(
+                        maxWidth: MediaQuery.of(context).size.width * 0.55),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: <Widget>[
+                        Text(
+                          message,
+                          style: TextStyle(
+                            color: Colors.black,
+                            fontSize: 17,
+                          ),
                         ),
-                    ),
-                    child: ConstrainedBox(
-                      constraints: BoxConstraints(
-                          maxWidth: MediaQuery.of(context).size.width * 0.55),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        children: <Widget>[
-                          Text(
-                            message,
+                        Container(
+                          width: 95,
+                          padding: EdgeInsets.fromLTRB(0, 5, 0, 0),
+                          alignment: Alignment.centerRight,
+                          child: Text(
+                            DateTime.fromMillisecondsSinceEpoch(timestamp).toUtc().toString().split(":")[0]+":"+DateTime.fromMillisecondsSinceEpoch(timestamp).toUtc().toString().split(":")[1],
                             style: TextStyle(
                               color: Colors.black,
-                              fontSize: 17,
+                              fontSize: 12,
                             ),
                           ),
-                          Container(
-                            width: 95,
-                            padding: EdgeInsets.fromLTRB(0, 5, 0, 0),
-                            alignment: Alignment.centerRight,
-                            child: Text(
-                              DateTime.fromMillisecondsSinceEpoch(timestamp).toUtc().toString().split(":")[0]+":"+DateTime.fromMillisecondsSinceEpoch(timestamp).toUtc().toString().split(":")[1],
-                              style: TextStyle(
-                                color: Colors.black,
-                                fontSize: 12,
-                              ),
-                            ),
-                          )
-                        ],
-                      ),
+                        )
+                      ],
                     ),
                   ),
-              ],
-            )
-          ],
-        ),
-      );
-    }
-
-
-    Widget serverInfoTable(String publicIp, String port, String latitude, String longitude, String country, String city, String region, String isp){
-      return ListView(
-        shrinkWrap: true,
-        padding: const EdgeInsets.fromLTRB(30, 10, 30, 40),                    
-        children: <Widget>[
-          Container(
-            padding: EdgeInsets.fromLTRB(0, 0, 0, 10),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: <Widget>[
-                Text(
-                  "IP",
-                  style: TextStyle(
-                    color: sentMessageWidgetColor,
-                    fontSize: 20, 
-                  ),
                 ),
-                Text(
+            ],
+          )
+        ],
+      ),
+    );
+  }
+
+
+  Widget serverInfoTable(String publicIp, String port, String latitude, String longitude, String country, String city, String region, String isp){
+    return ListView(
+      shrinkWrap: true,
+      padding: const EdgeInsets.fromLTRB(30, 10, 30, 40),                    
+      children: <Widget>[
+        Container(
+          padding: EdgeInsets.fromLTRB(0, 0, 0, 10),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: <Widget>[
+              Text(
+                "IP",
+                style: TextStyle(
+                  color: sentMessageWidgetColor,
+                  fontSize: 20, 
+                ),
+              ),
+              ConstrainedBox( 
+                constraints: BoxConstraints( 
+                  maxWidth: MediaQuery.of(context).size.width * 0.57,
+                ),
+                child: Text(
                   publicIp,
                   style: TextStyle(
                     color: sentMessageWidgetColor,
@@ -725,99 +727,114 @@ class ChatState extends State<Chat> {
                   overflow: TextOverflow.ellipsis,
                   maxLines: 1,                                
                 ),
-              ],
-            ),
-          ),   
-          Container(
-            padding: EdgeInsets.fromLTRB(0, 0, 0, 10),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: <Widget>[
-                Text(
-                  "Port",
+              ),
+            ],
+          ),
+        ),   
+        Container(
+          padding: EdgeInsets.fromLTRB(0, 0, 0, 10),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: <Widget>[
+              Text(
+                "Port",
+                style: TextStyle(
+                  color: sentMessageWidgetColor,
+                  fontSize: 20, 
+                ),
+              ),
+              ConstrainedBox( 
+                constraints: BoxConstraints( 
+                  maxWidth: MediaQuery.of(context).size.width * 0.57,
+                ),
+                child: Text(
+                  port,
                   style: TextStyle(
                     color: sentMessageWidgetColor,
                     fontSize: 20, 
                   ),
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 1,                                
                 ),
-                ConstrainedBox(
-                  constraints: BoxConstraints(
-                    maxWidth: 400
-                  ),
-                  child: Text(
-                    port,
-                    style: TextStyle(
-                      color: sentMessageWidgetColor,
-                      fontSize: 20, 
-                    ),
-                    overflow: TextOverflow.ellipsis,
-                    maxLines: 1,                                
-                  ),
+              ),
+            ],
+          ),
+        ),             
+        Container(
+          padding: EdgeInsets.fromLTRB(0, 0, 0, 10),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: <Widget>[
+              Text(
+                "LAT",
+                style: TextStyle(
+                  color: sentMessageWidgetColor,
+                  fontSize: 20, 
                 ),
-              ],
-            ),
-          ),             
-          Container(
-            padding: EdgeInsets.fromLTRB(0, 0, 0, 10),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: <Widget>[
-                Text(
-                  "LAT",
-                  style: TextStyle(
-                    color: sentMessageWidgetColor,
-                    fontSize: 20, 
-                  ),
+              ),
+              ConstrainedBox( 
+                constraints: BoxConstraints( 
+                  maxWidth: MediaQuery.of(context).size.width * 0.57,
                 ),
-                Text(
+                child: Text(
                   latitude,
                   style: TextStyle(
                     color: sentMessageWidgetColor,
                     fontSize: 20, 
                   ),
                   overflow: TextOverflow.ellipsis,
-                  maxLines: 1,
+                  maxLines: 1,                                
                 ),
-              ],
-            ),
-          ), 
-          Container(
-            padding: EdgeInsets.fromLTRB(0, 0, 0, 10),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: <Widget>[
-                Text(
-                  "LON",
-                  style: TextStyle(
-                    color: sentMessageWidgetColor,
-                    fontSize: 20, 
-                  ),
+              ),
+            ],
+          ),
+        ), 
+        Container(
+          padding: EdgeInsets.fromLTRB(0, 0, 0, 10),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: <Widget>[
+              Text(
+                "LON",
+                style: TextStyle(
+                  color: sentMessageWidgetColor,
+                  fontSize: 20, 
                 ),
-                Text(
+              ),
+              ConstrainedBox( 
+                constraints: BoxConstraints( 
+                  maxWidth: MediaQuery.of(context).size.width * 0.57,
+                ),
+                child: Text(
                   longitude,
                   style: TextStyle(
                     color: sentMessageWidgetColor,
                     fontSize: 20, 
                   ),
                   overflow: TextOverflow.ellipsis,
-                  maxLines: 1,
+                  maxLines: 1,                                
                 ),
-              ],
-            ),
-          ),                                                
-          Container(
-            padding: EdgeInsets.fromLTRB(0, 0, 0, 10),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: <Widget>[
-                Text(
-                  "Country",
-                  style: TextStyle(
-                    color: sentMessageWidgetColor,
-                    fontSize: 20, 
-                  ),
+              ), 
+            ],
+          ),
+        ),                                                
+        Container(
+          padding: EdgeInsets.fromLTRB(0, 0, 0, 10),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: <Widget>[
+              Text(
+                "Country",
+                style: TextStyle(
+                  color: sentMessageWidgetColor,
+                  fontSize: 20, 
                 ),
-                Text(
+              ),
+              ConstrainedBox( 
+                constraints: BoxConstraints( 
+                  maxWidth: MediaQuery.of(context).size.width * 0.57,
+                ),
+                child: Text(
                   country,
                   style: TextStyle(
                     color: sentMessageWidgetColor,
@@ -826,22 +843,27 @@ class ChatState extends State<Chat> {
                   overflow: TextOverflow.ellipsis,
                   maxLines: 1,                                
                 ),
-              ],
-            ),
-          ),  
-          Container(
-            padding: EdgeInsets.fromLTRB(0, 0, 0, 10),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: <Widget>[
-                Text(
-                  "City",
-                  style: TextStyle(
-                    color: sentMessageWidgetColor,
-                    fontSize: 20, 
-                  ),
+              ),
+            ],
+          ),
+        ),  
+        Container(
+          padding: EdgeInsets.fromLTRB(0, 0, 0, 10),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: <Widget>[
+              Text(
+                "City",
+                style: TextStyle(
+                  color: sentMessageWidgetColor,
+                  fontSize: 20, 
                 ),
-                Text(
+              ),
+              ConstrainedBox( 
+                constraints: BoxConstraints( 
+                  maxWidth: MediaQuery.of(context).size.width * 0.57,
+                ),
+                child: Text(
                   city,
                   style: TextStyle(
                     color: sentMessageWidgetColor,
@@ -850,22 +872,27 @@ class ChatState extends State<Chat> {
                   overflow: TextOverflow.ellipsis,
                   maxLines: 1,                                
                 ),
-              ],
-            ),
-          ),    
-          Container(
-            padding: EdgeInsets.fromLTRB(0, 0, 0, 10),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: <Widget>[
-                Text(
-                  "Region",
-                  style: TextStyle(
-                    color: sentMessageWidgetColor,
-                    fontSize: 20, 
-                  ),
+              ),
+            ],
+          ),
+        ),    
+        Container(
+          padding: EdgeInsets.fromLTRB(0, 0, 0, 10),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: <Widget>[
+              Text(
+                "Region",
+                style: TextStyle(
+                  color: sentMessageWidgetColor,
+                  fontSize: 20, 
                 ),
-                Text(
+              ),
+              ConstrainedBox( 
+                constraints: BoxConstraints( 
+                  maxWidth: MediaQuery.of(context).size.width * 0.57,
+                ),
+                child: Text(
                   region,
                   style: TextStyle(
                     color: sentMessageWidgetColor,
@@ -874,22 +901,27 @@ class ChatState extends State<Chat> {
                   overflow: TextOverflow.ellipsis,
                   maxLines: 1,                                
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
-          Container(
-            padding: EdgeInsets.fromLTRB(0, 0, 0, 10),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: <Widget>[
-                Text(
-                  "ISP",
-                  style: TextStyle(
-                    color: sentMessageWidgetColor,
-                    fontSize: 20, 
-                  ),
+        ),
+        Container(
+          padding: EdgeInsets.fromLTRB(0, 0, 0, 10),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: <Widget>[
+              Text(
+                "ISP",
+                style: TextStyle(
+                  color: sentMessageWidgetColor,
+                  fontSize: 20, 
                 ),
-                Text(
+              ),
+              ConstrainedBox( 
+                constraints: BoxConstraints( 
+                  maxWidth: MediaQuery.of(context).size.width * 0.57,
+                ),
+                child: Text(
                   isp,
                   style: TextStyle(
                     color: sentMessageWidgetColor,
@@ -898,12 +930,13 @@ class ChatState extends State<Chat> {
                   overflow: TextOverflow.ellipsis,
                   maxLines: 1,
                 ),
-              ],
-            ),
-          ),                                                                     
-        ],
-      );
-    }
+              ),
+            ],
+          ),
+        ),                                                                     
+      ],
+    );
+  }
 
   String chatLabel = "";
 

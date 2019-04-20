@@ -86,6 +86,7 @@ class Secp256k1{
     signature = JSON.parse(JSON.stringify(signature));
     signature["r"] = '"""+signature["r"]+r"""';
     signature["s"] = '"""+signature["s"]+r"""';
+    signature["recoveryParam"] = parseInt('"""+signature["recoveryParam"]+r"""');
     const pubKeyRecovered = ec.recoverPubKey(bigInt(msgHash,16).toString(), signature, signature.recoveryParam, "hex");    
     ec.verify(msgHash, signature, pubKeyRecovered);
     """);   
@@ -93,11 +94,28 @@ class Secp256k1{
     return validity == "true";
   }
 
+  Future<BigInt> publicKeyFromMessage(String messageHash, Map signature) async{
+    await launchUrlInWebview("", true);
+    String publicKey = await flutterWebviewPlugin.evalJavascript(ellipticCurve+r"""
+    const ec = new elliptic.ec('secp256k1');
+    const msgHash = '"""+messageHash+"""';
+    var signature = ec.sign(msgHash, ec.genKeyPair(), "hex", {canonical: true});
+    signature = JSON.parse(JSON.stringify(signature));
+    signature["r"] = '"""+signature["r"]+r"""';
+    signature["s"] = '"""+signature["s"]+r"""';
+    const pubKeyRecovered = ec.recoverPubKey(bigInt(msgHash,16).toString(), signature, signature.recoveryParam, "hex");    
+    JSON.parse(JSON.stringify(pubKeyRecovered))[0];
+    """);   
+    await flutterWebviewPlugin.close();
+    publicKey = publicKey.split('"').join("");
+    return BigInt.parse(publicKey);
+  }
+
   Future<String> encryptMessage(String message, BigInt symmetricKey) async{
     await launchUrlInWebview("", true);
     String encryptedMessage = await flutterWebviewPlugin.evalJavascript(crypto+r"""
     const symmetricKey = '"""+symmetricKey.toString()+r"""';
-    const message = '"""+message+"""';
+    const message = '"""+message+r"""';
     CryptoJS.AES.encrypt(message, symmetricKey).toString();
     """); 
     await flutterWebviewPlugin.close();
@@ -109,7 +127,7 @@ class Secp256k1{
     await launchUrlInWebview("", true);
     String message = await flutterWebviewPlugin.evalJavascript(crypto+r"""
     const symmetricKey = '"""+symmetricKey.toString()+r"""';
-    const encryptedMessage = '"""+encryptedMessage+"""';
+    const encryptedMessage = '"""+encryptedMessage+r"""';
     CryptoJS.AES.decrypt(encryptedMessage, symmetricKey).toString(CryptoJS.enc.Utf8);
     """); 
     await flutterWebviewPlugin.close();
@@ -118,9 +136,7 @@ class Secp256k1{
   }
 
   String generateRandomString(int length) {
-    List<String> alpha =
-        "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ123456789"
-            .split("");
+    List<String> alpha = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ123456789".split("");
     Random rng = Random();
     int min = 0;
     int max = alpha.length - 1;
@@ -139,9 +155,10 @@ class Secp256k1{
   Future<BigInt> generateRandomNumber(BigInt min, BigInt max) async{
     await launchUrlInWebview("", true);
     String randomNumber = await flutterWebviewPlugin.evalJavascript(ellipticCurve+r"""
-    bigInt.randBetween('"""+min.toString()+r"""', '"""+max.toString()+r"""');
+    bigInt.randBetween('"""+min.toString()+r"""', '"""+max.toString()+r"""').toString();
     """); 
     await flutterWebviewPlugin.close();
+    randomNumber = randomNumber.split('"').join("");
     return BigInt.parse(randomNumber);
   }   
 

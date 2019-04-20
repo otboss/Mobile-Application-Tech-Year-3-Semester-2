@@ -1,5 +1,8 @@
+import 'dart:convert';
 import 'dart:io';
 import 'package:cipherchat/screens/chat.dart';
+import 'package:crypto/crypto.dart';
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import '../custom_expansion_tile.dart' as custom;
 import '../main.dart';
@@ -17,6 +20,7 @@ class StartState extends State<Start> {
 
   bool ascendingSort = true;
   Widget previousServerFetch = Container();
+
 
   @override
   Widget build(BuildContext context) {
@@ -167,7 +171,6 @@ class StartState extends State<Start> {
                         ),
                       ),
                       onPressed: () async{
-                        newGroupConnection = true;
                         if(ipFieldController.text.length < 4){
                           toastMessageBottomShort("Invalid IP Provided", context);
                         }
@@ -179,19 +182,12 @@ class StartState extends State<Start> {
                             int port = int.parse(portFieldController.text);
                             try{
                               showCustomProcessDialog("Preparing", context);
-                              await dio.get("https://"+ipFieldController.text+":"+portFieldController.text+"/");
-                              await dio.get("https://"+ipFieldController.text+":"+portFieldController.text+"/ads");
-                              await dio.post("https://"+ipFieldController.text+":"+portFieldController.text+"/newgroup");
-                              await dio.post("https://"+ipFieldController.text+":"+portFieldController.text+"/joingroup");
-                              await dio.put("https://"+ipFieldController.text+":"+portFieldController.text+"/setgroupname");
-                              await dio.post("https://"+ipFieldController.text+":"+portFieldController.text+"/message");
-                              await dio.get("https://"+ipFieldController.text+":"+portFieldController.text+"/messages");
-                              await dio.get("https://"+ipFieldController.text+":"+portFieldController.text+"/anynewmessages");
-                              await dio.get("https://"+ipFieldController.text+":"+portFieldController.text+"/participants"); 
+                              assert(await checkServerRoutes(ipFieldController.text, port), "required server route missing");
                               currentServer = ipFieldController.text;
                               currentPort = port;
                               currentPrivateKey = await secp256k1EllipticCurve.generatePrivateKey();
                               currentPublicKey = await secp256k1EllipticCurve.generatePublicKey(currentPrivateKey.toString());
+                              newGroupConnection = true;
                               Navigator.pop(context);
                               await Future.delayed(Duration(seconds: 2));
                               Navigator.pushNamed(context, '/chat');
@@ -240,20 +236,23 @@ class StartState extends State<Start> {
                           toastMessageBottomShort("Connection Error", context);
                         }
                         else{
-                          newGroupConnection = true;
-                          showCustomProcessDialog("Finding Server", context);
-                          Map server = await selectRandomServerFromGithub();
+                          showCustomProcessDialog("Finding Server..", context);
+                          Map server = await databaseManager.selectRandomPreviousServer();
                           if(server == null){
-                            Navigator.pop(context);
-                            toastMessageBottomShort("Try again later", context);
+                            server = await selectRandomServerFromGithub();
                           }
                           else{
-                            currentServer = server["ip"];
-                            currentPort = server["port"];
-                            Navigator.pop(context);
-                            await Future.delayed(Duration(seconds: 1));
-                            Navigator.pushNamed(context, '/chat');
+                            if(secp256k1EllipticCurve.generateRandomInteger(0, 100) < 50)
+                              server = await databaseManager.selectRandomPreviousServer();
+                            else
+                              server = await selectRandomServerFromGithub();
                           }
+                          currentServer = server["ip"];
+                          currentPort = server["port"];
+                          newGroupConnection = true;
+                          Navigator.pop(context);
+                          await Future.delayed(Duration(seconds: 1));
+                          Navigator.pushNamed(context, '/chat');
                         }
                       },
                     ),
@@ -301,21 +300,47 @@ class StartState extends State<Start> {
                         ),
                         onPressed: () {
                           showPrompt("Enter Join Key", context, joinKeyFieldController, () async{
-                            newGroupConnection = true;
                             try{
-                              String ipAddress = joinKeyFieldController.text.substring(64);
-                              String port = ipAddress.split(":")[1];
-                              if(ipAddress.length > 6){
-                                await showCustomProcessDialog("Please Wait", context);
-                                await Future.delayed(Duration(seconds: 2)); 
-                                Navigator.pop(context);
-                                Navigator.pushNamed(context, "/chat"); 
+                              await showCustomProcessDialog("Please Wait", context);
+                              String rawJoinKey = utf8.decode(base64.decode(joinKeyFieldController.text));
+                              Map fullJoinKey = json.decode(rawJoinKey);
+                              BigInt privateKey = await secp256k1EllipticCurve.generatePrivateKey();
+                              Map publicKey  = await secp256k1EllipticCurve.generatePublicKey(privateKey.toString());
+                              String username = await databaseManager.getUsername();
+                              Map signature = {
+                                "r": (fullJoinKey["signature"]["r"]).toString(),
+                                "s": (fullJoinKey["signature"]["s"]).toString(),
+                                "recoveryParam": (fullJoinKey["signature"]["recoveryParam"]).toString(),
+                              };
+                              globalGroupJoinKey = JoinKey(fullJoinKey["ip"].toString(), int.parse(fullJoinKey["port"].toString()), fullJoinKey["encryptedMessage"].toString(), signature, fullJoinKey["joinKey"].toString(), BigInt.parse(publicKey["x2"].toString()), BigInt.parse(publicKey["x"].toString()), username.toString());
+                              assert(await checkServerRoutes(globalGroupJoinKey.ip, globalGroupJoinKey.port), "Invalid Server Credentials");
+                              int dbSaved = await databaseManager.isGroupSaved(globalGroupJoinKey.joinKey);
+                              if(dbSaved > -1){
+                                currentGroupId = dbSaved;
+                                String pastUsername = await databaseManager.getPastUsername(currentGroupId);
+                                await databaseManager.updateUsername(pastUsername);
                               }
                               else{
-                                toastMessageBottomShort("Invalid Join Key", context);
+                                if(await isUsernameTakenForServer(globalGroupJoinKey.ip, globalGroupJoinKey.port, globalGroupJoinKey.username, globalGroupJoinKey.joinKey, globalGroupJoinKey.encryptedMessage, globalGroupJoinKey.signature)){
+                                  await Future.delayed(Duration(seconds: 2));  
+                                  Navigator.pop(context);   
+                                  toastMessageBottomShort("Username Taken For Server", context);
+                                  return null;
+                                }
                               }
+                              currentServer = globalGroupJoinKey.ip;
+                              currentPort = globalGroupJoinKey.port;
+                              currentPrivateKey = privateKey;
+                              currentPublicKey = await secp256k1EllipticCurve.generatePublicKey(currentPrivateKey.toString());                               
+                              newGroupConnection = false;
+                              await Future.delayed(Duration(seconds: 2));  
+                              Navigator.pop(context);
+                              Navigator.pushNamed(context, "/chat");                               
                             }
                             catch(err){
+                              print(err);
+                              await Future.delayed(Duration(seconds: 2)); 
+                              Navigator.pop(context);                                
                               toastMessageBottomShort("Invalid Join Key", context);
                             }
                           }); 
@@ -335,3 +360,4 @@ class StartState extends State<Start> {
     );
   }
 }
+

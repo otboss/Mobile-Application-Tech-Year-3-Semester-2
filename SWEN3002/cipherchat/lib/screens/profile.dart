@@ -9,10 +9,9 @@ class Profile extends StatefulWidget {
 class ProfileState extends State<Profile> {
   @override
   Widget build(BuildContext context) {
-    // TODO: implement build
   
     FutureBuilder username = FutureBuilder<Map>(
-      future: null, // a previously-obtained Future<String> or null
+      future: null, 
       builder: (BuildContext context, AsyncSnapshot<Map> snapshot) {
         switch (snapshot.connectionState) {
           case ConnectionState.none:

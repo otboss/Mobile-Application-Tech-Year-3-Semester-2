@@ -3,10 +3,10 @@ import 'dart:convert';
 import 'dart:typed_data';
 import 'package:cipherchat/screens/chat.dart';
 import 'package:cipherchat/screens/start.dart';
+import 'package:crypto/crypto.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_webview_plugin/flutter_webview_plugin.dart';
-import 'package:flutter_string_encryption/flutter_string_encryption.dart';
 import './secp256k1.dart';
 import './database.dart';
 import './screens/home.dart';
@@ -25,6 +25,31 @@ Color themeColor = Color.fromRGBO(42, 66, 89, 1);
 Color materialGreen = Colors.teal[400];
 Color appBarTextColor = Colors.white;
 Color cardColor = Colors.white;
+Color sentMessageWidgetColor = Color.fromRGBO(48, 76, 102, 1);
+Color receivedMessageWidgetColor = Colors.grey[350];
+List<Color> receivedMessageUserIndicatorColor = [
+  materialGreen,
+  Colors.pink,
+  Colors.lightGreen,
+  Colors.orange,
+  Colors.purple,
+  Colors.redAccent,
+  Colors.yellow[600],
+  Colors.brown,
+  Colors.indigo
+];
+Map serverEntrypoints = {
+  "/": "get",
+  "/ads": "get",
+  "/newgroup": "post",
+  "/joingroup": "post",
+  "/message": "post",
+  "/messages": "get",
+  "/anynewmessages": "get",
+  "/participants": "get",
+  "/isusernametaken": "post"
+};
+
 final int limitPerChatsFetchFromDatabase = 20;
 final int limitPerMessagesFetchFromDatabase = 20;
 final int publicServersPerRequest = 10;
@@ -35,10 +60,9 @@ int currentPort = 0;
 BigInt currentPrivateKey = BigInt.parse("1");
 Map currentPublicKey = {};
 bool newGroupConnection = true;
-String pastGroupName = "";
+JoinKey globalGroupJoinKey;
 
-Future<bool> toastMessageBottomShort(
-    String message, BuildContext context) async {
+Future<bool> toastMessageBottomShort(String message, BuildContext context) async {
   Toast.show(message, context, duration: 4, gravity: Toast.BOTTOM);
   return true;
 }
@@ -67,10 +91,11 @@ Future<bool> launchUrlInWebview(String url, bool hidden) async {
   return true;
 }
 
-Future<bool> showCustomProcessDialog(String text, BuildContext context,
-    {bool dissmissable, TextAlign alignment}) async {
-  if (dissmissable == null) dissmissable = false;
-  if (alignment == null) alignment = TextAlign.left;
+Future<bool> showCustomProcessDialog(String text, BuildContext context, {bool dissmissable, TextAlign alignment}) async {
+  if (dissmissable == null) 
+    dissmissable = false;
+  if (alignment == null) 
+    alignment = TextAlign.left;
   Widget customDialog = AlertDialog(
     title: Text(
       text,
@@ -91,8 +116,7 @@ Future<bool> showCustomProcessDialog(String text, BuildContext context,
     ),
     actions: <Widget>[],
   );
-  showDialog(
-      context: context, child: customDialog, barrierDismissible: dissmissable);
+  showDialog(context: context, child: customDialog, barrierDismissible: dissmissable);
   return true;
 }
 
@@ -118,22 +142,29 @@ Future<void> showAlert(String title, String body, BuildContext context) {
       )
     ],
   );
-  showDialog(context: context, child: alert);
+  showDialog(context: context, child: alert, barrierDismissible: true);
 }
 
 
 Future<bool> checkServerRoutes(String ip, int port) async{
   try{
-    await dio.get("https://"+ip+":"+port.toString()+"/");
-    await dio.get("https://"+ip+":"+port.toString()+"/ads");
-    await dio.post("https://"+ip+":"+port.toString()+"/newgroup");
-    await dio.post("https://"+ip+":"+port.toString()+"/joingroup");
-    await dio.put("https://"+ip+":"+port.toString()+"/setgroupname");
-    await dio.post("https://"+ip+":"+port.toString()+"/message");
-    await dio.get("https://"+ip+":"+port.toString()+"/messages");
-    await dio.get("https://"+ip+":"+port.toString()+"/anynewmessages");
-    await dio.get("https://"+ip+":"+port.toString()+"/participants");  
-    await dio.get("https://"+ip+":"+port.toString()+"/servers");    
+    List entrypoints = serverEntrypoints.keys.toList();
+    for(var x = 0; x < entrypoints.length; x++){
+      switch(serverEntrypoints[entrypoints[x]]){
+        case "get":
+          await dio.get("https://"+ip+":"+port.toString()+entrypoints[x]);
+          break;
+        case "post":
+          await dio.post("https://"+ip+":"+port.toString()+entrypoints[x]);
+          break;
+        case "put":
+          await dio.put("https://"+ip+":"+port.toString()+entrypoints[x]);
+          break;
+        case "delete":
+          await dio.delete("https://"+ip+":"+port.toString()+entrypoints[x]);
+          break;
+      }
+    }    
   }
   catch(err){
     return false;
@@ -198,28 +229,34 @@ Future<void> showPrompt(String title, BuildContext context,
 }
 
 
-Widget loadingIndicator = Center(
-  child: new ListView(
-    shrinkWrap: true,
-      padding: const EdgeInsets.all(20.0),
-      children: [
-        SingleChildScrollView(
-          child: Container(
-            alignment: Alignment.center,
-            padding: EdgeInsets.fromLTRB(0, 5, 0, 60),
-            child: Column(
-              children: <Widget>[
-                CircularProgressIndicator(
-                  backgroundColor: themeColor,
-                  valueColor: AlwaysStoppedAnimation<Color>(Colors.blue),
-                ),
-              ],
+
+Widget loadingIndicator ({color: Colors}){
+  if(color == null)
+    color = Colors.blue;
+  return Center(
+    child: new ListView(
+      shrinkWrap: true,
+        padding: const EdgeInsets.all(20.0),
+        children: [
+          SingleChildScrollView(
+            child: Container(
+              alignment: Alignment.center,
+              padding: EdgeInsets.fromLTRB(0, 5, 0, 60),
+              child: Column(
+                children: <Widget>[
+                  CircularProgressIndicator(
+                    backgroundColor: themeColor,
+                    valueColor: AlwaysStoppedAnimation<Color>(color),
+                  ),
+                ],
+              ),
             ),
-          ),
-        )                    
-      ]
-  ),
-);
+          )                    
+        ]
+    ),
+  );
+}
+
 
 
 ///Selects a public CipherChat Server from the first issue
@@ -246,7 +283,10 @@ Future<Map> selectRandomServerFromGithub() async{
                 success: function(response){
                   try{
                     response = JSON.parse($($("p", $.parseHTML(response))[0]).html());
-                    resolve(response);
+                    if(response["ip"] != null && response["port"] != null)
+                      resolve(response);
+                    else
+                      resolve(null);
                   }
                   catch(err){
                     resolve(null);
@@ -288,6 +328,42 @@ Future<Map> selectRandomServerFromGithub() async{
   return null;
 }
 
+Future<Map> getServerInfo(String ip) async{
+  Map result = {};
+  try{
+    Response response = await dio.get("https://extreme-ip-lookup.com/json/"+ip);
+    result = json.decode(json.encode(response.data));
+    if(result["org"] == "Private IP Address LAN"){
+      Response publicIpAddress = await dio.get("https://ipecho.net/plain");
+      response = await dio.get("https://extreme-ip-lookup.com/json/"+publicIpAddress.data);
+      result = json.decode(json.encode(response.data));      
+    }
+  }
+  catch(err){
+
+  }
+  return result;
+}
+
+
+Future<bool> isUsernameTakenForServer(String ip, int port, String username, String joinKey, String encryptedMessage, Map signature) async{
+  try{
+    String currentServerUrl = "https://" + ip + ":" + port.toString() + "/";
+    Response response = await dio.post(currentServerUrl+"isusernametaken", data:{
+      "encryptedMessage": encryptedMessage,
+      "signature": json.encode(signature),
+      "username": username,
+      "joinKey": joinKey,
+    });  
+    if(response.data == "1")
+      return true;
+  }
+  catch(err){
+    print(err);
+  }
+  return false;   
+}       
+
 class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
@@ -304,5 +380,35 @@ class MyApp extends StatelessWidget {
         "/chat": (BuildContext context) => Chat(),
       },
     );
+  }
+}
+
+
+class JoinKey{
+  String ip, encryptedMessage, joinKey, username;
+  int port;
+  Map signature;
+  BigInt publicKey, publicKey2;
+  JoinKey(String ip, int port, String encryptedMessage, Map signature, String joinKey, BigInt publicKey, BigInt publicKey2, String username){
+    this.ip = ip;
+    this.port = port;
+    this.encryptedMessage = encryptedMessage;
+    this.signature = signature;
+    this.joinKey = joinKey;
+    this.publicKey = publicKey;
+    this.publicKey2 = publicKey2;
+    this.username = username;
+  }
+  toJSON(){
+    return {
+      "ip": ip,
+      "port": port,
+      "signature": signature,
+      "encryptedMessage": encryptedMessage,
+      "joinKey": joinKey,
+      "username": username,
+      "publicKey": publicKey,
+      "publicKey2": publicKey2,
+    };
   }
 }

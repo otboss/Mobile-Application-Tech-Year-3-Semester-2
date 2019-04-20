@@ -1,4 +1,3 @@
-
 import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:file_picker/file_picker.dart';
@@ -12,324 +11,344 @@ class Chat extends StatefulWidget {
   ChatState createState() => ChatState();
 }
 
-class ChatState extends State<Chat> {    
-
+class ChatState extends State<Chat> {
   TextEditingController messageTextController = TextEditingController();
+  TextEditingController groupChatTextController = TextEditingController();
   Map participants = {};
   Map messages = {};
+  List<Widget> messagesContainer = [];
   String passphrase = "";
   TextEditingController passphraseFieldController = TextEditingController();
-  int offsetForMessages;
-  String currentServerUrl = "https://"+currentServer+":"+currentPort.toString()+"/";
+  TextEditingController groupNameFieldController = TextEditingController();
+  int offsetForMessages = 1;
+  String currentServerUrl = "https://" + currentServer + ":" + currentPort.toString() + "/";
   bool connected = false;
+  bool isGroupChat = false;
 
 
-  Future<bool> updateProfilePic(int participantId) async{
-    try{
+  
+
+  Future<bool> updateProfilePic(int participantId) async {
+    try {
       File image = await FilePicker.getFile(type: FileType.IMAGE);
       String base64ProfilePic = base64.encode(await image.readAsBytes());
-      await databaseManager.updateProfilePicture(base64ProfilePic, false, gid: currentGroupId, pid: participantId);
+      await databaseManager.updateProfilePicture(base64ProfilePic, false,
+          gid: currentGroupId, pid: participantId);
       Navigator.pop(context);
       setState(() {});
-      toastMessageBottomShort("Profile Updated", context); 
-    }
-    catch(err){
+      toastMessageBottomShort("Profile Updated", context);
+    } catch (err) {
       return false;
     }
     return true;
   }
 
-  Future<bool> createNewGroup(String username, String publicKey) async{
-    try{
-      Response response = await dio.post(currentServerUrl+"newgroup", data: {
+  Future<bool> createNewGroup(String username) async {
+    try {
+      Response response = await dio.post(currentServerUrl + "newgroup", data: {
         "username": username,
-        "publicKey": publicKey,
+        "publicKey": currentPublicKey["x2"],
+        "publicKey2": currentPublicKey["x"],
         "passphrase": passphrase
-      });
-      if(response.data == "-1"){
+      });      
+      if (response.data == "-1") {
         return false;
-      }
-      else{
+      } else {
         String joinKey = response.data;
-        String privateKey = secp256k1EllipticCurve.generatePrivateKey().toString();
-        await databaseManager.saveGroup(currentServer, currentPort, currentServer, privateKey, joinKey);
+        await databaseManager.saveGroup(currentServer, currentPort, currentServer, currentPrivateKey.toString(), joinKey, username);
         await updateParticipants();
         return true;
       }
+    } catch (err) {
+      print(err);
     }
-    catch(err){
-      
+    return false;
+  }
+  
+  /*
+  Future<Map> joinGroup(String joinKey, String username, String publicKey,
+      String publicKey2, String encryptedMessage, String signature) async {
+    try {
+      Response response = await dio.post(currentServerUrl + "joingroup", data: {
+        "username": username,
+        "publicKey": publicKey,
+        "publicKey2": publicKey2,
+        "encryptedMessage": encryptedMessage,
+        "signature": signature
+      });
+      return json.decode(response.data);
+    } catch (err) {
+      print(err);
     }
     return null;
-  }
+  }*/
 
-  Future<Map> joinGroup(String joinKey, String username, String publicKey, String publicKey2, String encryptedMessage, String signature) async{
-      try{
-        Response response = await dio.post(currentServerUrl+"joingroup", data: {
-          "username": username,
-          "publicKey": publicKey,
-          "publicKey2": publicKey2,
-          "encryptedMessage": encryptedMessage,
-          "signature": signature
-        });
-        return json.decode(response.data);
-      }
-      catch(err){
-        print(err);
-      }  
-      return null;
-  }
+  Future<bool> joinGroup(String ip, int port, Map signature, String encryptedMessage, String joinKey, String publicKey, String publicKey2, String username) async{
+    try{
+      String currentServerUrl = "https://" + ip + ":" + port.toString() + "/";
+      Response response = await dio.post(currentServerUrl+"joingroup", data: {
+        "encryptedMessage": encryptedMessage,
+        "signature": json.encode(signature),
+        "username": username,
+        "publicKey": publicKey,
+        "publicKey2": publicKey2,
+        "joinKey": joinKey,
+      });
+      if(response.data == "1" || response.data == "-3")
+        return true;
+    }
+    catch(err){
+      return false;
+    }
+    return false;
+  }  
 
   ///Creates a base64 encoded Map of the required credentials to join a server
-  Future<String> generateJoinKey() async{
-    try{
+  Future<String> generateJoinKey() async {
+    try {
       Map groupInfo = await databaseManager.getGroupInfo(currentGroupId);
       Map completeJoinKey = {};
       completeJoinKey["ip"] = groupInfo["serverIp"];
-      completeJoinKey["port"] = groupInfo["serverPort"];    
+      completeJoinKey["port"] = groupInfo["serverPort"];
       completeJoinKey["joinKey"] = groupInfo["joinKey"];
       completeJoinKey["encryptedMessage"] = secp256k1EllipticCurve.generateRandomString(100);
-      String messageHash = sha256.convert(utf8.encode(completeJoinKey["encryptedMessage"])).toString();
-      completeJoinKey["signature"] = await secp256k1EllipticCurve.signMessage(messageHash, currentPrivateKey);
-      return base64.encode(utf8.encode(json.encode(completeJoinKey))).toString();
-    }
-    catch(err){
+      String messageHash = sha256
+          .convert(utf8.encode(completeJoinKey["encryptedMessage"]))
+          .toString();
+      completeJoinKey["signature"] = await secp256k1EllipticCurve.signMessage(
+          messageHash, currentPrivateKey);
+      return base64
+          .encode(utf8.encode(json.encode(completeJoinKey)))
+          .toString();
+    } catch (err) {
       print("ERROR OCCURRED");
       print(err);
     }
     return "";
   }
-  
+
   ///Parses a join key received from another peer (join keys are base64 encoded)
   Map parseJoinKey(String joinKey) {
-    try{
-      return json.decode(utf8.decode(json.decode(utf8.decode(base64.decode(joinKey)))));
-    }
-    catch(err){
+    try {
+      return json.decode(
+          utf8.decode(json.decode(utf8.decode(base64.decode(joinKey)))));
+    } catch (err) {
       return null;
     }
   }
 
-  Future<Map> getPrivateKey() async{
+  Future<Map> getPrivateKey() async {
     Map groupInfo = await databaseManager.getGroupInfo(currentGroupId);
     return groupInfo["privateKey"];
   }
 
-
   ///Retrieves the Admob ID from the server. Also tests for connection to the server
-  Future<String> getAdmodId() async{
-    while(true){
-      try{
-        Response response = await dio.get(currentServerUrl+"/ads");
+  Future<String> getAdmodId() async {
+    while (true) {
+      try {
+        Response response = await dio.get(currentServerUrl + "/ads");
         return response.data;
-      }
-      catch(err){
-
-      }
+      } catch (err) {}
       await Future.delayed(Duration(seconds: 4));
-    }  
+    }
   }
 
-  Future<String> getGroupName() async{
-    try{
+  Future<String> getGroupName() async {
+    try {
       String randomMessage = secp256k1EllipticCurve.generateRandomString(100);
       String username = await databaseManager.getUsername();
       String messageHash = sha256.convert(utf8.encode(randomMessage)).toString();
-      BigInt privateKey = await databaseManager.getPrivateKey(currentGroupId);
-      Map signature = await secp256k1EllipticCurve.signMessage(messageHash, privateKey);
+      Map signature = await secp256k1EllipticCurve.signMessage(messageHash, currentPrivateKey);
       String joinKey = await databaseManager.getGroupJoinKey(currentGroupId);
-      Response response = await dio.get(currentServerUrl+"getgroupname", data: {
+      Response response =
+          await dio.get(currentServerUrl + "getgroupname", data: {
         "encryptedMessage": randomMessage,
         "signature": signature,
         "username": username,
         "joinKey": joinKey
       });
       return response.data;
-    }
-    catch(err){
+    } catch (err) {
       print(err);
     }
-    await Future.delayed(Duration(seconds: 4));    
+    await Future.delayed(Duration(seconds: 4));
   }
 
-  Future<bool> setGroupName(String groupName) async{
-      try{
-        String randomMessage = secp256k1EllipticCurve.generateRandomString(100);
-        String messageHash = sha256.convert(utf8.encode(randomMessage)).toString();
-        BigInt privateKey = await databaseManager.getPrivateKey(currentGroupId);
-        Map signature = await secp256k1EllipticCurve.signMessage(messageHash, privateKey);
-        String joinKey = await databaseManager.getGroupJoinKey(currentGroupId);
-        Response response = await dio.put(currentServerUrl+"setgroupname", data: {
-          "encryptedMessage": randomMessage,
-          "signature": signature,
-          "joinKey": joinKey
-        });
-        if(response.data != "1")
-          return false;
-      }
-      catch(err){
+  Future<bool> setGroupName(String groupName) async {
+    try {
+      String randomMessage = secp256k1EllipticCurve.generateRandomString(100);
+      String messageHash = sha256.convert(utf8.encode(randomMessage)).toString();
+      Map signature = await secp256k1EllipticCurve.signMessage(messageHash, currentPrivateKey);
+      String joinKey = await databaseManager.getGroupJoinKey(currentGroupId);
+      Response response = await dio.put(currentServerUrl + "setgroupname", data: {
+        "encryptedMessage": randomMessage,
+        "signature": signature,
+        "joinKey": joinKey
+      });
+      if (response.data != "1") 
         return false;
-      }
-      return true;   
+    } catch (err) {
+      return false;
+    }
+    return true;
   }
-  
-  Future<Map> getParticipants() async{
-    try{
+
+  Future<Map> getParticipants() async {
+    try {
       String message = secp256k1EllipticCurve.generateRandomString(100);
       String messageHash = sha256.convert(utf8.encode(message)).toString();
-      BigInt privateKey = await databaseManager.getPrivateKey(currentGroupId);
-      Map signature = await secp256k1EllipticCurve.signMessage(messageHash, privateKey);
+      Map signature = await secp256k1EllipticCurve.signMessage(messageHash, currentPrivateKey);
       String joinKey = await databaseManager.getGroupJoinKey(currentGroupId);
       String username = await databaseManager.getUsername();
-      Response response = await dio.get(currentServerUrl+"participants", data: {
-        "encryptedMessage":message,
+      Response response = await dio.get(currentServerUrl + "participants", data: {
+        "encryptedMessage": message,
         "signature": json.encode(signature),
         "joinKey": joinKey,
         "username": username
-      });    
-      return json.decode(response.data);
-    }
-    catch(err){
+      });
+      print("THE PARTICIPANTS ARE: ");
+      print(response.data);
+      return json.decode(json.encode(response.data));
+    } catch (err) {
       print(err);
     }
     return null;
   }
 
   Future<bool> muteChat() async {
-    
-  }  
 
-  Future<bool> updateParticipants() async{
+  }
+
+
+  Future<bool> updateParticipants() async {
+    try{
       Map participants = await getParticipants();
-      List usernames = participants.keys.toList();    
-      for(var x = 0; x < usernames.length; x++){
-        try{
-          await databaseManager.saveParticipant(currentGroupId, usernames[x], databaseManager.defaultProfilePicBase64, BigInt.parse(participants[usernames[x]]["publicKey"]), participants[usernames[x]]["publicKey2"], participants[usernames[x]]["joined"]);
-          if(usernames.length == 2){
-            String joinKey = await databaseManager.getGroupJoinKey(currentGroupId);
-            String username = await databaseManager.getUsername();
-            if(usernames[x] != username)
-            await databaseManager.updateServerLabel(usernames[x], joinKey);
-          }
-          if(usernames.length > 2){
-            String message = secp256k1EllipticCurve.generateRandomString(100);
-            String messageHash = sha256.convert(utf8.encode(message)).toString();
-            BigInt privateKey = await databaseManager.getPrivateKey(currentGroupId);
-            Map signature = await secp256k1EllipticCurve.signMessage(messageHash, privateKey);
-            String joinKey = await databaseManager.getGroupJoinKey(currentGroupId);
-            String username = await databaseManager.getUsername();            
-            Response response = await dio.get(currentServerUrl+"getgroupname", data: {
-              "encryptedMessage": message,
-              "signature": json.encode(signature),
-              "joinKey": joinKey,
-              "username": username
-            });
-            await databaseManager.updateServerLabel(json.encode(response.data), joinKey);            
-          }
-        }
-        catch(err){
+      List usernames = participants.keys.toList();
+      for (var x = 0; x < usernames.length; x++) {
+        try {
+          await databaseManager.saveParticipant(currentGroupId, usernames[x], databaseManager.defaultProfilePicBase64, BigInt.parse(participants[usernames[x]]["publicKey"]), BigInt.parse(participants[usernames[x]]["publicKey2"]), int.parse(participants[usernames[x]]["joined"].toString()));
+        } catch (err) {
           print(err);
         }
       }
+    }
+    catch(err){
+      print("ERROR HERE!!!");
+      print(err);
+    }
     return true;
   }
 
 
   Future<int> sendMessage(String message) async {
-    try{
+    try {
       Map participants = await databaseManager.getParticipants(currentGroupId);
-      if(participants.keys.length > 0){
+      if (participants.keys.length == 0) 
         return 0;
-      }
-      BigInt privateKey = await databaseManager.getPrivateKey(currentGroupId);
-      BigInt compositeKey = await databaseManager.getCompositeKey(currentGroupId);
       BigInt symmetricKey = await databaseManager.getSymmetricKey(currentGroupId);
       String username = await databaseManager.getUsername();
       String encryptedMessage = await secp256k1EllipticCurve.encryptMessage(message, symmetricKey);
       String encryptedMessageHash = sha256.convert(utf8.encode(encryptedMessage)).toString();
-      Map signature = await secp256k1EllipticCurve.signMessage(encryptedMessageHash, privateKey);  
+      Map signature = await secp256k1EllipticCurve.signMessage(encryptedMessageHash, currentPrivateKey);
       String joinKey = await databaseManager.getGroupJoinKey(currentGroupId);
-      await updateParticipants();
-      Response response = await dio.post(currentServerUrl+"message", data: {
+      Map compositeKeys = await databaseManager.generateCompositeKeysForRecipients(currentGroupId);
+      print("THE COMPOSITE KEYS ARE: ");
+      print(compositeKeys);
+      Response response = await dio.post(currentServerUrl + "message", data: {
         "encryptedMessage": encryptedMessage,
         "signature": json.encode(signature),
         "joinKey": joinKey,
         "username": username,
-        "compositeKey": compositeKey
+        "compositeKeys": json.encode(compositeKeys)
       });
-      if(response.data == "true"){
-        
-      }
-      if(response.data == "false")
+      if (response.data == "-1") 
         return -1;
-    }
-    catch(err){
+      else{
+        String currentUsername = await databaseManager.getUsername();
+        SentMessageResponse result = SentMessageResponse(int.parse(response.data.mid), int.parse(response.data.timestamp));
+        await databaseManager.saveMessage(currentGroupId, result.messageId, message, currentUsername, result.timestamp, 1);
+      } 
+      print("THE MESSAGES ARE: ");  
+      print(await databaseManager.getMessages(currentGroupId));
+            
+    } catch (err) {
       print(err);
       return -2;
     }
     return 1;
-  }  
+  }
 
-  Future<Map> getNewMessages() async{
+  Future<List> getNewMessages() async {
     String message = secp256k1EllipticCurve.generateRandomString(100);
     String messageHash = sha256.convert(utf8.encode(message)).toString();
-    BigInt privateKey = await databaseManager.getPrivateKey(currentGroupId);
-    Map signature = await secp256k1EllipticCurve.signMessage(messageHash, privateKey);
+    Map signature = await secp256k1EllipticCurve.signMessage(messageHash, currentPrivateKey);
     String joinKey = await databaseManager.getGroupJoinKey(currentGroupId);
     String username = await databaseManager.getUsername();
     int offset = await databaseManager.getLastMessageId(currentGroupId);
     Response response;
-    try{
-      response = await dio.get(currentServerUrl+"messages", data: {
+    try {
+      response = await dio.get(currentServerUrl + "messages", data: {
         "encryptedMessage": message,
         "signature": json.encode(signature),
         "joinKey": joinKey,
         "username": username,
         "offset": offset
-      });            
+      });
+    } catch (err) {
+      return null;
+    }
+    List result = [];
+    Map data = json.decode(json.encode(response.data));
+    List messageIds = data.keys.toList();
+    for(var x = 0; x < messageIds.length; x++){
+      result.add(NewMessagesResponse(int.parse(messageIds[x]), response.data.sender, response.data.encryptedMessage, json.decode(json.encode(response.data.compositeKeys)), int.parse(response.data.ts)));
+    }
+    result.sort((a, b) => a.messageId.compareTo(b.messageId));
+    return result;
+  }
+
+  Future<Map> getOlderMessages() async {
+    Map oldMessages = {};
+    try{
+      oldMessages = await databaseManager.getMessages(currentGroupId, offset: offsetForMessages);
+      List messageIds = oldMessages.keys.toList();
+      messageIds.sort();
+      offsetForMessages = int.parse(messageIds[messageIds.length - 1]);
     }
     catch(err){
-      return {};
+
     }
-    return json.decode(response.data);      
+    return oldMessages;
   }
 
-  Future<Map> getOlderMessages() async{
-    Map oldMessages = await databaseManager.getMessages(currentGroupId, offset: offsetForMessages);
-    List messageIds = oldMessages.keys.toList();
-    messageIds.sort();
-    offsetForMessages = int.parse(messageIds[messageIds.length - 1]);
-    return oldMessages;    
-  }
-
-  Future<bool> newMessagesCheck() async{
-    try{
+  Future<bool> newMessagesCheck() async {
+    try {
       String randomMessage = secp256k1EllipticCurve.generateRandomString(100);
       String messageHash = sha256.convert(utf8.encode(randomMessage)).toString();
-      BigInt privateKey = await databaseManager.getPrivateKey(currentGroupId);
-      Map signature = await secp256k1EllipticCurve.signMessage(messageHash, privateKey);
+      Map signature = await secp256k1EllipticCurve.signMessage(messageHash, currentPrivateKey);
       String username = await databaseManager.getUsername();
       String joinKey = await databaseManager.getGroupJoinKey(currentGroupId);
       int offset = await databaseManager.getLastMessageId(currentGroupId);
-      Response response = await dio.put(currentServerUrl+"setgroupname", data: {
+      Response response =
+          await dio.put(currentServerUrl + "setgroupname", data: {
         "encryptedMessage": randomMessage,
         "signature": signature,
         "joinKey": joinKey,
         "username": username,
         "offset": offset
       });
-      if(response.data != "true")
+      if (response.data != "true") 
         return false;
-    }
-    catch(err){
+    } catch (err) {
       return false;
     }
-    return true;   
-  }  
+    return true;
+  }
 
-  Future<Map> getMessagesForInitialDisplaying() async{
+  Future<Map> getMessagesForInitialDisplaying() async {
     int lastMessageId = await databaseManager.getLastMessageId(currentGroupId);
-    Map oldMessages = await databaseManager.getMessages(currentGroupId, offset: lastMessageId);
+    Map oldMessages = await databaseManager.getMessages(currentGroupId,
+        offset: lastMessageId);
     return oldMessages;
   }
 
@@ -337,82 +356,566 @@ class ChatState extends State<Chat> {
 
   bool passphrasePromptOpen = false;
 
-  Future<bool> newGroupConnector() async{ 
-    String username = await databaseManager.getUsername();
-    while(true){
+  Map currentServerInfo = {};
+
+
+  Future<bool> fetchAndSaveNewMessages() async{
+    try{ 
+      List newMessages = await getNewMessages();
+      String username = await databaseManager.getUsername();
+      for(var x = 0; x < newMessages.length; x++){
+        try{
+          NewMessagesResponse currentMessage = newMessages[x];
+          BigInt compositeKey = BigInt.parse(currentMessage.compositeKeys[username]);
+          BigInt symmetricKey = await secp256k1EllipticCurve.generateSymmetricKey(currentPrivateKey, [compositeKey]);
+          String decryptedMessage = await secp256k1EllipticCurve.decryptMessage(currentMessage.encryptedMessage, symmetricKey);
+            if(decryptedMessage != "")
+              await databaseManager.saveMessage(currentGroupId, currentMessage.messageId, decryptedMessage, currentMessage.sender, currentMessage.timestamp, 0);
+        }
+        catch(err){
+          print(err);
+          continue;
+        }
+      }
+    }
+    catch(err){
+      print(err);
+      return false;
+    }    
+    return true;
+  }
+
+  Future newMessageListener() async{
+    print("Message listener started..");
+    while(context.toString().split("(")[0] == "Chat"){
       try{
-        Response response = await dio.post(currentServerUrl+"newgroup", data:{
-          "username": username,
-          "publicKey": currentPublicKey["x2"],
-          "publicKey2": currentPublicKey["x"],
-          "passphrase": passphrase
-        });
-        if(response.data == "0"){
-          if(passphrasePromptOpen == false)
-            showPrompt("Passphrase Required", context, passphraseFieldController, (){
-              passphrasePromptOpen = false;
-              setState(() {
-               passphrase = passphraseFieldController.text;                  
+        print("Getting new messages");
+        await updateParticipants();   
+        await fetchAndSaveNewMessages();
+      }
+      catch(err){
+        
+      }
+      await Future.delayed(Duration(seconds: 5));
+    }
+  }
+
+  Future<bool> newGroupConnector(BuildContext conext) async {
+    String username = await databaseManager.getUsername();
+    if(connected == false){
+      while (context.toString().split("(")[0] == "Chat") {
+        try {
+          Response response = await dio.post(currentServerUrl + "newgroup", data: {
+            "username": username,
+            "publicKey": currentPublicKey["x2"],
+            "publicKey2": currentPublicKey["x"],
+            "passphrase": passphrase
+          });
+          if (response.data == "0") { 
+            if (passphrasePromptOpen == false)
+              showPrompt("Passphrase Required", context, passphraseFieldController, () {
+                passphrasePromptOpen = false;
+                setState(() {
+                  passphrase = passphraseFieldController.text;
+                });
+                passphrase = passphraseFieldController.text;
               });
-              passphrase = passphraseFieldController.text;
-            });
-          passphrasePromptOpen = true;
-        }
-        else{
-          if(response.data != "-1"){
-            //Connection Successful, New group created
-            String joinKey = json.encode(response.data);  
-            await databaseManager.saveGroup(currentServer, currentPort, currentServer, currentPrivateKey.toString(), joinKey);
-            currentGroupId = await databaseManager.getLastGroupId();
-            connected = true;
-            return true;
+            passphrasePromptOpen = true;
+          } 
+          else {
+            if (response.data != "-1") {
+              //Connection Successful, New group created
+              String joinKey = response.data;
+              await databaseManager.saveGroup(currentServer, currentPort, currentServer, currentPrivateKey.toString(), joinKey, username);
+              currentGroupId = await databaseManager.getLastGroupId();
+              connected = true;
+              newMessageListener();
+              return true;
+            }
           }
+        } catch (err) {
+          print(err);
         }
+        await Future.delayed(Duration(seconds: 4));
       }
-      catch(err){
-        print(err);
-      }
-      await Future.delayed(Duration(seconds: 4));
     }
-  }
-
-
-  Future<bool> oldGroupConnector() async{
-    String username = await databaseManager.getUsername();
-    while(true){
+    else{
       try{
-        String message = secp256k1EllipticCurve.generateRandomString(100);
-        String messageHash = sha256.convert(utf8.encode(message)).toString();              
-        BigInt privateKey = await databaseManager.getPrivateKey(currentGroupId);
-        Map publicKey = await secp256k1EllipticCurve.generatePublicKey(privateKey.toString());
-        Map signature = await secp256k1EllipticCurve.signMessage(messageHash, privateKey);
-        Response response = await dio.get(currentServerUrl+"joingroup", data:{
-          "username": username,
-          "publicKey": publicKey["x2"],
-          "publicKey2": publicKey["x"],
-          "encryptedMessage": message,
-          "signature": signature
-        });
-        if(response.data == "-3" || response.data == "1"){
-          connected = true;
-          return true;
-        }
-      } 
-      catch(err){
-
+        return await checkServerRoutes(currentServer, currentPort);
       }
-      await Future.delayed(Duration(seconds: 4));
+      catch(err){
+        return false;
+      }
     }
   }
 
-  @override 
+  Future<bool> oldGroupConnector(BuildContext conext) async {
+    if(connected == false){
+      while (context.toString().split("(")[0] == "Chat") {
+        try {
+          assert(await joinGroup(currentServer, currentPort, globalGroupJoinKey.signature, globalGroupJoinKey.encryptedMessage, globalGroupJoinKey.joinKey, globalGroupJoinKey.publicKey.toString(), globalGroupJoinKey.publicKey2.toString(), globalGroupJoinKey.username), "Error while joining group");
+          currentGroupId = await databaseManager.saveGroup(globalGroupJoinKey.ip, globalGroupJoinKey.port, globalGroupJoinKey.ip, currentPrivateKey.toString(), globalGroupJoinKey.joinKey, globalGroupJoinKey.username);
+          connected = true;
+          newMessageListener();          
+          return true;
+        } catch (err) { 
+          print(err);
+        }
+        await Future.delayed(Duration(seconds: 4));
+      }
+    }
+    else{
+      try{
+        return await checkServerRoutes(currentServer, currentPort);
+      }
+      catch(err){
+        return false;
+      }
+    }
+  }
+
+
+  Widget generateRecipientRow(String username) {
+    if (participantCheckboxIndicators[username] == null)
+      participantCheckboxIndicators[username] = false;
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: <Widget>[
+        Text(username),
+        Checkbox(
+          value: participantCheckboxIndicators[username],
+          activeColor: materialGreen,
+          onChanged: (val) async {
+            await databaseManager.updateChatRecipient(currentGroupId, username, val);
+            setState(() {
+              participantCheckboxIndicators[username] = val;
+            });
+          },
+        )
+      ],
+    );
+  }
+
+
+    Widget generateSentMessageWidget(String username, String message, int timestamp, String profilePic) {
+      return Container(
+        margin: EdgeInsets.fromLTRB(0, 5, 0, 5),
+        child: Stack(
+          overflow: Overflow.visible,
+          children: <Widget>[
+            GestureDetector(
+              child: Container(
+                width: 45,
+                height: 45,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(30),
+                  border: Border.all(color: sentMessageWidgetColor)
+                ),
+                margin: EdgeInsets.fromLTRB(0, 0, 5, 0),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(30),
+                  child: base64ToImageConverter(profilePic),
+                ),
+              ),
+              onTap: () async{
+                File image = await FilePicker.getFile(type: FileType.ANY);
+                String base64profilePic = base64.encode(image.readAsBytesSync()).toString();
+                await databaseManager.updateProfilePicture(base64profilePic, true);
+                setState(() {});
+              },
+            ),
+            Container(
+              margin: EdgeInsets.fromLTRB(50, 20, 0, 0),
+              width: 7,
+              height: 10,
+              color: sentMessageWidgetColor,
+            ),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                ConstrainedBox(
+                  constraints: BoxConstraints(
+                      maxWidth: 150,
+                  ),
+                  child: Container(
+                    margin: EdgeInsets.fromLTRB(50, 2, 0, 2),
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      username,
+                      style: TextStyle(
+                        color: sentMessageWidgetColor,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ),
+                Container(
+                    padding: EdgeInsets.fromLTRB(10, 10, 10, 8),
+                    margin: EdgeInsets.fromLTRB(56, 0, 0, 0),
+                    decoration: BoxDecoration(
+                        color: sentMessageWidgetColor,
+                        borderRadius: BorderRadius.only(
+                          topRight: Radius.circular(5),
+                          bottomRight: Radius.circular(5),
+                          bottomLeft: Radius.circular(5),
+                        ),
+                    ),
+                    child: ConstrainedBox(
+                      constraints: BoxConstraints(
+                          maxWidth: MediaQuery.of(context).size.width * 0.6),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: <Widget>[
+                          Text(
+                            message,
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 17,
+                            ),
+                          ),
+                          Container(
+                            width: 95,
+                            padding: EdgeInsets.fromLTRB(0, 5, 0, 0),
+                            alignment: Alignment.centerRight,
+                            child: Text(
+                              DateTime.fromMillisecondsSinceEpoch(timestamp).toUtc().toString().split(":")[0]+":"+DateTime.fromMillisecondsSinceEpoch(timestamp).toUtc().toString().split(":")[1],
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 12,
+                              ),
+                            ),
+                          )
+                        ],
+                      ),
+                    )),
+              ],
+            )
+          ],
+        ),
+      );
+    }
+
+    Widget generateReceivedMessageWidget(String username, String message, int timestamp, String profilePic, int userJoinNumber) {
+      return Container(
+        margin: EdgeInsets.fromLTRB(0, 5, 0, 5),
+        child: Stack(
+          alignment: Alignment.topRight,
+          overflow: Overflow.visible,
+          children: <Widget>[
+            GestureDetector(
+              child: Container(
+                width: 45,
+                height: 45,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(30),
+                  border: Border.all(color: receivedMessageUserIndicatorColor[userJoinNumber%receivedMessageUserIndicatorColor.length])
+                ),                                  
+                margin: EdgeInsets.fromLTRB(0, 0, 0, 0),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(30),
+                  child: base64ToImageConverter(profilePic),
+                ),
+              ),
+              onTap: () async{
+               File image = await FilePicker.getFile(type: FileType.ANY);
+               String base64profilePic = base64.encode(image.readAsBytesSync()).toString();
+               Map userInfo = await databaseManager.getParticipants(currentGroupId);
+               await databaseManager.updateProfilePicture(base64profilePic, false, pid: userInfo[username]["pid"], gid: currentGroupId);
+               setState(() {});
+              },
+            ),
+            Container(
+              margin: EdgeInsets.fromLTRB(0, 20, 49, 0),
+              width: 7,
+              height: 10,
+              color: receivedMessageWidgetColor
+            ),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: <Widget>[
+                ConstrainedBox(
+                  constraints: BoxConstraints(
+                      maxWidth: 150,
+                  ),
+                  child: Container(
+                    margin: EdgeInsets.fromLTRB(0, 2, 49, 2),
+                    alignment: Alignment.centerRight,
+                    child: Text(
+                      username,
+                      style: TextStyle(
+                        color: receivedMessageUserIndicatorColor[userJoinNumber%receivedMessageUserIndicatorColor.length],
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ),
+                Container(
+                    padding: EdgeInsets.fromLTRB(10, 10, 10, 8),
+                    margin: EdgeInsets.fromLTRB(0, 0, 55, 0),
+                    decoration: BoxDecoration(
+                        color: receivedMessageWidgetColor,
+                        borderRadius: BorderRadius.only(
+                          topLeft: Radius.circular(5),
+                          bottomRight: Radius.circular(5),
+                          bottomLeft: Radius.circular(5),
+                        ),
+                    ),
+                    child: ConstrainedBox(
+                      constraints: BoxConstraints(
+                          maxWidth: MediaQuery.of(context).size.width * 0.55),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: <Widget>[
+                          Text(
+                            message,
+                            style: TextStyle(
+                              color: Colors.black,
+                              fontSize: 17,
+                            ),
+                          ),
+                          Container(
+                            width: 95,
+                            padding: EdgeInsets.fromLTRB(0, 5, 0, 0),
+                            alignment: Alignment.centerRight,
+                            child: Text(
+                              DateTime.fromMillisecondsSinceEpoch(timestamp).toUtc().toString().split(":")[0]+":"+DateTime.fromMillisecondsSinceEpoch(timestamp).toUtc().toString().split(":")[1],
+                              style: TextStyle(
+                                color: Colors.black,
+                                fontSize: 12,
+                              ),
+                            ),
+                          )
+                        ],
+                      ),
+                    ),
+                  ),
+              ],
+            )
+          ],
+        ),
+      );
+    }
+
+
+    Widget serverInfoTable(String publicIp, String port, String latitude, String longitude, String country, String city, String region, String isp){
+      return ListView(
+        shrinkWrap: true,
+        padding: const EdgeInsets.fromLTRB(30, 10, 30, 40),                    
+        children: <Widget>[
+          Container(
+            padding: EdgeInsets.fromLTRB(0, 0, 0, 10),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: <Widget>[
+                Text(
+                  "IP",
+                  style: TextStyle(
+                    color: sentMessageWidgetColor,
+                    fontSize: 20, 
+                  ),
+                ),
+                Text(
+                  publicIp,
+                  style: TextStyle(
+                    color: sentMessageWidgetColor,
+                    fontSize: 20, 
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 1,                                
+                ),
+              ],
+            ),
+          ),   
+          Container(
+            padding: EdgeInsets.fromLTRB(0, 0, 0, 10),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: <Widget>[
+                Text(
+                  "Port",
+                  style: TextStyle(
+                    color: sentMessageWidgetColor,
+                    fontSize: 20, 
+                  ),
+                ),
+                ConstrainedBox(
+                  constraints: BoxConstraints(
+                    maxWidth: 400
+                  ),
+                  child: Text(
+                    port,
+                    style: TextStyle(
+                      color: sentMessageWidgetColor,
+                      fontSize: 20, 
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                    maxLines: 1,                                
+                  ),
+                ),
+              ],
+            ),
+          ),             
+          Container(
+            padding: EdgeInsets.fromLTRB(0, 0, 0, 10),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: <Widget>[
+                Text(
+                  "LAT",
+                  style: TextStyle(
+                    color: sentMessageWidgetColor,
+                    fontSize: 20, 
+                  ),
+                ),
+                Text(
+                  latitude,
+                  style: TextStyle(
+                    color: sentMessageWidgetColor,
+                    fontSize: 20, 
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 1,
+                ),
+              ],
+            ),
+          ), 
+          Container(
+            padding: EdgeInsets.fromLTRB(0, 0, 0, 10),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: <Widget>[
+                Text(
+                  "LON",
+                  style: TextStyle(
+                    color: sentMessageWidgetColor,
+                    fontSize: 20, 
+                  ),
+                ),
+                Text(
+                  longitude,
+                  style: TextStyle(
+                    color: sentMessageWidgetColor,
+                    fontSize: 20, 
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 1,
+                ),
+              ],
+            ),
+          ),                                                
+          Container(
+            padding: EdgeInsets.fromLTRB(0, 0, 0, 10),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: <Widget>[
+                Text(
+                  "Country",
+                  style: TextStyle(
+                    color: sentMessageWidgetColor,
+                    fontSize: 20, 
+                  ),
+                ),
+                Text(
+                  country,
+                  style: TextStyle(
+                    color: sentMessageWidgetColor,
+                    fontSize: 20, 
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 1,                                
+                ),
+              ],
+            ),
+          ),  
+          Container(
+            padding: EdgeInsets.fromLTRB(0, 0, 0, 10),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: <Widget>[
+                Text(
+                  "City",
+                  style: TextStyle(
+                    color: sentMessageWidgetColor,
+                    fontSize: 20, 
+                  ),
+                ),
+                Text(
+                  city,
+                  style: TextStyle(
+                    color: sentMessageWidgetColor,
+                    fontSize: 20, 
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 1,                                
+                ),
+              ],
+            ),
+          ),    
+          Container(
+            padding: EdgeInsets.fromLTRB(0, 0, 0, 10),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: <Widget>[
+                Text(
+                  "Region",
+                  style: TextStyle(
+                    color: sentMessageWidgetColor,
+                    fontSize: 20, 
+                  ),
+                ),
+                Text(
+                  region,
+                  style: TextStyle(
+                    color: sentMessageWidgetColor,
+                    fontSize: 20, 
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 1,                                
+                ),
+              ],
+            ),
+          ),
+          Container(
+            padding: EdgeInsets.fromLTRB(0, 0, 0, 10),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: <Widget>[
+                Text(
+                  "ISP",
+                  style: TextStyle(
+                    color: sentMessageWidgetColor,
+                    fontSize: 20, 
+                  ),
+                ),
+                Text(
+                  isp,
+                  style: TextStyle(
+                    color: sentMessageWidgetColor,
+                    fontSize: 20, 
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 1,
+                ),
+              ],
+            ),
+          ),                                                                     
+        ],
+      );
+    }
+
+  String chatLabel = "";
+
+  @override
   void initState() {
-    databaseManager.getLastMessageId(currentGroupId).then((offsetVal){
+    databaseManager.getLastMessageId(currentGroupId).then((offsetVal) {
       offsetForMessages = offsetVal;
     });
+    chatLabel = currentServer;
     super.initState();
   }
-  
+
 
   @override
   Widget build(BuildContext context) {
@@ -420,33 +923,18 @@ class ChatState extends State<Chat> {
       client.badCertificateCallback = (X509Certificate cert, String host, int port) {
         return true;
       };
-    };    
-    /*dio.get("https://wrong.host.badssl.com/").then((response){
-      print("THE RESPONSE IS: ");
-      print(response);
-    });  
-    HttpClient client = new HttpClient();
-    client.badCertificateCallback =((X509Certificate cert, String host, int port) => true);
-    client.postUrl(Uri.parse("https://wrong.host.badssl.com/")).then((response) async{
-      print(response);
-    });*/
-    var startConnection;
+    };
+
+    var loadConnectionStatus;
     if(newGroupConnection){
-      startConnection = FutureBuilder<bool>(
-        future: newGroupConnector(), // a previously-obtained Future<String> or null
+      loadConnectionStatus = FutureBuilder<bool>(
+        future: newGroupConnector(context),
         builder: (BuildContext context, AsyncSnapshot<bool> snapshot) {
-          Widget connectingIndicator = Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              Text(currentServer),
-              Text(
-                "Connecting..",
-                style: TextStyle(
-                  fontSize: 12,
-                ),
-              )
-            ],
+          Widget connectingIndicator = Text(
+            "Connecting..",
+            style: TextStyle(
+              fontSize: 12,
+            ),
           );
           switch (snapshot.connectionState) {
             case ConnectionState.none:
@@ -456,41 +944,26 @@ class ChatState extends State<Chat> {
             case ConnectionState.waiting:
               return connectingIndicator;
             case ConnectionState.done:
-              if (snapshot.hasError)
-                return Text('Error: ${snapshot.error}');
-              return Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: <Widget>[
-                  Text(currentServer),
-                  Text(
-                    "Connected",
-                    style: TextStyle(
-                      fontSize: 12,
-                    ),
-                  )
-                ],
-              );              
+              if (snapshot.hasError) return Text('Error: ${snapshot.error}');
+              return Text(
+                "Connected",
+                style: TextStyle(
+                  fontSize: 12,
+                ),
+              );
           }
         },
       );
     }
     else{
-      startConnection = FutureBuilder<bool>(
-        future: oldGroupConnector(), // a previously-obtained Future<String> or null
+      loadConnectionStatus = FutureBuilder<bool>(
+        future: oldGroupConnector(context),
         builder: (BuildContext context, AsyncSnapshot<bool> snapshot) {
-          Widget connectingIndicator = Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              Text(pastGroupName),
-              Text(
-                "Connecting..",
-                style: TextStyle(
-                  fontSize: 12,
-                ),
-              )
-            ],
+          Widget connectingIndicator = Text(
+            "Connecting..",
+            style: TextStyle(
+              fontSize: 12,
+            ),
           );
           switch (snapshot.connectionState) {
             case ConnectionState.none:
@@ -500,114 +973,287 @@ class ChatState extends State<Chat> {
             case ConnectionState.waiting:
               return connectingIndicator;
             case ConnectionState.done:
-              if (snapshot.hasError)
-                return Text('Error: ${snapshot.error}');
-              return Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: <Widget>[
-                  Text(pastGroupName),
-                    Text(
-                      "Connected",
-                      style: TextStyle(
-                        fontSize: 12,
-                      ),
-                    )
-                  ],
-              );   
+              if (snapshot.hasError) return Text('Error: ${snapshot.error}');
+              return Text(
+                "Connected",
+                style: TextStyle(
+                  fontSize: 12,
+                ),
+              );
           }
-          return null; // unreachable
         },
       );
     }
 
-    Widget generateRecipientRow(String username){
-      if(participantCheckboxIndicators[username] == null)
-        participantCheckboxIndicators[username] = false;
-      return Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: <Widget>[
-          Text(username),
-          Checkbox(
-            value: participantCheckboxIndicators[username],
-            activeColor: materialGreen,
-            onChanged: (val) async{
-              await databaseManager.updateChatRecipient(currentGroupId, username, val);
-              setState(() {
-                participantCheckboxIndicators[username] = val;
-              });
-            },
-          )
-        ],
-      );      
-    }
-
-    FutureBuilder loadParticipants = FutureBuilder<Map>(
-      future: databaseManager.getParticipants(currentGroupId), // a previously-obtained Future<String> or null
-      builder: (BuildContext context, AsyncSnapshot<Map> snapshot) {
+    
+    FutureBuilder loadChatLabel = FutureBuilder<String>(
+      future: databaseManager.getGroupName(currentGroupId), // a previously-obtained Future<String> or null
+      builder: (BuildContext context, AsyncSnapshot<String> snapshot) {
         switch (snapshot.connectionState) {
           case ConnectionState.none:
-            return loadingIndicator;
+            return Text(chatLabel);
           case ConnectionState.active:
-            return loadingIndicator;      
+            return Text(chatLabel);
           case ConnectionState.waiting:
-            return loadingIndicator;
+            return Text(chatLabel);
           case ConnectionState.done:
             if (snapshot.hasError)
               return Text('Error: ${snapshot.error}');
+            chatLabel = snapshot.data;
+            return Text(chatLabel);
+        }
+      },
+    );
+
+    FutureBuilder loadParticipants = FutureBuilder<Map>(
+      future: databaseManager.getParticipants(currentGroupId),
+      builder: (BuildContext context, AsyncSnapshot<Map> snapshot) {
+        switch (snapshot.connectionState) {
+          case ConnectionState.none:
+            return loadingIndicator(color: Colors.blue);
+          case ConnectionState.active:
+            return loadingIndicator(color: Colors.blue);
+          case ConnectionState.waiting:
+            return loadingIndicator(color: Colors.blue);
+          case ConnectionState.done:
+            if (snapshot.hasError) return Text('Error: ${snapshot.error}');
             Map result = snapshot.data;
-            List usernames = result.keys.toList();
             List<Widget> users = [];
-            for(var x = 0; x < usernames.length; x++){
-              if(result[usernames[x]] == true){
-                users.add(
-                  Row(
+            try{
+              List usernames = result.keys.toList();
+              if(usernames.length > 2)
+                isGroupChat = true;
+              for (var x = 0; x < usernames.length; x++) {        
+                if (result[usernames[x]]["currentUser"] == true) {
+                  users.insert(0, Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: <Widget>[
                       Text(
-                        usernames[x], 
+                        usernames[x],
                         style: TextStyle(
-                          color: materialGreen,
+                          color: sentMessageWidgetColor,
                         ),
                       ),
                       Checkbox(
                         value: true,
                         activeColor: Colors.grey[400],
-                        onChanged: (val){
-
-                        },
+                        onChanged: (val) {},
                       )
                     ],
-                  )
-                );
+                  ));
+                } else
+                  users.add(generateRecipientRow(usernames[x]));
               }
-              else
-                users.add(
-                  generateRecipientRow(usernames[x])
-                );
             }
-            return ListView(
-              shrinkWrap: true,
-              padding: const EdgeInsets.fromLTRB(30, 20, 23, 40),
-              children: [
-                Column(
-                  children: users,
-                ),
-              ],
-            );    
+            catch(err){
+              print("AN ERROR OCCURRED");
+              print(err);
+              return loadingIndicator(color: Colors.blue);
+            }
+            return RefreshIndicator(
+              child: ListView(
+                shrinkWrap: true,
+                padding: const EdgeInsets.fromLTRB(30, 20, 23, 40),
+                children: [
+                  Column(
+                    children: users,
+                  ),
+                ],
+              ),
+              onRefresh: () async{
+                await updateParticipants();
+              },
+            );
         }
       },
     );
 
-    Future<Widget> generateSentMessageWidget(String message){
-
+    var loadInitialMessages;
+    if(messagesContainer.length == 0){
+      loadInitialMessages = FutureBuilder<Map>(
+        future: databaseManager.getMessages(currentGroupId, offset: offsetForMessages),
+        builder: (BuildContext context, AsyncSnapshot<Map> snapshot) {
+          switch (snapshot.connectionState) {
+            case ConnectionState.none:
+              return loadingIndicator(color: Colors.blue);
+            case ConnectionState.active:
+              return loadingIndicator(color: Colors.blue);
+            case ConnectionState.waiting:
+              return loadingIndicator(color: Colors.blue);
+            case ConnectionState.done:
+              if (snapshot.hasError) return Text('Error: ${snapshot.error}');
+              if(snapshot.data.keys.toList().length == 0){
+                return Center(
+                  child: GestureDetector(
+                    child: Container(
+                      margin: EdgeInsets.fromLTRB(0, 0, 0, 35),
+                      child: ListView(
+                        shrinkWrap: true, 
+                        padding: EdgeInsets.all(20.0),
+                        children: [
+                          Container(
+                            child: Icon(Icons.bubble_chart, color: Colors.grey[400], size: 25,),
+                            padding: EdgeInsets.fromLTRB(0, 10, 0, 0),
+                          ),
+                          Container(
+                            alignment: Alignment.center,
+                            child: Text(
+                              'This Chat is Empty', 
+                              style: TextStyle(
+                                color: Colors.grey[400],
+                              ),
+                            ),
+                          ),
+                          Container(
+                            padding: EdgeInsets.fromLTRB(0, 2, 0, 0),
+                            alignment: Alignment.center,
+                            child: Text(
+                              '(Tap to Refresh)', 
+                              style: TextStyle(
+                                color: Colors.grey[400],
+                                fontSize: 12
+                              ),
+                            ),
+                          ),
+                        ]
+                      ),
+                    ),
+                    onTap: () async{
+                      try{
+                        fetchAndSaveNewMessages();
+                        Map olderMessages = await getOlderMessages();
+                        if(olderMessages.keys.length > 0){
+                          List messageIds = olderMessages.keys.toList();
+                          messageIds.sort();
+                          offsetForMessages = int.parse(messageIds[messageIds.length - 1]);
+                          for(var x = 0; x < messageIds.length; x++){
+                            if(olderMessages[messageIds[x]]["isSentMessage"]){
+                              messagesContainer.insert(0, generateSentMessageWidget(olderMessages[messageIds[x]]["username"], olderMessages[messageIds[x]]["message"], olderMessages[messageIds[x]]["ts"], olderMessages[messageIds[x]]["profilePic"]));
+                            }
+                            else{
+                              messagesContainer.insert(0, generateReceivedMessageWidget(olderMessages[messageIds[x]]["username"], olderMessages[messageIds[x]]["message"], olderMessages[messageIds[x]]["ts"], olderMessages[messageIds[x]]["profilePic"], olderMessages[messageIds[x]]["num"]));
+                            }
+                          }                        
+                        }
+                      }
+                      catch(err){
+                        print(err);
+                      }
+                    },
+                  ),
+                );
+              }
+              Map initialMessages = snapshot.data;
+              List messageIds = initialMessages.keys.toList();
+              messageIds.sort();
+              offsetForMessages = int.parse(messageIds[messageIds.length - 1]);
+              for(var x = 0; x < messageIds.length; x++){
+                if(initialMessages[messageIds[x]]["isSentMessage"]){
+                  messagesContainer.add(generateSentMessageWidget(initialMessages[messageIds[x]]["username"], initialMessages[messageIds[x]]["message"], initialMessages[messageIds[x]]["ts"], initialMessages[messageIds[x]]["profilePic"]));
+                }
+                else{
+                  messagesContainer.add(generateReceivedMessageWidget(initialMessages[messageIds[x]]["username"], initialMessages[messageIds[x]]["message"], initialMessages[messageIds[x]]["ts"], initialMessages[messageIds[x]]["profilePic"], initialMessages[messageIds[x]]["num"]));
+                }
+              }
+              Widget loadMoreButton = Row(
+                children: <Widget>[
+                  Flexible(
+                    flex: 1,
+                    child: Container(),
+                  ),
+                  Container(
+                    margin: EdgeInsets.fromLTRB(0, 0, 0, 10),
+                    decoration: BoxDecoration(
+                      color: sentMessageWidgetColor,
+                      borderRadius: BorderRadius.circular(100)
+                    ),
+                    child: IconButton( 
+                      padding: EdgeInsets.all(0),
+                      highlightColor: sentMessageWidgetColor,
+                      icon: Icon(Icons.restore, color: Colors.white,),
+                      onPressed: () async{
+                        try{
+                          fetchAndSaveNewMessages();
+                          Map olderMessages = await getOlderMessages();
+                          if(olderMessages.keys.length > 0){
+                            List messageIds = olderMessages.keys.toList();
+                            messageIds.sort();
+                            offsetForMessages = int.parse(messageIds[messageIds.length - 1]);
+                            for(var x = 0; x < messageIds.length; x++){
+                              if(olderMessages[messageIds[x]]["isSentMessage"]){
+                                messagesContainer.insert(0, generateSentMessageWidget(olderMessages[messageIds[x]]["username"], olderMessages[messageIds[x]]["message"], olderMessages[messageIds[x]]["ts"], olderMessages[messageIds[x]]["profilePic"]));
+                              }
+                              else{
+                                messagesContainer.insert(0, generateReceivedMessageWidget(olderMessages[messageIds[x]]["username"], olderMessages[messageIds[x]]["message"], olderMessages[messageIds[x]]["ts"], olderMessages[messageIds[x]]["profilePic"], olderMessages[messageIds[x]]["num"]));
+                              }
+                            }                        
+                          }
+                          setState(() {});
+                        }
+                        catch(err){
+                          print(err);
+                        }
+                      },
+                    )
+                  ),
+                  Flexible(
+                    flex: 1,
+                    child: Container(),
+                  )                                                    
+                ],
+              );
+              if(messageIds.length > 0)
+                messagesContainer.insert(0, loadMoreButton);
+              return Container(
+                child: ListView(
+                  reverse: true,
+                  padding: EdgeInsets.fromLTRB(10, 10, 10, 70),
+                  children: messagesContainer.reversed.toList(),
+                ),
+              );
+          }
+        },
+      );
+    }
+    else{
+      loadInitialMessages = Container(
+        child: ListView(
+            reverse: true,
+            padding: EdgeInsets.fromLTRB(10, 10, 10, 70),
+            children: messagesContainer.reversed.toList(),
+          ),
+      );
     }
 
-    Future<Widget> generateReceivedMessageWidget(String message){
-
+    var loadServerDetails;
+    if(json.encode(currentServerInfo) == "{}"){
+      loadServerDetails = FutureBuilder<Map>(
+        future: getServerInfo(currentServer),
+        builder: (BuildContext context, AsyncSnapshot<Map> snapshot) {
+          switch (snapshot.connectionState) {
+            case ConnectionState.none:
+              return serverInfoTable("", currentPort.toString(), "", "", "", "", "", "");
+            case ConnectionState.active:
+              return serverInfoTable("", currentPort.toString(), "", "", "", "", "", "");
+            case ConnectionState.waiting:
+              return serverInfoTable("", currentPort.toString(), "", "", "", "", "", "");
+            case ConnectionState.done:
+              if (snapshot.hasError)
+                return Text('Error: ${snapshot.error}');
+              currentServerInfo = snapshot.data;
+              if(currentServerInfo == null)
+                return serverInfoTable("", currentPort.toString(), "", "", "", "", "", "");
+              return serverInfoTable(currentServerInfo["query"], currentPort.toString(), currentServerInfo["lat"], currentServerInfo["lon"], currentServerInfo["country"], currentServerInfo["city"], currentServerInfo["region"], currentServerInfo["isp"]);
+          }
+        },
+      );
+    }
+    else{
+      loadServerDetails = serverInfoTable(currentServerInfo["query"], currentPort.toString(), currentServerInfo["lat"], currentServerInfo["lon"], currentServerInfo["country"], currentServerInfo["city"], currentServerInfo["region"], currentServerInfo["isp"]);
     }
 
-    
+
+
     /*client.receivedMessages = [
       generateSentMessageWidget(
           "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.",
@@ -641,132 +1287,380 @@ class ChatState extends State<Chat> {
           print(await secp256k1EllipticCurve.generateSymmetricKey(prkey3, [BigInt.parse(pubk1), BigInt.parse(pubk2)]));
         });
       });
-    });    */   
+    });    */
 
-    var loadMessages;
+    
 
     print("NEW WIDGET BUILT");
+    print(context.toString().split("(")[0]);
 
     return DefaultTabController(
-      length: 2,
+      length: 3,
       child: Scaffold(
-      appBar: AppBar(
-        backgroundColor: themeColor,
-        leading: IconButton(
-          icon: Icon(
-            Icons.arrow_back,
-          ),
-          onPressed: () async {
-            Navigator.pop(context);
-          },
-        ),
-        title: startConnection,
-        actions: <Widget>[
-          IconButton(
-            icon: Icon(Icons.share, color: appBarTextColor,),
-            onPressed: () async{
-              if(connected){
-                String joinKey = await generateJoinKey();
-                Share.share(joinKey);
-              }
-              else{
-                toastMessageBottomShort("Not Connected", context);
-              }
+        appBar: AppBar(
+          backgroundColor: themeColor,
+          leading: IconButton(
+            icon: Icon(
+              Icons.arrow_back,
+            ),
+            onPressed: () async {
+              Navigator.pop(context);
             },
-          )
-        ],
-      ),
-      body: TabBarView(
-            children: [
-              Stack(
-                children: <Widget>[
-                  Container(
-                    child: loadMessages,
-                  ),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    mainAxisSize: MainAxisSize.max,
-                    mainAxisAlignment: MainAxisAlignment.end,
+          ),
+          title: GestureDetector(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                loadChatLabel,
+                loadConnectionStatus
+              ],
+            ),
+            onTap: () {
+              showPrompt("Set Label", context, groupChatTextController, () async{
+                await databaseManager.setGroupName(currentGroupId, groupChatTextController.text);
+                groupChatTextController.text = "";
+              });
+            },
+          ),
+          actions: <Widget>[
+            IconButton(
+              icon: Icon(
+                Icons.share,
+                color: appBarTextColor,
+              ),
+              onPressed: () async {
+                if (connected) {
+                  String joinKey = await generateJoinKey();
+                  print(utf8.decode(base64.decode(joinKey))); 
+                  Share.share(joinKey);
+                } else {
+                  toastMessageBottomShort("Not Connected", context);
+                }
+              },
+            )
+          ],
+        ),
+        body: TabBarView(
+          children: [
+            Stack(
+              children: <Widget>[
+                /*Container(
+                  child: ListView(
+                    reverse: true,
+                    padding: EdgeInsets.fromLTRB(5, 10, 5, 70),
                     children: <Widget>[
+
                       Container(
-                        padding: EdgeInsets.fromLTRB(10, 5, 5, 5),
-                        alignment: Alignment.bottomCenter,
-                        constraints: BoxConstraints(
-                          maxHeight: 180,
-                        ),
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.end,
+                        margin: EdgeInsets.fromLTRB(0, 5, 0, 5),
+                        child: Stack(
+                          overflow: Overflow.visible,
                           children: <Widget>[
-                            Flexible(
-                              flex: 1,
+                            GestureDetector(
                               child: Container(
-                                padding: EdgeInsets.fromLTRB(13, 3, 13, 3),
-                                margin: EdgeInsets.fromLTRB(0, 0, 0, 0),
+                                width: 45,
+                                height: 45,
                                 decoration: BoxDecoration(
-                                  color: appBarTextColor,
-                                  border: Border.all(
-                                    color: themeColor,
-                                  ),
                                   borderRadius: BorderRadius.circular(30),
+                                  border: Border.all(color: sentMessageWidgetColor)
                                 ),
-                                child: SingleChildScrollView(
-                                  child: Theme(
-                                    data: ThemeData(cursorColor: materialGreen),
-                                    child: TextField(
-                                      maxLines: null,
-                                      obscureText: false,
-                                      controller: messageTextController,
-                                      autofocus: false,
-                                      decoration: InputDecoration(
-                                        enabledBorder: UnderlineInputBorder(
-                                          borderSide: BorderSide(
-                                            color: Colors.transparent,
-                                          ),
-                                        ),
-                                        focusedBorder: UnderlineInputBorder(
-                                          borderSide: BorderSide(
-                                            color: Colors.transparent,
-                                            width: 2.0,
-                                          ),
-                                          borderRadius: BorderRadius.circular(50),
-                                        ),
-                                        hintText: "type your message here..",
-                                        border: new UnderlineInputBorder(
-                                            borderSide:
-                                                new BorderSide(color: Colors.red)),
-                                        labelStyle: Theme.of(context)
-                                            .textTheme
-                                            .caption
-                                            .copyWith(
-                                                color: materialGreen, fontSize: 16),
-                                        errorText: null,
-                                      ),
+                                margin: EdgeInsets.fromLTRB(0, 0, 5, 0),
+                                child: ClipRRect(
+                                  borderRadius: BorderRadius.circular(30),
+                                  child: base64ToImageConverter(databaseManager.defaultProfilePicBase64),
+                                ),
+                              ),
+                              onTap: () async{
+                                try{
+                                  File image = await FilePicker.getFile(type: FileType.ANY);
+                                  String base64profilePic = base64.encode(image.readAsBytesSync()).toString();
+                                  print(base64profilePic);
+                                }
+                                catch(err){ 
+                                  print(err);
+                                }
+                              },
+                            ),
+                            Container(
+                              margin: EdgeInsets.fromLTRB(50, 20, 0, 0),
+                              width: 7,
+                              height: 10,
+                              color: sentMessageWidgetColor,
+                            ),
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: <Widget>[
+                                ConstrainedBox(
+                                  constraints: BoxConstraints(
+                                      maxWidth: MediaQuery.of(context).size.width * 0.5,
+                                  ),
+                                  child: Container(
+                                    margin: EdgeInsets.fromLTRB(50, 2, 0, 2),
+                                    alignment: Alignment.centerLeft,
+                                    child: Text(
+                                      "Anonymous",
                                       style: TextStyle(
-                                        color: Colors.black87,
-                                        fontSize: 16,
+                                        color: sentMessageWidgetColor,
                                       ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                ),
+                                Container(
+                                    padding: EdgeInsets.fromLTRB(10, 10, 10, 8),
+                                    margin: EdgeInsets.fromLTRB(56, 0, 0, 0),
+                                    decoration: BoxDecoration(
+                                        color: sentMessageWidgetColor,
+                                        borderRadius: BorderRadius.only(
+                                          topRight: Radius.circular(5),
+                                          bottomRight: Radius.circular(5),
+                                          bottomLeft: Radius.circular(5),
+                                        ),
+                                    ),
+                                    child: ConstrainedBox(
+                                      constraints: BoxConstraints(
+                                          maxWidth: MediaQuery.of(context)
+                                                  .size
+                                                  .width *
+                                              0.65),
+                                      child: Column(
+                                        children: <Widget>[
+                                          Text(
+                                            "FractionallySizedBox may also be useful. You can also read the screen width directly out of MediaQuery.of(context), and create a sized box based on that, if you really want to size as a fraction of the screen regardless of what the layout is.",
+                                            style: TextStyle(
+                                              color: Colors.white,
+                                              fontSize: 17,
+                                            ),
+                                          ),
+                                          Container(
+                                            padding: EdgeInsets.fromLTRB(
+                                                0, 5, 0, 0),
+                                            alignment: Alignment.centerRight,
+                                            child: Text(
+                                              DateTime.now()
+                                                      .toUtc()
+                                                      .toString()
+                                                      .split(":")[0] +
+                                                  ":" +
+                                                  DateTime.now()
+                                                      .toUtc()
+                                                      .toString()
+                                                      .split(":")[1],
+                                              style: TextStyle(
+                                                color: Colors.white,
+                                                fontSize: 12,
+                                              ),
+                                            ),
+                                          )
+                                        ],
+                                      ),
+                                    )),
+                              ],
+                            )
+                          ],
+                        ),
+                      ),
+
+                      Container(
+                        margin: EdgeInsets.fromLTRB(0, 5, 0, 5),
+                        child: Stack(
+                          alignment: Alignment.topRight,
+                          overflow: Overflow.visible,
+                          children: <Widget>[
+                            GestureDetector(
+                              child: Container(
+                                width: 45,
+                                height: 45,
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(30),
+                                  border: Border.all(color: Colors.pink)
+                                ),                                  
+                                margin: EdgeInsets.fromLTRB(0, 0, 5, 0),
+                                child: ClipRRect(
+                                  borderRadius: BorderRadius.circular(30),
+                                  child: base64ToImageConverter(databaseManager.defaultProfilePicBase64),
+                                ),
+                              ),
+                              onTap: () async{
+                                File image = await FilePicker.getFile(type: FileType.ANY);
+                                String base64profilePic = base64.encode(utf8.encode(image.readAsStringSync())).toString();
+                                print(base64profilePic);
+                              },
+                            ),
+                            Container(
+                              margin: EdgeInsets.fromLTRB(0, 20, 54, 0),
+                              width: 7,
+                              height: 10,
+                              color: receivedMessageWidgetColor
+                            ),
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.end,
+                              children: <Widget>[
+                                ConstrainedBox(
+                                  constraints: BoxConstraints(
+                                      maxWidth: MediaQuery.of(context).size.width * 0.5,
+                                  ),
+                                  child: Container(
+                                    margin: EdgeInsets.fromLTRB(0, 2, 54, 2),
+                                    alignment: Alignment.centerRight,
+                                    child: Text(
+                                      "Anonymous",
+                                      style: TextStyle(
+                                        color: Colors.pink,
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                ),
+                                Container(
+                                    padding: EdgeInsets.fromLTRB(10, 10, 10, 8),
+                                    margin: EdgeInsets.fromLTRB(0, 0, 60, 0),
+                                    decoration: BoxDecoration(
+                                        color: receivedMessageWidgetColor,
+                                        borderRadius: BorderRadius.only(
+                                          topLeft: Radius.circular(5),
+                                          bottomRight: Radius.circular(5),
+                                          bottomLeft: Radius.circular(5),
+                                        ),
+                                    ),
+                                    child: ConstrainedBox(
+                                      constraints: BoxConstraints(
+                                          maxWidth: MediaQuery.of(context)
+                                                  .size
+                                                  .width *
+                                              0.65),
+                                      child: Column(
+                                        children: <Widget>[
+                                          Text(
+                                            "FractionallySizedBox may also be useful. You can also read the screen width directly out of MediaQuery.of(context), and create a sized box based on that, if you really want to size as a fraction of the screen regardless of what the layout is.",
+                                            style: TextStyle(
+                                              color: Colors.black,
+                                              fontSize: 17,
+                                            ),
+                                          ),
+                                          Container(
+                                            padding: EdgeInsets.fromLTRB(
+                                                0, 5, 0, 0),
+                                            alignment: Alignment.centerRight,
+                                            child: Text(
+                                              DateTime.now()
+                                                      .toUtc()
+                                                      .toString()
+                                                      .split(":")[0] +
+                                                  ":" +
+                                                  DateTime.now()
+                                                      .toUtc()
+                                                      .toString()
+                                                      .split(":")[1],
+                                              style: TextStyle(
+                                                color: Colors.black,
+                                                fontSize: 12,
+                                              ),
+                                            ),
+                                          )
+                                        ],
+                                      ),
+                                    )),
+                              ],
+                            )
+                          ],
+                        ),
+                      ),
+
+                    ],
+                  ),
+                ),
+                */
+                loadInitialMessages,
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  mainAxisSize: MainAxisSize.max,
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: <Widget>[
+                    Container(
+                      padding: EdgeInsets.fromLTRB(10, 5, 5, 5),
+                      alignment: Alignment.bottomCenter,
+                      constraints: BoxConstraints(
+                        maxHeight: 180,
+                      ),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: <Widget>[
+                          Flexible(
+                            flex: 1,
+                            child: Container(
+                              padding: EdgeInsets.fromLTRB(13, 3, 13, 3),
+                              margin: EdgeInsets.fromLTRB(0, 0, 0, 0),
+                              decoration: BoxDecoration(
+                                color: appBarTextColor,
+                                border: Border.all(
+                                  color: themeColor,
+                                ),
+                                borderRadius: BorderRadius.circular(30),
+                              ),
+                              child: SingleChildScrollView(
+                                child: Theme(
+                                  data: ThemeData(cursorColor: materialGreen),
+                                  child: TextField(
+                                    maxLines: null,
+                                    obscureText: false,
+                                    controller: messageTextController,
+                                    autofocus: false,
+                                    decoration: InputDecoration(
+                                      enabledBorder: UnderlineInputBorder(
+                                        borderSide: BorderSide(
+                                          color: Colors.transparent,
+                                        ),
+                                      ),
+                                      focusedBorder: UnderlineInputBorder(
+                                        borderSide: BorderSide(
+                                          color: Colors.transparent,
+                                          width: 2.0,
+                                        ),
+                                        borderRadius:
+                                            BorderRadius.circular(50),
+                                      ),
+                                      hintText: "type your message here..",
+                                      border: new UnderlineInputBorder(
+                                          borderSide: new BorderSide(
+                                              color: Colors.red)),
+                                      labelStyle: Theme.of(context)
+                                          .textTheme
+                                          .caption
+                                          .copyWith(
+                                              color: materialGreen,
+                                              fontSize: 16),
+                                      errorText: null,
+                                    ),
+                                    style: TextStyle(
+                                      color: Colors.black87,
+                                      fontSize: 16,
                                     ),
                                   ),
                                 ),
                               ),
                             ),
-                            Container(
-                              margin: EdgeInsets.fromLTRB(10, 0, 0, 0),
-                              padding: EdgeInsets.fromLTRB(3, 0, 0, 0),
-                              width: 50,
-                              height: 50,
-                              decoration: BoxDecoration(
-                                  color: themeColor,
-                                  borderRadius: BorderRadius.circular(30)),
-                              child: IconButton(
-                                icon: Icon(
-                                  Icons.send,
-                                ),
-                                color: appBarTextColor,
-                                onPressed: () async {
-                                  if(connected){
+                          ),
+                          Container(
+                            margin: EdgeInsets.fromLTRB(10, 0, 0, 0),
+                            padding: EdgeInsets.fromLTRB(3, 0, 0, 0),
+                            width: 50,
+                            height: 50,
+                            decoration: BoxDecoration(
+                                color: themeColor,
+                                borderRadius: BorderRadius.circular(30)),
+                            child: IconButton(
+                              icon: Icon(
+                                Icons.send,
+                              ),
+                              color: appBarTextColor,
+                              onPressed: () async {
+                                if (connected) {
+                                  if(messageTextController.text.length > 0){
                                     int deliveryStatus = await sendMessage(messageTextController.text);
-                                    switch(deliveryStatus){
+                                    switch (deliveryStatus) {
                                       case 0:
                                         toastMessageBottomShort("No Recipients", context);
                                         break;
@@ -782,20 +1676,20 @@ class ChatState extends State<Chat> {
                                         break;
                                     }
                                   }
-                                  else{
-                                    toastMessageBottomShort("Not Connected", context);
-                                  }
-                                },
-                              ),
+                                } else {
+                                  toastMessageBottomShort("Not Connected", context);
+                                }
+                              },
                             ),
-                          ],
-                        ),
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
-                ],
-              ),
-              Column(
+                    ),
+                  ],
+                ),
+              ],
+            ),
+            Column(
                 children: <Widget>[
                   Container(
                     alignment: Alignment.topLeft,
@@ -829,40 +1723,77 @@ class ChatState extends State<Chat> {
                       ),
                     ),
                   ),
-                  Flexible(
-                    flex: 10,
-                    fit: FlexFit.tight,
-                    child: loadParticipants
-                    /*Center(
-                child: new ListView(
-                  shrinkWrap: true,
-                    padding: const EdgeInsets.all(20.0),
-                    children: [
-                      SingleChildScrollView(
-                        child: Container(
-                          alignment: Alignment.center,
-                          padding: EdgeInsets.fromLTRB(0, 5, 0, 60),
-                          child: Column(
-                            children: <Widget>[
-                              CircularProgressIndicator(
-                                backgroundColor: themeColor,
-                                valueColor: AlwaysStoppedAnimation<Color>(Colors.blue),
-                              ),
-                            ],
-                          ),
-                        ),
-                      )                    
-                    ]
-                ),
-              );*/
-                  ),
-          
+                  Flexible(flex: 10, fit: FlexFit.tight, child: loadParticipants),
                 ],
-              )
-            ],
-          ),
-    ),
-  
+              ),
+              Column(
+                children: <Widget>[
+                  Container(
+                    alignment: Alignment.topLeft,
+                    height: 55,
+                    padding: EdgeInsets.fromLTRB(10, 20, 0, 0),
+                    child: SizedBox.expand(
+                      child: Column(
+                        children: <Widget>[
+                          Container(
+                            alignment: Alignment.topLeft,
+                            child: Text( 
+                              "Server Details",
+                              style: TextStyle(
+                                color: themeColor,
+                                fontSize: 20,
+                              ),
+                            ),
+                          ),                          
+                        ],
+                      ),
+                    ),
+                  ),
+                  Flexible(
+                    flex: 10, 
+                    fit: FlexFit.tight, 
+                    child: loadServerDetails
+                  ),
+                ],
+              ),
+          ],
+        ),
+      ),
     );
+  }
+}
+
+///Class responsible for handling incomming messages from the server
+class NewMessagesResponse{
+  int messageId;
+  String sender;
+  String encryptedMessage;  
+  Map<String, String> compositeKeys;  
+  int timestamp;
+  NewMessagesResponse(messageId, sender, encryptedMessage, compositeKeys, timestamp){
+    this.messageId = messageId;
+    this.sender = sender;
+    this.encryptedMessage = encryptedMessage;
+    this.compositeKeys = compositeKeys;
+    this.timestamp = timestamp;
+  }
+  Map toJSON(){
+    return {
+      "messageId": messageId,
+      "sender": sender,
+      "encryptedMessage": encryptedMessage,
+      "compositeKeys": compositeKeys,
+      "timestamp": timestamp,
+    };
+  }
+}
+
+
+class SentMessageResponse{
+  int messageId;
+  int timestamp;
+  SentMessageResponse(messageId, timestamp){
+    this.messageId = messageId;
+    this.timestamp = timestamp;
   }
 }

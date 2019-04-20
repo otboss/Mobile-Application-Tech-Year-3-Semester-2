@@ -47,10 +47,10 @@ class HomeState extends State<Home> {
             child: InkWell(
               onTap: () {
                 //Navigate to chat screen and show previous messages
-                newGroupConnection = false;
                 currentServer = serverIp;
                 currentPort = port;
                 currentPrivateKey = privateKey;
+                newGroupConnection = false;
                 Navigator.pushNamed(context, "/chat");
               },
               child: Container(
@@ -131,8 +131,7 @@ class HomeState extends State<Home> {
             color: Colors.transparent,
             child: InkWell(
               onTap: () {
-                //Navigate to chat screen and show previous messages
-                newGroupConnection = false;
+                //Navigate to chat screen and show previous messages 
                 currentServer = serverIp;
                 currentPort = port;      
                 currentPrivateKey = privateKey;          
@@ -264,7 +263,7 @@ class HomeState extends State<Home> {
       ),*/
         FlatButton(
           child: Text("SAVE", style: TextStyle(color: materialGreen)),
-          onPressed: () {
+          onPressed: () async{
             callback();
           },
         )
@@ -280,30 +279,51 @@ class HomeState extends State<Home> {
     List queryResults = await databaseManager.getAllGroups(offset, searchFieldController.text);
     List results = [];
     for (var x = 0; x < queryResults.length; x++) {
-      if(results[x]["members"] < 2){
-        results.add(generateRecentConvoCard(queryResults[x]["label"], queryResults[x]["profilePic"], queryResults[x]["ts"], queryResults[x]["msg"], queryResults[x]["username"], queryResults[x]["serverIp"], queryResults[x]["serverPort"], false, queryResults[x]["privateKey"]));
-      }
-      else{
-        results.add(generateRecentConvoCard(queryResults[x]["label"], queryResults[x]["profilePic"], queryResults[x]["ts"], queryResults[x]["msg"], queryResults[x]["username"], queryResults[x]["serverIp"], queryResults[x]["serverPort"], true, queryResults[x]["privateKey"]));
-      }
+      results.add(generateRecentConvoCard(queryResults[x]["label"], queryResults[x]["profilePic"], queryResults[x]["ts"], queryResults[x]["msg"], queryResults[x]["username"], queryResults[x]["serverIp"], queryResults[x]["serverPort"], true, queryResults[x]["privateKey"]));
     }
     try{   
-      results.sort((a, b) => b.gid.compareTo(a.gid));
-      groupsOffset = results[0]["gid"];
+      if(searchFieldController.text.length == 0){
+        queryResults.sort((a, b) => b.gid.compareTo(a.gid));
+        groupsOffset = queryResults[queryResults.length - 1]["gid"];
+      }
       for(var x = 0; x < results.length; x++){
         loadedConversations.add(results[x]);
       }
-      if(searchFieldController.text.length == 0){
-        Widget loadMoreButton = RaisedButton(
-          color: themeColor,
-          textColor: Colors.white,
-          child: Text("Load More"),
-          onPressed: () async{
-            await loadConversations(groupsOffset);
-            setState(() {});                             
-          },
-        );   
-        results.add(loadMoreButton); 
+      Widget loadMoreButton = Row(
+        children: <Widget>[
+          Flexible(
+            flex: 1,
+            child: Container(),
+          ),
+          Container(
+            margin: EdgeInsets.fromLTRB(0, 0, 0, 10),
+            decoration: BoxDecoration(
+              color: sentMessageWidgetColor,
+              borderRadius: BorderRadius.circular(100)
+            ),
+            child: IconButton( 
+              padding: EdgeInsets.all(0),
+              highlightColor: sentMessageWidgetColor,
+              icon: Icon(Icons.restore, color: Colors.white,),
+              onPressed: () async{
+                try{
+                  await loadConversations(groupsOffset);
+                  setState(() {});  
+                }
+                catch(err){
+                  print(err);
+                }
+              },
+            )
+          ),
+          Flexible(
+            flex: 1,
+            child: Container(),
+          )                                                    
+        ],
+      ); 
+      if(results.length > 0){
+        results.insert(0, loadMoreButton);
       }
     }
     catch(err){
@@ -344,11 +364,11 @@ class HomeState extends State<Home> {
       builder: (BuildContext context, AsyncSnapshot<List> snapshot) {
         switch (snapshot.connectionState) {
           case ConnectionState.none:
-            return loadingIndicator;
+            return loadingIndicator(color: Colors.blue);
           case ConnectionState.active:
-            return loadingIndicator;
+            return loadingIndicator(color: Colors.blue);
           case ConnectionState.waiting:
-            return loadingIndicator;
+            return loadingIndicator(color: Colors.blue);
           case ConnectionState.done:
             if (snapshot.hasError) 
               return Text('Error: ${snapshot.error}');
@@ -401,12 +421,15 @@ class HomeState extends State<Home> {
               Icons.settings,
             ),
             color: Colors.white,
-            onPressed: () {
+            onPressed: () async {
               showAccountSettings("Settings", context, usernameFieldController,
                   ipFieldController, portFieldController, () async {
-                if (accountUsernameInputController.text.length > 0) if (await databaseManager
-                    .updateUsername(accountUsernameInputController.text))
-                  toastMessageBottomShort("Updated Successfully", context);
+                if (accountUsernameInputController.text.length > 0){
+                  if (await databaseManager.updateUsername(accountUsernameInputController.text)){
+                    toastMessageBottomShort("Updated Successfully", context);
+                  }
+                  Navigator.pop(context);  
+                }
               });
             },
           )

@@ -16,11 +16,11 @@ class DatabaseManager {
   static Database db;
   ///Columns Are: aid, username, profilePic, ts
   final String accountTable = "accountInfo";
-  ///Columns Are: gid, serverIp, serverPort, label, joinKey, privateKey, displayPicture
+  ///Columns Are: gid, serverIp, serverPort, label, joinKey, privateKey, displayPicture, username
   final String groupsTable = "groups";
-  ///Columns Are: mid, pid, gid, midFromServer, msg, ts
+  ///Columns Are: mid, pid, gid, midFromServer, msg, receivedTime, isSentMessage, ts
   final String messagesTable = "messages";
-  ///Columns Are: pid, gid, username, profilePic, publicKey, publicKey2, recipient
+  ///Columns Are: pid, gid, username, profilePic, publicKey, publicKey2, recipient, joined, ts
   final String participantsTable = "participants"; 
   ///Columns Are: sid, ip, port, name, page
 
@@ -38,9 +38,9 @@ class DatabaseManager {
       String path = await getDatabasePath();
       db = await openDatabase(path, version: 1);
       await db.execute("CREATE TABLE IF NOT EXISTS $accountTable(aid INTEGER PRIMARY KEY, username TEXT, ts DATETIME DEFAULT CURRENT_TIMESTAMP);");
-      await db.execute("CREATE TABLE IF NOT EXISTS $groupsTable(gid INTEGER PRIMARY KEY, serverIp TEXT, serverPort INTEGER, label TEXT, joinKey TEXT, privateKey TEXT, displayPicture TEXT, ts DATETIME DEFAULT CURRENT_TIMESTAMP);");
-      await db.execute("CREATE TABLE IF NOT EXISTS $participantsTable(pid INTEGER PRIMARY KEY, gid INTEGER, username TEXT, profilePic TEXT, publicKey TEXT, publicKey2 TEXT, recipient INTEGER DEFAULT 0, ts DATETIME DEFAULT CURRENT_TIMESTAMP, FOREIGN KEY(gid) REFERENCES $groupsTable(gid));");
-      await db.execute("CREATE TABLE IF NOT EXISTS $messagesTable(mid INTEGER PRIMARY KEY, gid INTEGER, pid INTEGER, midFromServer INTEGER, msg TEXT, ts DATETIME DEFAULT CURRENT_TIMESTAMP, FOREIGN KEY(gid) REFERENCES $groupsTable(gid), FOREIGN KEY(pid) REFERENCES $participantsTable(pid));");
+      await db.execute("CREATE TABLE IF NOT EXISTS $groupsTable(gid INTEGER PRIMARY KEY, serverIp TEXT, serverPort INTEGER, label TEXT, joinKey TEXT, privateKey TEXT, displayPicture LONGTEXT, username TEXT, ts DATETIME DEFAULT CURRENT_TIMESTAMP);");
+      await db.execute("CREATE TABLE IF NOT EXISTS $participantsTable(pid INTEGER PRIMARY KEY, gid INTEGER, username TEXT, profilePic LONGTEXT, publicKey TEXT, publicKey2 TEXT, recipient INTEGER DEFAULT 0, joined INTEGER, ts DATETIME DEFAULT CURRENT_TIMESTAMP, FOREIGN KEY(gid) REFERENCES $groupsTable(gid));");
+      await db.execute("CREATE TABLE IF NOT EXISTS $messagesTable(mid INTEGER PRIMARY KEY, gid INTEGER, pid INTEGER, midFromServer INTEGER, msg TEXT, receivedTime INTEGER, isSentMessage INTEGER DEFAULT 0, ts DATETIME DEFAULT CURRENT_TIMESTAMP, FOREIGN KEY(gid) REFERENCES $groupsTable(gid), FOREIGN KEY(pid) REFERENCES $participantsTable(pid));");
       await db.rawInsert("INSERT INTO $accountTable (username) VALUES ('Anonymous')");
       print("Database Created Successfully");
       return db;
@@ -97,19 +97,20 @@ class DatabaseManager {
     return null;
   }
 
-  Future<bool> saveGroup(String serverIp, int serverPort, String label, String privateKey, String joinKey) async{
+  Future<int> saveGroup(String serverIp, int serverPort, String label, String privateKey, String joinKey, String username) async{
     var client = await getDatabase();
     List query = [];
     try{
       query = await client.rawQuery("SELECT * FROM $groupsTable WHERE joinKey = '"+joinKey+"';");
       if(query.length == 0)
-        await client.rawInsert("INSERT INTO $groupsTable (serverIp, serverPort, label, joinKey, privateKey, displayPicture) VALUES ('"+serverIp+"', '"+serverPort.toString()+"', '"+label+"', '"+privateKey+"', '"+joinKey+"', '"+defaultProfilePicBase64+"');");
+        await client.rawInsert("INSERT INTO $groupsTable (serverIp, serverPort, label, joinKey, privateKey, displayPicture, username) VALUES ('"+serverIp+"', '"+serverPort.toString()+"', '"+label+"', '"+joinKey+"', '"+privateKey+"', '"+defaultProfilePicBase64+"', '"+username+"');");
+      query = await client.rawQuery("SELECT gid FROM $groupsTable WHERE joinKey = '"+joinKey+"';");
+      return int.parse(query[0]["gid"].toString());
     }
     catch(err){
       print(err);
-      return false;
-    }    
-    return true;
+    }
+    return null;
   }
 
 
@@ -125,13 +126,13 @@ class DatabaseManager {
     return true;
   }
 
-  Future<bool> saveParticipant(int groupId, String username, String profilePic, BigInt publicKey, String publicKey2, String timestamp) async{
+  Future<bool> saveParticipant(int groupId, String username, String profilePic, BigInt publicKey, BigInt publicKey2, int joinedTimestamp) async{
     var client = await getDatabase();
     List query = [];
     try{
       query = await client.rawQuery("SELECT * FROM $participantsTable WHERE gid = '"+groupId.toString()+"' AND username = '"+username+"';");
       if(query.length == 0)
-        await client.rawInsert("INSERT INTO $participantsTable (gid, username, profilePic, publicKey, publicKey2, ts) VALUES ('"+groupId.toString()+"', '"+username+"', '"+profilePic+"', '"+publicKey.toString()+"', '"+publicKey2+"', '"+timestamp.toString()+"');");
+        await client.rawInsert("INSERT INTO $participantsTable (gid, username, profilePic, publicKey, publicKey2, joined) VALUES ('"+groupId.toString()+"', '"+username+"', '"+profilePic+"', '"+publicKey.toString()+"', '"+publicKey2.toString()+"', '"+joinedTimestamp.toString()+"');");
     }
     catch(err){
       print(err);
@@ -161,7 +162,7 @@ class DatabaseManager {
   Future<Map> selectRandomPreviousServer() async{
     var client = await getDatabase();
     try{
-      List query = await client.rawQuery("SELECT serverIp, serverPort FROM $groupsTable ORDER BY random() LIMIT 1");
+      List query = await client.rawQuery("SELECT serverIp ip, serverPort port FROM $groupsTable ORDER BY random() LIMIT 1");
       return query[0];
     }
     catch(err){
@@ -188,6 +189,68 @@ class DatabaseManager {
       return null;
     }   
   }
+
+  
+  Future<Map> generateCompositeKeysForRecipients(int gid) async{
+    var client = await getDatabase();
+    Map result = {};
+    List query = [];
+    try{
+      String currentUsername = await getUsername();
+      query = await client.rawQuery("SELECT username, publicKey FROM $participantsTable WHERE gid = '"+gid.toString()+"' AND recipient = '1'");
+      for(var x = 0; x < query.length; x++){
+        result[query[x]["username"]] = BigInt.parse("1");
+        for(var y = 0; y < query.length; y++){
+          if(query[y]["username"] != currentUsername)
+            result[query[x]["username"]] *= BigInt.parse(query[y]["publicKey"]);
+        }
+      }
+    }
+    catch(err){
+      print(err);
+      return null;
+    }   
+    return result;
+  }
+
+  Future<String> getPastUsername(int gid) async{
+    var client = await getDatabase();
+    List query = [];
+    try{
+      query = await client.rawQuery("SELECT username FROM $groupsTable WHERE gid = '"+gid.toString()+"';");
+      return query[0]["username"];
+    }
+    catch(err){
+      print(err);
+    }
+    return null;
+  }
+  
+  Future<String> getGroupName(int gid) async{
+    var client = await getDatabase();
+    List query = [];
+    try{
+      query = await client.rawQuery("SELECT label FROM $groupsTable WHERE gid = '"+gid.toString()+"';");
+      return query[0]["label"];
+    }
+    catch(err){
+      print(err);
+      return currentServer;
+    }
+  }
+  
+  Future<bool> setGroupName(int gid, String newLabel) async{
+    var client = await getDatabase();
+    try{
+      await client.rawQuery("UPDATE $groupsTable SET label = '"+newLabel+"'");
+    }
+    catch(err){
+      print(err);
+      return false;
+    }   
+    return true;
+  }
+
 
   Future<BigInt> getSymmetricKey(int gid) async{
     try{
@@ -265,11 +328,10 @@ class DatabaseManager {
     }    
     return query[0]["username"];
   }
-  
+   
   Future<bool> updateUsername(String username) async{
     var client = await getDatabase();
     try{
-      username = json.encode(username);
       await client.rawQuery("UPDATE $accountTable SET username = '"+username+"'");
       return true;
     }
@@ -293,21 +355,24 @@ class DatabaseManager {
     return null;
   }
 
-  Future<bool> saveMessage(int currentGroupId, String messageId, String midFromServer, String message, String sender) async{
+  Future<bool> saveMessage(int currentGroupId, int midFromServer, String message, String sender, int receivedTime, int isSentMessage) async{
     var client = await getDatabase();
     try{
-      messageId = json.encode(messageId);
       message = json.encode(message);
       sender = json.encode(sender);
       List query = await client.rawQuery("SELECT pid FROM $participantsTable WHERE username = '"+sender+"' AND gid = '$currentGroupId';");
       int participantId = query[0]["pid"];      
-      List previousMessages = await client.rawQuery("SELECT mid FROM $messagesTable WHERE mid = '"+midFromServer+"' AND pid = '"+participantId.toString()+"';");
+      List previousMessages = await client.rawQuery("SELECT mid FROM $messagesTable WHERE mid = '"+midFromServer.toString()+"' AND pid = '"+participantId.toString()+"';");
       if(previousMessages.length == 0){
         //Message not yet saved
         try{
-          List messageInserted = await client.rawQuery("SELECT * FROM messages WHERE midFromServer = '"+midFromServer+"' AND gid = '$currentGroupId';");
-          if(messageInserted.length == 0)
-            await client.rawInsert("INSERT INTO $messagesTable (pid, gid, midFromServer, msg, symmetricKey, privateKey) VALUES ('$participantId', '$message', '$currentGroupId');");
+            List messageInserted = await client.rawQuery("SELECT * FROM messages WHERE midFromServer = '"+midFromServer.toString()+"' AND gid = '$currentGroupId';");
+            if(messageInserted.length == 0){
+              if(isSentMessage > 0)
+                await client.rawInsert("INSERT INTO $messagesTable (pid, gid, midFromServer, msg, receivedTime, isSentMessage) VALUES ('$participantId', '"+currentGroupId.toString()+"', '"+midFromServer.toString()+"', '"+message+"', '"+receivedTime.toString()+"', '1');");
+              else
+                await client.rawInsert("INSERT INTO $messagesTable (pid, gid, midFromServer, msg, receivedTime, isSentMessage) VALUES ('$participantId', '"+currentGroupId.toString()+"', '"+midFromServer.toString()+"', '"+message+"', '"+receivedTime.toString()+"', '0');");
+            }
         }
         catch(err){
           print(err);
@@ -321,25 +386,48 @@ class DatabaseManager {
     return true;    
   }
 
+  Future<String> getSenderOfMessageFromPublicKey2(int currentGroupId, BigInt publicKey2) async{
+    var client = await getDatabase();
+    try{
+      List query = await client.rawQuery("SELECT username FROM $participantsTable WHERE publicKey2 = '"+publicKey2.toString()+"' AND gid = '"+currentGroupId.toString()+"';"); 
+      return query[0]["username"];
+    }
+    catch(err){
+      return null;
+    }
+  }
+
   Future<Map> getParticipants(int gid) async{
     var client = await getDatabase();
     List query = [];
     Map result = {};
     try{
       String currentUser = await databaseManager.getUsername();
-      result[currentUser] = true;
-      query = await client.rawQuery("SELECT *, ts FROM $participantsTable WHERE gid = '"+gid.toString()+"'");
-      query.sort((a, b) => a.joined.compareTo(b.joined));
+      query = await client.rawQuery("SELECT * FROM $participantsTable WHERE gid = '"+gid.toString()+"' ORDER BY username");
+      //print(json.decode(source).encode(query[0]));
+      //query.sort((a, b) => a.joined.compareTo(b.joined));
       for(var x = 0; x < query.length; x++){
-        String joined = DateTime(query[x]["ts"]).toString();
-        print(joined);
-        if(query[x]["username"] != currentUser)
+        int joined = int.parse(query[x]["joined"].toString());
+        if(query[x]["username"] != currentUser){ 
           result[query[x]["username"]] = {
-            "joined": joined
+            "pid": query[x]["pid"],
+            "joined": joined,
+            "currentUser": false
           };
+        }
+        else{
+          result[query[x]["username"]] = {
+            "pid": query[x]["pid"],
+            "joined": joined,
+            "currentUser": true
+          };
+        }
       }
+      print("THE PARTICIPANTS ARE");
+      print(result);
     }
     catch(err){
+      print("ERROR IN databaseManager.getParticipants");
       print(err);
     }
     return result;
@@ -368,23 +456,57 @@ class DatabaseManager {
   ///Gets the messages for a specific ip address and username from the database
   Future<Map> getMessages(int gid, {offset: int}) async{
     var client = await getDatabase();
+    Map participants = await getParticipantNumbers(gid);
     Map result = {};
     List query = [];
     if(offset != null){
-        query = await client.rawQuery("SELECT *, UNIX_TIMESTAMP(ts)*1000 time FROM $messagesTable WHERE gid = '$gid' WHERE mid <= '"+offset+"' ORDER BY ts DESC LIMIT $limitPerMessagesFetchFromDatabase;");
+        query = await client.rawQuery("SELECT *, STRFTIME('%s', $messagesTable.ts)*1000 tme FROM $messagesTable JOIN $participantsTable ON $messagesTable.gid = $participantsTable.gid WHERE $messagesTable.gid = '$gid' AND $messagesTable.mid <= '"+offset.toString()+"' ORDER BY $messagesTable.ts DESC LIMIT $limitPerMessagesFetchFromDatabase;");
     }
     else{
-      query = await client.rawQuery("SELECT *, UNIX_TIMESTAMP(ts)*1000 time FROM $messagesTable WHERE gid = '$gid' ORDER BY ts DESC LIMIT $limitPerMessagesFetchFromDatabase;");
+      query = await client.rawQuery("SELECT *, STRFTIME('%s', $messagesTable.ts)*1000 tme FROM $messagesTable JOIN $participantsTable ON $messagesTable.gid = $participantsTable.gid WHERE $messagesTable.gid = '$gid' ORDER BY $messagesTable.ts DESC LIMIT $limitPerMessagesFetchFromDatabase;");
     }
     for(var x = 0; x < query.length; x++){
-      result[query[x]["midFromServer"]] = {
-        "sender": query[x]["username"],
-        "message": query[x]["message"],
-        "compositeKey": query[x]["compositeKey"],
-        "ts": DateTime.fromMillisecondsSinceEpoch(query[x]["time"])
-      };
+      if(query[x]["isSentMessage"] > 0){
+        result[query[x]["midFromServer"]] = {
+          "pid": query[x]["pid"],
+          "num": participants[query[x]["username"]],
+          "sender": query[x]["username"],
+          "profilePic": query[x]["profilePic"],
+          "message": query[x]["message"],
+          "isSentMessage": true,
+          "ts": int.parse(query[x]["tme"])
+        };
+      }
+      else{
+        result[query[x]["midFromServer"]] = {
+          "pid": query[x]["pid"],
+          "num": participants[query[x]["username"]],
+          "sender": query[x]["username"],
+          "profilePic": query[x]["profilePic"],
+          "message": query[x]["message"],
+          "isSentMessage": false,
+          "ts": DateTime.fromMillisecondsSinceEpoch(query[x]["tme"])
+        };
+      }
     }
     return result;
+  }
+
+  Future<Map> getParticipantNumbers(int gid) async{
+    var client = await getDatabase();
+    Map participants = {};
+    try{
+      List query = await client.rawQuery("SELECT * FROM $participantsTable WHERE gid = '"+gid.toString()+"' ORDER BY pid");
+      for(var x = 0; x < query.length; x++){
+        participants[query[x]["username"]] = x+1;
+      }
+      return participants;
+    }
+    catch(err){
+      print("Error in databaseManager.getParticipantNumbers");
+      print(err);
+    } 
+    return null;
   }
 
 
@@ -392,14 +514,34 @@ class DatabaseManager {
     var client = await getDatabase();
     try{
       List query = await client.rawQuery("SELECT MAX(midFromServer) lastMessage FROM $messagesTable WHERE gid = '"+gid.toString()+"'");
-      if(query.length > 0)
-        return query[0]["lastMessage"];
+      if(query.length > 0){
+        if(query[0]["lastMessage"] != null){
+          return int.parse(query[0]["lastMessage"].toString());
+        }
+      }
     }
     catch(err){
+      print("Error in databaseManager.getLastMessageId");
       print(err);
     } 
-    return null;
+    return -1;
   }
+  
+  Future<int> isGroupSaved(String joinKey) async{
+    var client = await getDatabase();
+    try{
+      List query = await client.rawQuery("SELECT gid FROM $groupsTable WHERE joinKey = '"+joinKey+"'");
+      if(query.length > 0)
+        return int.parse(query[0]["gid"].toString());
+      return -1;
+    }
+    catch(err){
+      print("Error in databaseManager.getLastMessageId");
+      print(err);
+    } 
+    return -1;
+  }
+
 
   ///Converts a flutter list to an sql list
   String listToSqlArray(List lst){

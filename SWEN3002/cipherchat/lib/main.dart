@@ -362,7 +362,7 @@ Future<bool> isUsernameTakenForServer(String ip, int port, String username, Stri
     print(err);
   }
   return false;   
-}       
+}
 
 class MyApp extends StatelessWidget {
   @override

@@ -41,11 +41,55 @@ const execute = function (command, callback) {
  * (expiredSignaturesTable => exsid, gid, r, s, ts)
  * (serversTable => sid, ip, port, page, ts)
 */
+/*
 const databaseTables = {
     "groupsTable": "groups",
     "participantsTable": "participants",
     "messagesTable": "messages",
     "compositeKeysTable": "compositeKeys",
+};*/
+
+const databaseTables = {
+    "groupsTable": {
+        "tableName": "groups",
+        "columns":{
+            "groupId": "groups.gid",
+            "joinKey": "groups.joinKey",
+            "timestamp": "groupsTable.ts",
+        }
+    },
+    "participantsTable": {
+        "tableName": "participants",
+        "columns":{
+            "particpantId": "participants.pid",
+            "groupId": "participants.gid",
+            "username": "participants.username",
+            "publicKey": "participants.publicKey",
+            "publicKey2": "participants.publicKey2",
+            "timestamp": "participants.ts"
+        }
+    },
+    "messagesTable": {
+        "tableName": "messages",
+        "columns":{
+            "messageId": "messages.mid",
+            "groupId": "messages.gid",
+            "particpantId": "messages.pid",
+            "message": "messages.message",
+            "timestamp": "messages.ts"
+        }
+    },
+    "compositeKeysTable": {
+        "tableName": "compositeKeys",
+        "columns":{
+            "compositeKeyId": "compositeKeys.cpid",
+            "messageId": "compositeKeys.mid",
+            "groupId": "compositeKeys.gid",
+            "participantId": "compositeKeys.pid",
+            "compositeKey": "compositeKeys.compositeKey",
+            "timestamp": "compositeKeys.ts"
+        }      
+    }
 };
 
 try{
@@ -114,7 +158,10 @@ const generateNewCertificate = function(){
 
 const getGroupIdFromJoinKey = function(joinKey){
     return new Promise(function(resolve, reject){
-        connection.query("SELECT gid FROM "+databaseTables.groupsTable+" WHERE joinKey = '"+joinKey+"';", function(error, results, fields){
+        connection.query(`
+        SELECT `+databaseTables.groupsTable.columns.groupId+` gid 
+        FROM `+databaseTables.groupsTable.tableName+` 
+        WHERE joinKey = '`+joinKey+`';`, function(error, results, fields){
             if(results.length == 0)
                 resolve(null)
             else    
@@ -125,7 +172,11 @@ const getGroupIdFromJoinKey = function(joinKey){
 
 const getParticipantIdFromGroupId = function(groupId, username){
     return new Promise(function(resolve, reject){
-        connection.query("SELECT pid FROM "+databaseTables.participantsTable+" WHERE gid = '"+groupId+"' AND username = '"+username+"';", function(error, results, fields){
+        connection.query(`
+        SELECT `+databaseTables.participantsTable.columns.particpantId+` pid 
+        FROM `+databaseTables.participantsTable.tableName+` 
+        WHERE `+databaseTables.participantsTable.columns.groupId+` = '`+groupId+`' 
+        AND `+databaseTables.participantsTable.columns.username+` = '`+username+`';`, function(error, results, fields){
             if(results.length == 0)
                 resolve(null)
             else    
@@ -156,6 +207,7 @@ const jsArrayToSqlArray = function(lst){
 const verifySignature = function(gid, pid, message, r, s, recoveryParam){
     return new Promise(function(resolve, reject){
         var badResult = function(){
+            console.log("INVALID SIGNATURE RECEIVED");
             resolve({
                 "isValid": false,
                 "publicKey": null
@@ -176,7 +228,10 @@ const verifySignature = function(gid, pid, message, r, s, recoveryParam){
                 console.log("THE group id is: ");
                 console.log(gid);
                 if(ec.verify(hashedMessage, signature, pubKeyRecovered)){
-                    connection.query("SELECT * FROM "+databaseTables.participantsTable+" WHERE gid = '"+gid+"' AND publicKey2 = '"+pubKeyRecovered["x"].toString()+"';", function(error, results, fields){
+                    connection.query(`
+                    SELECT * FROM `+databaseTables.participantsTable.tableName+` 
+                    WHERE `+databaseTables.participantsTable.columns.groupId+` = '`+gid+`' 
+                    AND `+databaseTables.participantsTable.columns.publicKey2+` = '`+pubKeyRecovered[`x`].toString()+`';`, function(error, results, fields){
                         console.log("THE RESULTS FROM SIGNATURE QUERY IS: ");
                         console.log(results);
                         if(results.length > 0){
@@ -338,25 +393,38 @@ router.post('/newgroup', async function(req, res){
     const publicKey2 = addslashes(req.body.publicKey2);
     const passphrase = addslashes(req.body.passphrase);
     const joinKey = sha256(makeJoinKey(1000)+(new Date().getTime().toString()));
-    console.log(req.body);
-    console.log("THE PASSPHRASE SEND BY THE CLIENT IS: ");
-    console.log(sha256(passphrase));
-    console.log("THE PASSPHRASE OF THE SERVER IS: ");
-    console.log(config.sha256Password);
     try{
         bigInt(publicKey);
         bigInt(publicKey2);
         if(sha256(passphrase) == config.sha256Password){
-            connection.query("INSERT INTO "+databaseTables.groupsTable+" (joinKey) VALUES ('"+joinKey+"');", function(error, results, fields){
-                console.log("GROUP INSERT ID IS: ");
-                console.log(results["insertId"]);
-                connection.query("INSERT INTO "+databaseTables.participantsTable+" (gid, username, publicKey, publicKey2) VALUES ('"+results["insertId"]+"', '"+username+"', '"+publicKey+"', '"+publicKey2+"');", function(error, results, fields){
+            connection.query(`
+            INSERT 
+            INTO `+databaseTables.groupsTable.tableName+` (
+                `+databaseTables.groupsTable.columns.joinKey+`
+            ) 
+            VALUES (
+                '`+joinKey+`'
+            );`, function(error, results, fields){
+                connection.query(`
+                INSERT 
+                INTO `+databaseTables.participantsTable.tableName+` 
+                (
+                    `+databaseTables.participantsTable.columns.groupId+`, 
+                    `+databaseTables.participantsTable.columns.username+`, 
+                    `+databaseTables.participantsTable.columns.publicKey+`, 
+                    `+databaseTables.participantsTable.columns.publicKey2+`
+                ) 
+                VALUES (
+                    '`+results[`insertId`]+`', 
+                    '`+username+`', 
+                    '`+publicKey+`', 
+                    '`+publicKey2+`'
+                );`, function(error, results, fields){
                     res.send(joinKey);
                 });
             });            
         }
         else{
-            console.log("INCORRECT PASSPHRASE");
             res.send("0");
         }
     }
@@ -388,11 +456,18 @@ router.post('/joingroup', async function(req, res){
         if(signatureVerification["isValid"]){
             bigInt(publicKey).toString();
             bigInt(publicKey2).toString();
-            connection.query("SELECT * FROM "+databaseTables.participantsTable+" WHERE gid = '"+groupId+"';", function(error, results, fields){
+            connection.query(`
+            SELECT * 
+            FROM `+databaseTables.participantsTable.tableName+` 
+            WHERE `+databaseTables.participantsTable.columns.groupId+` = '`+groupId+`';`, function(error, results, fields){
                 if(error)
                     console.log(error);
                 if(results.length < config.maxParticipantsPerGroup){
-                    connection.query("SELECT * FROM "+databaseTables.participantsTable+" WHERE gid = '"+groupId+"' AND username = '"+username+"';", function(error, results, fields){
+                    connection.query(`
+                    SELECT * 
+                    FROM `+databaseTables.participantsTable.tableName+` 
+                    WHERE `+databaseTables.participantsTable.columns.groupId+` = '`+groupId+`' 
+                    AND `+databaseTables.participantsTable.columns.username+` = '`+username+`';`, function(error, results, fields){
                         if(error)
                             console.log(error);
                         if(results.length > 0){
@@ -400,7 +475,21 @@ router.post('/joingroup', async function(req, res){
                             res.send("-3");
                         }
                         else{
-                            connection.query("INSERT INTO "+databaseTables.participantsTable+" (gid, username, publicKey, publicKey2) VALUES ('"+groupId+"', '"+username+"', '"+publicKey+"', '"+publicKey2+"');", function(error, results, fields){
+                            connection.query(`
+                            INSERT 
+                            INTO `+databaseTables.participantsTable.tableName+` 
+                            (
+                                `+databaseTables.participantsTable.columns.groupId+`, 
+                                `+databaseTables.participantsTable.columns.username+`, 
+                                `+databaseTables.participantsTable.columns.publicKey+`, 
+                                `+databaseTables.participantsTable.columns.publicKey2+`
+                            ) 
+                            VALUES (
+                                '`+groupId+`', 
+                                '`+username+`', 
+                                '`+publicKey+`', 
+                                '`+publicKey2+`'
+                            );`, function(error, results, fields){
                                 if(error){
                                     console.log(err);
                                     res.send("-2");
@@ -444,7 +533,11 @@ router.post('/isusernametaken', async function(req, res){
             res.send("0");
         const signatureVerification = await verifySignature(groupId, true, encryptedMessage, signature["r"], signature["s"], signature["recoveryParam"]);
         if(signatureVerification["isValid"]){
-            connection.query("SELECT * FROM "+databaseTables.participantsTable+" WHERE gid = '"+groupId+"' AND username = '"+username+"';", function(error, results, fields){
+            connection.query(`
+            SELECT * 
+            FROM `+databaseTables.participantsTable.tableName+` 
+            WHERE `+databaseTables.participantsTable.columns.groupId+` = '`+groupId+`' 
+            AND `+databaseTables.participantsTable.columns.username+` = '`+username+`';`, function(error, results, fields){
                 if(results.length > 0)
                     res.send("1");
                 else
@@ -467,6 +560,7 @@ router.post('/message', async function(req, res){
         res.send("");
         return null;        
     }    
+    console.log("NEW MESSAGE REQUEST");
     const encryptedMessage = addslashes(req.body.encryptedMessage);
     const signature = JSON.parse(req.body.signature);
     signature["r"] = addslashes(signature["r"]);
@@ -475,34 +569,81 @@ router.post('/message', async function(req, res){
     const joinKey = addslashes(req.body.joinKey);
     const username = addslashes(req.body.username);
     const compositeKeys = JSON.parse(req.body.compositeKeys);
+    console.log("THE COMPOSITE KEYS ARE: ");
+    console.log(compositeKeys);
     const groupId = await getGroupIdFromJoinKey(joinKey);
     const participantId = await getParticipantIdFromGroupId(groupId, username);
+    console.log("PARTICIPANT ID: "+participantId.toString());
+    console.log("NEW MESSAGE REQUEST!");
+    console.log(req.body);
     try{
         const signatureVerification = await verifySignature(groupId, participantId, encryptedMessage, signature["r"], signature["s"], signature["recoveryParam"]);
         if(signatureVerification["isValid"]){
-            connection.query("INSERT INTO "+databaseTables.messagesTable+" (gid, pid, message) VALUES ('"+groupId+"', "+participantId+"', '"+encryptedMessage+"');", function(error, results, fields){
+            connection.query(`
+            INSERT 
+            INTO `+databaseTables.messagesTable.tableName+` (
+                `+databaseTables.messagesTable.columns.groupId+`, 
+                `+databaseTables.messagesTable.columns.particpantId+`, 
+                `+databaseTables.messagesTable.columns.message+`
+            )
+            VALUES (
+                '`+groupId+`', 
+                '`+participantId+`', 
+                '`+encryptedMessage+`'
+            );`, function(error, results, fields){
                 if(error)
                     res.send("-1");
                 else{
                     const messageInsertionId = results["insertId"];
-                    const messageRecipientUsernames = Object.key(compositeKeys);
+                    const messageRecipientUsernames = Object.keys(compositeKeys);
                     for(var x = 0; x < messageRecipientUsernames.length; x++){
+                        const currentRecipientUsername = messageRecipientUsernames[x];
                         try{
-                            bigInt(compositeKeys[messageRecipientUsernames[x]]);
-                            compositeKeys[messageRecipientUsernames[x]] = addslashes(compositeKeys[messageRecipientUsernames[x]]);
-                            connection.query("SELECT pid FROM "+databaseTables.participantsTable+" WHERE gid = '"+groupId+"' AND username = '"+messageRecipientUsernames[x]+"';", function(error, results, fields){
-                                const pid = results[0]["pid"];
-                                connection.query("INSERT INTO "+databaseTables.compositeKeysTable+" (mid, gid, pid, compositeKey) VALUES ('"+messageInsertionId+"', '"+groupId+"', '"+pid+"', '"+compositeKeys[messageRecipientUsernames[x]]+"');");
+                            bigInt(compositeKeys[currentRecipientUsername]);
+                            compositeKeys[currentRecipientUsername] = addslashes(compositeKeys[currentRecipientUsername]);
+                            connection.query(`
+                            SELECT `+databaseTables.participantsTable.columns.particpantId+` pid 
+                            FROM `+databaseTables.participantsTable.tableName+` 
+                            WHERE `+databaseTables.participantsTable.columns.username+` = '`+currentRecipientUsername+`';`, function(error, results, fields){
+                                const currentParticipantId = results[0]["pid"];
+                                connection.query(`
+                                INSERT 
+                                INTO `+databaseTables.compositeKeysTable.tableName+` (
+                                    `+databaseTables.compositeKeysTable.columns.messageId+`, 
+                                    `+databaseTables.compositeKeysTable.columns.groupId+`, 
+                                    `+databaseTables.compositeKeysTable.columns.participantId+`, 
+                                    `+databaseTables.compositeKeysTable.columns.compositeKey+`
+                                ) 
+                                VALUES (
+                                    '`+messageInsertionId+`', 
+                                    '`+groupId+`', 
+                                    '`+currentParticipantId+`', 
+                                    '`+compositeKeys[currentRecipientUsername]+`'
+                                );`, function(error, results, fields){
+                                    if(error)
+                                        console.log(error);
+                                });                                
                             });
                         }
                         catch(err){
                             console.log(err);
                         }                        
                     }
-                    connection.query("SELECT *, UNIX_TIMESTAMP(ts)*1000 tme FROM "+databaseTables.messagesTable+" WHERE mid = '"+messageInsertionId+"';", function(error, results, fields){
+                    connection.query(`
+                    SELECT *, 
+                    UNIX_TIMESTAMP(`+databaseTables.messagesTable.columns.timestamp+`)*1000 sentTime 
+                    FROM `+databaseTables.messagesTable.tableName+` 
+                    WHERE mid = '`+messageInsertionId+`';`, function(error, results, fields){
+                        if(error)
+                            console.log(error);
+                        console.log("THE MESSAGE RESPONSE IS: ");
+                        console.log({
+                            "mid": results[0]["mid"],
+                            "timestamp": results[0]["sentTime"],
+                        });
                         res.send({
                             "mid": results[0]["mid"],
-                            "timestamp": results[0]["tme"],
+                            "timestamp": results[0]["sentTime"],
                         });
                     });
                 }
@@ -532,15 +673,63 @@ router.get('/messages', async function(req, res){
     try{
         const signatureVerification = await verifySignature(groupId, participantId, encryptedMessage, signature["r"], signature["s"], signature["recoveryParam"]);  
         if(signatureVerification["isValid"]){
-            connection.query("SELECT ts FROM "+databaseTables.participantsTable+" WHERE pid = '"+participantId+"' AND gid = '"+groupId+"';", function(error, results, fields){
-                const userJoinTs = results[0]["ts"];
-                connection.query("SELECT * FROM "+databaseTables.messagesTable+" JOIN "+databaseTables.participantsTable+" ON "+databaseTables.messagesTable+".gid = "+databaseTables.participantsTable+".gid WHERE "+databaseTables.messagesTable+".gid = '"+groupId+"' AND "+databaseTables.messagesTable+".mid > '"+offset+"' AND "+databaseTables.messagesTable+".ts > '"+userJoinTs+"' ORDER BY "+databaseTables.messagesTable+".ts DESC LIMIT 20;", function(error, messageResults, fields){
+            connection.query(`
+            SELECT `+databaseTables.participantsTable.columns.timestamp+` ts
+            FROM `+databaseTables.participantsTable.tableName+` 
+            WHERE `+databaseTables.participantsTable.columns.particpantId+` = '`+participantId+`' 
+            AND `+databaseTables.participantsTable.columns.groupId+` = '`+groupId+`';`, function(error, userInfo, fields){
+                const userJoinTs = userInfo[0]["ts"];
+                connection.query(`
+                SELECT `+databaseTables.messagesTable.columns.messageId+` mid
+                FROM `+databaseTables.messagesTable.tableName+` 
+                JOIN `+databaseTables.participantsTable.tableName+` 
+                ON `+databaseTables.messagesTable.columns.groupId+` = `+databaseTables.participantsTable.columns.groupId+` 
+                WHERE `+databaseTables.messagesTable.columns.groupId+` = '`+groupId+`' 
+                AND `+databaseTables.messagesTable.columns.messageId+` > '`+offset+`' 
+                AND `+databaseTables.messagesTable.columns.timestamp+` > '`+userJoinTs+`' 
+                ORDER BY `+databaseTables.messagesTable.columns.timestamp+` 
+                DESC LIMIT 20;`, function(error, messageResults, fields){
                     if(error)
                         res.send("0");
                     else{
                         var messages = {};
                         for(var x = 0; x < messageResults.length; x++){
                             const messageId = messageResults[x]["mid"];
+                            connection.query(`
+                            SELECT `+databaseTables.messagesTable.columns.messageId+` messageId, 
+                            `+databaseTables.participantsTable.columns.username+` sender, 
+                            `+databaseTables.messagesTable.columns.message+` encryptedMessage, 
+                            `+databaseTables.compositeKeysTable.columns.participantId+` compositeKeyPid, 
+                            `+databaseTables.compositeKeysTable.columns.compositeKey+` compositeKey, 
+                            UNIX_TIMESTAMP(`+databaseTables.messagesTable.columns.timestamp+`)*1000 sentTime 
+                            FROM `+databaseTables.compositeKeysTable.tableName+` 
+                            JOIN `+databaseTables.messagesTable.tableName+` 
+                            ON `+databaseTables.compositeKeysTable.columns.messageId+` = `+databaseTables.messagesTable.columns.messageId+` 
+                            JOIN `+databaseTables.participantsTable.tableName+` 
+                            ON `+databaseTables.messagesTable.columns.particpantId+` = `+databaseTables.participantsTable.columns.particpantId+` 
+                            WHERE `+databaseTables.compositeKeysTable.columns.messageId+` = '`+messageId+`' 
+                            GROUP BY `+databaseTables.compositeKeysTable.columns.compositeKeyId+`;`, function(error, results, fields){                  
+                                for(var x = 0; x < results.length; x++){
+                                    connection.query(`
+                                    SELECT `+databaseTables.participantsTable.columns.username+` 
+                                    FROM `+databaseTables.participantsTable.tableName+` 
+                                    WHERE `+databaseTables.participantsTable.columns.particpantId+` = '`+results[x]["compositeKeyPid"]+`';`, function(error, usernameResult, fields){
+                                        var compositeKeys = {};
+                                        var compositeKeyUsername = usernameResult[0]["username"];
+                                        var compositeKeyObj = {};                                                  
+                                        /*compositeKeyObj[compositeKeyUsername] = results[x]["compositeKey"];
+                                        if(messages[messageId] != null)
+                                            compositeKeyObj = {...compositeKeyObj, ...messages[messageId]["compositeKeys"]};
+                                        messages[messageId] = {
+                                            "sender": results[x]["sender"],
+                                            "encryptedMessage": results[x]["encryptedMessage"],
+                                            "compositeKeys": compositeKeys,
+                                            "ts": results[x]["sentTime"]
+                                        }*/
+                                    });
+                                }
+                            });
+                            /*
                             connection.query("SELECT "+databaseTables.participantsTable+".username, "+databaseTables.compositeKeysTable+".compositeKey FROM "+databaseTables.compositeKeysTable+" JOIN "+databaseTables.participantsTable+" ON "+databaseTables.compositeKeysTable+".pid = "+databaseTables.participantsTable+".pid WHERE "+databaseTables.compositeKeysTable+".mid = '"+messageId+"';", function(error, results, fields){
                                 var compositeKeys = {};
                                 for(var x = 0; x < results.length; x++){
@@ -548,13 +737,13 @@ router.get('/messages', async function(req, res){
                                 }
                                 connection.query("SELECT pid, username, UNIX_TIMESTAMP(ts)*1000 time FROM "+databaseTables.messagesTable+" JOIN "+databaseTables.participantsTable+" ON "+databaseTables.messagesTable+".pid = "+databaseTables.participantsTable+".pid WHERE "+databaseTables.messagesTable+".mid = '"+messageId+"';", function(error, senderInfo, fields){
                                     messages[messageId] = {
-                                        "sender": senderInfo[0]["username"],
+                                        "sender": senderInfo[0]["encryptedMessage"],
                                         "encryptedMessage": messageResults[x]["message"],
                                         "compositeKeys": compositeKeys,
                                         "ts": results[x]["time"]
                                     }
                                 });
-                            });
+                            });*/
                         }
                         res.send(messages);
                     }            
@@ -589,9 +778,18 @@ router.get('/anynewmessages', async function(req, res){
         const signatureVerification = await verifySignature(groupId, participantId, encryptedMessage, signature["r"], signature["s"], signature["recoveryParam"]);  
         if(signatureVerification["isValid"]){
             offset = jsArrayToSqlArray(offset);
-            connection.query("SELECT ts FROM "+databaseTables.participantsTable+" WHERE pid = '"+participantId+"' AND gid = '"+groupId+"';", function(error, results, fields){
+            connection.query("SELECT "+databaseTables.participantsTable.columns.timestamp+" FROM "+databaseTables.participantsTable.tableName+" WHERE pid = '"+participantId+"' AND gid = '"+groupId+"';", function(error, results, fields){
                 const userJoinTs = results[0]["ts"];
-                connection.query("SELECT * FROM "+databaseTables.messagesTable+" JOIN "+databaseTables.participantsTable+" ON "+databaseTables.messagesTable+".gid = "+databaseTables.participantsTable+".gid WHERE "+databaseTables.messagesTable+".gid = '"+groupId+"' AND "+databaseTables.messagesTable+".mid > "+offset+" AND "+databaseTables.messagesTable+".ts > '"+userJoinTs+"' ORDER BY "+databaseTables.messagesTable+".ts DESC LIMIT 20;", function(error, results, fields){
+                connection.query(`
+                SELECT * 
+                FROM `+databaseTables.messagesTable.tableName+` 
+                JOIN `+databaseTables.participantsTable.tableName+` 
+                ON `+databaseTables.messagesTable.columns.groupId+` = `+databaseTables.participantsTable.columns.groupId+` 
+                WHERE `+databaseTables.messagesTable.columns.groupId+` = '`+groupId+`' 
+                AND `+databaseTables.messagesTable.columns.messageId+` > `+offset+` 
+                AND `+databaseTables.messagesTable+`.ts > '`+userJoinTs+`' 
+                ORDER BY `+databaseTables.messagesTable.columns.timestamp+` 
+                DESC LIMIT 20;`, function(error, results, fields){
                     if(error)
                         res.send("0");
                     else{
@@ -622,28 +820,27 @@ router.get('/participants', async function(req, res){
     signature["recoveryParam"] = addslashes(signature["recoveryParam"]);
     const joinKey = addslashes(req.query.joinKey);
     const username = addslashes(req.query.username);
-    console.log("NEW PARTICIPANTS FETCH QUERY: ");
-    console.log(req.query);
     const groupId = await getGroupIdFromJoinKey(joinKey);
     const participantId = await getParticipantIdFromGroupId(groupId, username);
     try{
-        console.log(signature);
         const signatureVerification = await verifySignature(groupId, participantId, encryptedMessage, signature["r"], signature["s"], signature["recoveryParam"]);  
         if(signatureVerification["isValid"]){
             var participants = {};
-            connection.query("SELECT *, UNIX_TIMESTAMP(ts)*1000 tme FROM "+databaseTables.participantsTable+" WHERE gid = '"+groupId+"';", function(error, results, fields){
+            connection.query(`
+            SELECT *, 
+            UNIX_TIMESTAMP(`+databaseTables.participantsTable.columns.timestamp+`)*1000 joinedTimestamp
+            FROM `+databaseTables.participantsTable.tableName+` 
+            WHERE `+databaseTables.participantsTable.columns.groupId+` = '`+groupId+`';`, function(error, results, fields){
                 if(error)
                     console.log(error);
                 for(var x = 0; x < results.length; x++){
                     participants[results[x]["username"]] = {
                         "publicKey": results[x]["publicKey"],
                         "publicKey2": results[x]["publicKey2"],
-                        "joined": results[x]["tme"]
+                        "joined": results[x]["joinedTimestamp"]
                     };
                 }
                 res.send(participants);
-                console.log("RESPONSE: ");
-                console.log(participants);
             });  
         }
         else{

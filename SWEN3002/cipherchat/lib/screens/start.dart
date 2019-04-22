@@ -305,6 +305,7 @@ class StartState extends State<Start> {
                               String rawJoinKey = utf8.decode(base64.decode(joinKeyFieldController.text));
                               Map fullJoinKey = json.decode(rawJoinKey);
                               BigInt privateKey = await secp256k1EllipticCurve.generatePrivateKey();
+                              currentPrivateKey = privateKey;
                               Map publicKey  = await secp256k1EllipticCurve.generatePublicKey(privateKey.toString());
                               String username = await databaseManager.getUsername();
                               Map signature = {
@@ -317,6 +318,7 @@ class StartState extends State<Start> {
                               int dbSaved = await databaseManager.isGroupSaved(globalGroupJoinKey.joinKey);
                               if(dbSaved > -1){
                                 currentGroupId = dbSaved;
+                                currentPrivateKey = await databaseManager.getPrivateKey(currentGroupId);
                                 String pastUsername = await databaseManager.getPastUsername(currentGroupId);
                                 await databaseManager.updateUsername(pastUsername);
                               }
@@ -330,7 +332,6 @@ class StartState extends State<Start> {
                               }
                               currentServer = globalGroupJoinKey.ip;
                               currentPort = globalGroupJoinKey.port;
-                              currentPrivateKey = privateKey;
                               currentPublicKey = await secp256k1EllipticCurve.generatePublicKey(currentPrivateKey.toString());                               
                               newGroupConnection = false;
                               await Future.delayed(Duration(seconds: 2));  

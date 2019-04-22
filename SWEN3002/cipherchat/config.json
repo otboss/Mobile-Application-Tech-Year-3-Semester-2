@@ -1,0 +1,19 @@
+{
+    "serverIp": "<Server Ip Address Here>",
+    "autoIpDetection": true,
+    "showAdvertisments": true,
+    "admodId":"ca-app-pub-3940256099942544/6300978111",
+    "enableHTTPS": true,
+    "keyPath":"./key.pem",
+    "certPath":"./cert.pem",
+    "sha256Password": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "maxParticipantsPerGroup": 100,
+    "port": 6333,
+    "databaseConfig":{
+        "host":"localhost",
+        "user":"root",
+        "password":"",
+        "database":"cipherchat",
+        "port": 3306
+    }
+}

@@ -43,45 +43,6 @@ class ChatState extends State<Chat> {
     return true;
   }
 
-  Future<bool> createNewGroup(String username) async {
-    try {
-      Response response = await dio.post(currentServerUrl + "newgroup", data: {
-        "username": username,
-        "publicKey": currentPublicKey["x2"],
-        "publicKey2": currentPublicKey["x"],
-        "passphrase": passphrase
-      });      
-      if (response.data == "-1") {
-        return false;
-      } else {
-        String joinKey = response.data;
-        await databaseManager.saveGroup(currentServer, currentPort, currentServer, currentPrivateKey.toString(), joinKey, username);
-        await updateParticipants();
-        return true;
-      }
-    } catch (err) {
-      print(err);
-    }
-    return false;
-  }
-  
-  /*
-  Future<Map> joinGroup(String joinKey, String username, String publicKey,
-      String publicKey2, String encryptedMessage, String signature) async {
-    try {
-      Response response = await dio.post(currentServerUrl + "joingroup", data: {
-        "username": username,
-        "publicKey": publicKey,
-        "publicKey2": publicKey2,
-        "encryptedMessage": encryptedMessage,
-        "signature": signature
-      });
-      return json.decode(response.data);
-    } catch (err) {
-      print(err);
-    }
-    return null;
-  }*/
 
   Future<bool> joinGroup(String ip, int port, Map signature, String encryptedMessage, String joinKey, String publicKey, String publicKey2, String username) async{
     try{
@@ -153,46 +114,6 @@ class ChatState extends State<Chat> {
     }
   }
 
-  Future<String> getGroupName() async {
-    try {
-      String randomMessage = secp256k1EllipticCurve.generateRandomString(100);
-      String username = await databaseManager.getUsername();
-      String messageHash = sha256.convert(utf8.encode(randomMessage)).toString();
-      Map signature = await secp256k1EllipticCurve.signMessage(messageHash, currentPrivateKey);
-      String joinKey = await databaseManager.getGroupJoinKey(currentGroupId);
-      Response response =
-          await dio.get(currentServerUrl + "getgroupname", data: {
-        "encryptedMessage": randomMessage,
-        "signature": signature,
-        "username": username,
-        "joinKey": joinKey
-      });
-      return response.data;
-    } catch (err) {
-      print(err);
-    }
-    await Future.delayed(Duration(seconds: 4));
-  }
-
-  Future<bool> setGroupName(String groupName) async {
-    try {
-      String randomMessage = secp256k1EllipticCurve.generateRandomString(100);
-      String messageHash = sha256.convert(utf8.encode(randomMessage)).toString();
-      Map signature = await secp256k1EllipticCurve.signMessage(messageHash, currentPrivateKey);
-      String joinKey = await databaseManager.getGroupJoinKey(currentGroupId);
-      Response response = await dio.put(currentServerUrl + "setgroupname", data: {
-        "encryptedMessage": randomMessage,
-        "signature": signature,
-        "joinKey": joinKey
-      });
-      if (response.data != "1") 
-        return false;
-    } catch (err) {
-      return false;
-    }
-    return true;
-  } 
-
   Future<Map> getParticipants() async {
     try {
       String message = secp256k1EllipticCurve.generateRandomString(100);
@@ -240,20 +161,19 @@ class ChatState extends State<Chat> {
 
   Future<int> sendMessage(String message) async {
     try {
-      Map participants = await databaseManager.getParticipants(currentGroupId);
-      if (participants.keys.length == 0) 
-        return 0;
+      Map compositeKeys = await databaseManager.generateCompositeKeysForRecipients(currentGroupId);
+      print("THE COMPOSITE KEYS ARE: ");
+      print(compositeKeys);
+      if(compositeKeys.keys.length == 0)
+        return 0;      
       BigInt symmetricKey = await databaseManager.getSymmetricKey(currentGroupId);
       String username = await databaseManager.getUsername();
       String encryptedMessage = await secp256k1EllipticCurve.encryptMessage(message, symmetricKey);
       String encryptedMessageHash = sha256.convert(utf8.encode(encryptedMessage)).toString();
       Map signature = await secp256k1EllipticCurve.signMessage(encryptedMessageHash, currentPrivateKey);
       String joinKey = await databaseManager.getGroupJoinKey(currentGroupId);
-      Map compositeKeys = await databaseManager.generateCompositeKeysForRecipients(currentGroupId);
-      print("THE COMPOSITE KEYS ARE: ");
-      print(compositeKeys);
       Response response = await dio.post(currentServerUrl + "message", data: {
-        "encryptedMessage": encryptedMessage,
+        "encryptedMessage": encryptedMessage, 
         "signature": json.encode(signature),
         "joinKey": joinKey,
         "username": username,
@@ -262,8 +182,11 @@ class ChatState extends State<Chat> {
       if (response.data == "-1") 
         return -1;
       else{
+        Map responseData = json.decode(json.encode(response.data));
+        print("THE MESSAGE RESPONSE IS: ");
+        print(response.data["mid"]);
         String currentUsername = await databaseManager.getUsername();
-        SentMessageResponse result = SentMessageResponse(int.parse(response.data.mid), int.parse(response.data.timestamp));
+        SentMessageResponse result = SentMessageResponse(int.parse(responseData["mid"].toString()), int.parse(responseData["timestamp"].toString()));
         await databaseManager.saveMessage(currentGroupId, result.messageId, message, currentUsername, result.timestamp, 1);
       } 
       print("THE MESSAGES ARE: ");  
@@ -309,6 +232,10 @@ class ChatState extends State<Chat> {
     Map oldMessages = {};
     try{
       oldMessages = await databaseManager.getMessages(currentGroupId, offset: offsetForMessages);
+      print("THE MESSAGES OFFSET IS: ");
+      print(offsetForMessages);
+      print("THE OLD MESSAGES ARE: ");
+      print(oldMessages);
       List messageIds = oldMessages.keys.toList();
       messageIds.sort();
       offsetForMessages = int.parse(messageIds[messageIds.length - 1]);
@@ -321,15 +248,14 @@ class ChatState extends State<Chat> {
 
   Future<bool> newMessagesCheck() async {
     try {
-      String randomMessage = secp256k1EllipticCurve.generateRandomString(100);
-      String messageHash = sha256.convert(utf8.encode(randomMessage)).toString();
+      String encryptedMessage = secp256k1EllipticCurve.generateRandomString(100);
+      String messageHash = sha256.convert(utf8.encode(encryptedMessage)).toString();
       Map signature = await secp256k1EllipticCurve.signMessage(messageHash, currentPrivateKey);
       String username = await databaseManager.getUsername();
       String joinKey = await databaseManager.getGroupJoinKey(currentGroupId);
       int offset = await databaseManager.getLastMessageId(currentGroupId);
-      Response response =
-          await dio.put(currentServerUrl + "setgroupname", data: {
-        "encryptedMessage": randomMessage,
+      Response response = await dio.get(currentServerUrl + "anynewmessages", data: {
+        "encryptedMessage": encryptedMessage,
         "signature": signature,
         "joinKey": joinKey,
         "username": username,
@@ -1103,19 +1029,49 @@ class ChatState extends State<Chat> {
 
     var loadInitialMessages;
     if(messagesContainer.length == 0){
+
+    }
+    else{
+      loadInitialMessages = Container(
+        child: ListView(
+            reverse: true,
+            padding: EdgeInsets.fromLTRB(10, 10, 10, 70),
+            children: messagesContainer.reversed.toList(),
+          ),
+      );
+    }
       loadInitialMessages = FutureBuilder<Map>(
         future: databaseManager.getMessages(currentGroupId, offset: offsetForMessages),
         builder: (BuildContext context, AsyncSnapshot<Map> snapshot) {
+          Widget finalResult = Container(
+            child: ListView(
+              reverse: true,
+              padding: EdgeInsets.fromLTRB(10, 10, 10, 70),
+              children: messagesContainer.reversed.toList(),
+            ),
+          );
           switch (snapshot.connectionState) {
             case ConnectionState.none:
-              return loadingIndicator(color: Colors.blue);
+              if(messagesContainer.length > 0)
+                return finalResult;
+              else
+                return loadingIndicator(color: Colors.blue);
+              break;
             case ConnectionState.active:
-              return loadingIndicator(color: Colors.blue);
+              if(messagesContainer.length > 0)
+                return finalResult;
+              else
+                return loadingIndicator(color: Colors.blue);
+              break;
             case ConnectionState.waiting:
-              return loadingIndicator(color: Colors.blue);
+              if(messagesContainer.length > 0)
+                return finalResult;
+              else
+                return loadingIndicator(color: Colors.blue);
+              break;
             case ConnectionState.done:
               if (snapshot.hasError) return Text('Error: ${snapshot.error}');
-              if(snapshot.data.keys.toList().length == 0){
+              if(messagesContainer.length + snapshot.data.keys.toList().length == 0){
                 return Center(
                   child: GestureDetector(
                     child: Container(
@@ -1153,6 +1109,7 @@ class ChatState extends State<Chat> {
                     ),
                     onTap: () async{
                       try{
+                        print("NO ERROR FOR GETTING NEW MESSAGES!");
                         fetchAndSaveNewMessages();
                         Map olderMessages = await getOlderMessages();
                         if(olderMessages.keys.length > 0){
@@ -1161,10 +1118,10 @@ class ChatState extends State<Chat> {
                           offsetForMessages = int.parse(messageIds[messageIds.length - 1]);
                           for(var x = 0; x < messageIds.length; x++){
                             if(olderMessages[messageIds[x]]["isSentMessage"]){
-                              messagesContainer.insert(0, generateSentMessageWidget(olderMessages[messageIds[x]]["username"], olderMessages[messageIds[x]]["message"], olderMessages[messageIds[x]]["ts"], olderMessages[messageIds[x]]["profilePic"]));
+                              messagesContainer.insert(0, generateSentMessageWidget(olderMessages[messageIds[x]]["sender"], olderMessages[messageIds[x]]["message"], int.parse(olderMessages[messageIds[x]]["ts"].toString()), olderMessages[messageIds[x]]["profilePic"]));
                             }
                             else{
-                              messagesContainer.insert(0, generateReceivedMessageWidget(olderMessages[messageIds[x]]["username"], olderMessages[messageIds[x]]["message"], olderMessages[messageIds[x]]["ts"], olderMessages[messageIds[x]]["profilePic"], olderMessages[messageIds[x]]["num"]));
+                              messagesContainer.insert(0, generateReceivedMessageWidget(olderMessages[messageIds[x]]["sender"], olderMessages[messageIds[x]]["message"], int.parse(olderMessages[messageIds[x]]["ts"].toString()), olderMessages[messageIds[x]]["profilePic"], olderMessages[messageIds[x]]["num"]));
                             }
                           }                        
                         }
@@ -1179,14 +1136,11 @@ class ChatState extends State<Chat> {
               Map initialMessages = snapshot.data;
               List messageIds = initialMessages.keys.toList();
               messageIds.sort();
-              offsetForMessages = int.parse(messageIds[messageIds.length - 1]);
-              for(var x = 0; x < messageIds.length; x++){
-                if(initialMessages[messageIds[x]]["isSentMessage"]){
-                  messagesContainer.add(generateSentMessageWidget(initialMessages[messageIds[x]]["username"], initialMessages[messageIds[x]]["message"], initialMessages[messageIds[x]]["ts"], initialMessages[messageIds[x]]["profilePic"]));
-                }
-                else{
-                  messagesContainer.add(generateReceivedMessageWidget(initialMessages[messageIds[x]]["username"], initialMessages[messageIds[x]]["message"], initialMessages[messageIds[x]]["ts"], initialMessages[messageIds[x]]["profilePic"], initialMessages[messageIds[x]]["num"]));
-                }
+              try{
+                offsetForMessages = int.parse(messageIds[messageIds.length - 1].toString());
+              }
+              catch(err){
+                //RANGE ERROR
               }
               Widget loadMoreButton = Row(
                 children: <Widget>[
@@ -1214,10 +1168,10 @@ class ChatState extends State<Chat> {
                             offsetForMessages = int.parse(messageIds[messageIds.length - 1]);
                             for(var x = 0; x < messageIds.length; x++){
                               if(olderMessages[messageIds[x]]["isSentMessage"]){
-                                messagesContainer.insert(0, generateSentMessageWidget(olderMessages[messageIds[x]]["username"], olderMessages[messageIds[x]]["message"], olderMessages[messageIds[x]]["ts"], olderMessages[messageIds[x]]["profilePic"]));
+                                messagesContainer.insert(0, generateSentMessageWidget(olderMessages[messageIds[x]]["sender"], olderMessages[messageIds[x]]["message"], int.parse(olderMessages[messageIds[x]]["ts"].toString()), olderMessages[messageIds[x]]["profilePic"]));
                               }
                               else{
-                                messagesContainer.insert(0, generateReceivedMessageWidget(olderMessages[messageIds[x]]["username"], olderMessages[messageIds[x]]["message"], olderMessages[messageIds[x]]["ts"], olderMessages[messageIds[x]]["profilePic"], olderMessages[messageIds[x]]["num"]));
+                                messagesContainer.insert(0, generateReceivedMessageWidget(olderMessages[messageIds[x]]["sender"], olderMessages[messageIds[x]]["message"], int.parse(olderMessages[messageIds[x]]["ts"].toString()), olderMessages[messageIds[x]]["profilePic"], olderMessages[messageIds[x]]["num"]));
                               }
                             }                        
                           }
@@ -1232,32 +1186,30 @@ class ChatState extends State<Chat> {
                   Flexible(
                     flex: 1,
                     child: Container(),
-                  )                                                    
+                  )
                 ],
               );
-              if(messageIds.length > 0)
+              if(messagesContainer.length == 0)
                 messagesContainer.insert(0, loadMoreButton);
-              return Container(
-                child: ListView(
-                  reverse: true,
-                  padding: EdgeInsets.fromLTRB(10, 10, 10, 70),
-                  children: messagesContainer.reversed.toList(),
-                ),
-              );
+              print("NEW MESSAGES ARE: ");
+              print(initialMessages.keys);               
+              for(var x = 0; x < messageIds.length; x++){
+                print(initialMessages[messageIds[x]]);
+                print([initialMessages[messageIds[x]]["sender"], initialMessages[messageIds[x]]["message"], int.parse(initialMessages[messageIds[x]]["ts"].toString())]);
+                if(initialMessages[messageIds[x]]["isSentMessage"]){
+                  messagesContainer.add(generateSentMessageWidget(initialMessages[messageIds[x]]["sender"], initialMessages[messageIds[x]]["message"], int.parse(initialMessages[messageIds[x]]["ts"].toString()), initialMessages[messageIds[x]]["profilePic"]));
+                }
+                else{
+                  messagesContainer.add(generateReceivedMessageWidget(initialMessages[messageIds[x]]["sender"], initialMessages[messageIds[x]]["message"], int.parse(initialMessages[messageIds[x]]["ts"].toString()), initialMessages[messageIds[x]]["profilePic"], initialMessages[messageIds[x]]["num"]));
+                }
+              }
+
+
+              return finalResult;
           }
         },
       );
-    }
-    else{
-      loadInitialMessages = Container(
-        child: ListView(
-            reverse: true,
-            padding: EdgeInsets.fromLTRB(10, 10, 10, 70),
-            children: messagesContainer.reversed.toList(),
-          ),
-      );
-    }
-
+    
     var loadServerDetails;
     if(json.encode(currentServerInfo) == "{}"){
       loadServerDetails = FutureBuilder<Map>(
@@ -1705,7 +1657,10 @@ class ChatState extends State<Chat> {
                                         break;
                                       default:
                                         //Sent action
-                                        messageTextController.text = "";
+                                        print("message sent successfully!");
+                                        setState(() {
+                                          messageTextController.text = "";
+                                        });
                                         break;
                                     }
                                   }
@@ -1828,5 +1783,103 @@ class SentMessageResponse{
   SentMessageResponse(messageId, timestamp){
     this.messageId = messageId;
     this.timestamp = timestamp;
+  }
+}
+
+class RequestPayload{
+  String username, encryptedMessage, joinKey, publicKey, publicKey2, passphrase;
+  Map signature, compositeKeys;
+  int messagesOffset;
+  BigInt symmetricKey;
+
+  Future<RequestPayload> init({String message, String passphrase}) async{
+      if(passphrase == null)
+        passphrase = "";    
+      this.symmetricKey = await databaseManager.getSymmetricKey(currentGroupId);
+      if(message == null){
+        message = secp256k1EllipticCurve.generateRandomString(100);
+        this.encryptedMessage = message;
+      }
+      else
+        this.encryptedMessage = await secp256k1EllipticCurve.encryptMessage(message, symmetricKey);
+      String encryptedMessageHash = sha256.convert(utf8.encode(encryptedMessage)).toString();
+      this.username = await databaseManager.getUsername();
+      this.signature = await secp256k1EllipticCurve.signMessage(encryptedMessageHash, currentPrivateKey);
+      this.compositeKeys = await databaseManager.generateCompositeKeysForRecipients(currentGroupId);
+      this.messagesOffset = await databaseManager.getLastMessageId(currentGroupId);
+      this.joinKey = await databaseManager.getGroupJoinKey(currentGroupId);
+      if(newGroupConnection){
+        this.publicKey = currentPublicKey["x2"]; 
+        this.publicKey2 = currentPublicKey["x"];        
+      }
+      else{
+        this.publicKey = globalGroupJoinKey.publicKey.toString(); 
+        this.publicKey2 = globalGroupJoinKey.publicKey2.toString();
+      }
+      this.passphrase = passphrase;
+      return this;
+  }
+
+  toJSON(){
+    return {
+      "encryptedMessage": encryptedMessage,
+      "signature": json.encode(signature),
+      "joinKey": joinKey,
+      "username": username,
+      "compositeKeys": json.encode(compositeKeys),
+      "publicKey": publicKey,
+      "publicKey2": publicKey2,
+      "passphrase": passphrase,
+      "offset": messagesOffset    
+    };    
+  }
+
+  toMessageJSON(){
+    return {
+      "encryptedMessage": encryptedMessage,
+      "signature": json.encode(signature),
+      "joinKey": joinKey,
+      "username": username,
+      "compositeKeys": json.encode(compositeKeys)
+    };
+  }
+
+  toNewGroupJSON(){
+    return {
+      "username": username,
+      "publicKey": currentPublicKey["x2"],
+      "publicKey2": currentPublicKey["x"],
+      "passphrase": passphrase
+    };
+  }
+
+  toJoinGroupJSON(){
+    return {
+      "encryptedMessage": encryptedMessage,
+      "signature": json.encode(signature),
+      "username": username,
+      "publicKey": publicKey,
+      "publicKey2": publicKey2,
+      "joinKey": joinKey,
+    };
+  }  
+
+  toGetParticipantsJSON(){
+    return {
+      "encryptedMessage": encryptedMessage,
+      "signature": json.encode(signature),
+      "joinKey": joinKey,
+      "username": username
+    };    
+  }
+
+  toGetNewMessagesJSON(){
+    return {
+      "encryptedMessage": encryptedMessage,
+      "signature": json.encode(signature),
+      "joinKey": joinKey,
+      "username": username,
+      "offset": messagesOffset
+    };
   }
 }

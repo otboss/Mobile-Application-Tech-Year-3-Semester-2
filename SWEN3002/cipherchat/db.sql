@@ -3,6 +3,7 @@ USE cipherchat;
 
 CREATE TABLE IF NOT EXISTS groups(
     gid INT(11) NOT NULL AUTO_INCREMENT,
+    name VARCHAR(50),
     joinKey VARCHAR(100) NOT NULL,
     ts TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
     UNIQUE(joinKey),
@@ -26,21 +27,29 @@ CREATE TABLE IF NOT EXISTS messages(
     gid INT(11) NOT NULL,
     pid INT(11) NOT NULL,
     message TEXT NOT NULL,
+    compositeKey VARCHAR(255) NOT NULL,
     ts TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
     PRIMARY KEY(mid),
     FOREIGN KEY(pid) REFERENCES participants(pid)
 );
 
-CREATE TABLE IF NOT EXISTS compositeKeys(
-    cpid INT(11) NOT NULL AUTO_INCREMENT,
-    mid INT(11) NOT NULL ,
+CREATE TABLE IF NOT EXISTS expiredSignatures(
+    exsid INT(11) NOT NULL AUTO_INCREMENT,
     gid INT(11) NOT NULL,
-    pid INT(11) NOT NULL,
-    compositeKey VARCHAR(255) NOT NULL,
+    r VARCHAR(100),
+    s VARCHAR(100),
     ts TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
-    UNIQUE(mid, pid),
-    PRIMARY KEY(cpid),
-    FOREIGN KEY(mid) REFERENCES messages(mid),
-    FOREIGN KEY(gid) REFERENCES groups(gid),
-    FOREIGN KEY(pid) REFERENCES participants(pid)
+    UNIQUE(gid, r, s),
+    PRIMARY KEY(exsid),
+    FOREIGN KEY(gid) REFERENCES groups(gid) 
+);
+
+CREATE TABLE IF NOT EXISTS servers(
+    sid INT(11) NOT NULL AUTO_INCREMENT,
+    ip VARCHAR(50) NOT NULL,
+    port INT(11),
+    page INT(11),
+    ts TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    UNIQUE(ip, port),
+    PRIMARY KEY(sid)
 );

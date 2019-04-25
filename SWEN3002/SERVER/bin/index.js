@@ -1,5 +1,6 @@
 //MODULES
 const express = require("express");
+const compression = require('compression');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const bodyParser = require('body-parser');
@@ -262,21 +263,19 @@ const verifySignature = function(gid, pid, message, r, s, recoveryParam){
 /** Server Router*/
 const router = express();
 
-//HELMET PROTECTION MIDDLEWARE
-router.use(helmet());
 
-//LIMIT REQUESTS FROM IP ADDRESS, PREVENTS SPAM
-router.use(
-    rateLimit({
-        windowMs: 15 * 60 * 1000,
-        max: 1500,
-        message: "try again later."
-    })
-);
-
-//REQUEST BODY PARSER
-router.use(bodyParser.urlencoded({ extended: false }));
-router.use(bodyParser.json());
+router
+    .use(helmet())
+    .use(compression())
+    .use(
+        rateLimit({
+            windowMs: 15 * 60 * 1000,
+            max: 1500,
+            message: "try again later."
+        })
+    )
+    .use(bodyParser.urlencoded({ extended: false }))
+    .use(bodyParser.json());
 
 
 //BOOT MESSAGE

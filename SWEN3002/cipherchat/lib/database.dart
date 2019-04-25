@@ -15,13 +15,13 @@ class DatabaseManager {
 
   static Database db;
   ///Columns Are: aid, username, profilePic, ts
-  final String accountTable = "accountInfo";
+  //final String accountTable = "accountInfo";
   ///Columns Are: gid, serverIp, serverPort, label, joinKey, privateKey, displayPicture, username
-  final String groupsTable = "groups";
+  //final String groupsTable = "groups";
   ///Columns Are: mid, pid, gid, midFromServer, msg, receivedTime, isSentMessage, ts
-  final String messagesTable = "messages";
+  //final String messagesTable = "messages";
   ///Columns Are: pid, gid, username, profilePic, publicKey, publicKey2, recipient, joined, ts
-  final String participantsTable = "participants"; 
+  //final String participantsTable = "participants"; 
   ///Columns Are: sid, ip, port, name, page
 
 
@@ -31,64 +31,15 @@ class DatabaseManager {
 
 
   ///Columns Are: aid, username, profilePic, ts
-  
 
-  Map databaseTables = {
-    "accountTable":{
-      "tableName": "accountInfo",
-      "columns":{
-        "accountId": "aid",
-        "username": "username",
-        "profilePic": "profilePic",
-        "timestamp": "ts"
-      }
-    },
-    "groupsTable":{
-      "tableName": "groups",
-      "columns":{
-        "groupId": "gid",
-        "serverIp": "serverIp",
-        "serverPort": "serverPort",
-        "label": "label",
-        "joinKey": "joinKey",
-        "privateKey": "privateKey",
-        "displayPicture": "displayPicture",
-        "username": "username",
-        "timestamp": "ts"
-      }
-    },
-    "participantsTable":{
-      "tableName": "participants",
-      "columns":{
-        "participantId": "pid",
-        "groupid": "gid",
-        "username": "username",
-        "profilePic": "serverPort",
-        "publicKey": "publicKey",
-        "publicKey2": "publicKey2",
-        "recipient": "recipient",
-        "joined": "displayPicture",
-        "timestamp": "ts"
-      },
-    },
-    "messagesTable":{
-      "tableName": "messages",
-      "columns":{
-        "messageId": "mid",
-        "participantId": "pid",
-        "groupid": "gid",
-        "messageIdFromServer": "midFromServer",
-        "message": "msg",
-        "receivedTime": "receivedTime",
-        "isSentMessage": "isSentMessage",
-        "timestamp": "ts"
-      }
-    }
-  };
   DatabaseManager.internal();
 
+  AccountTable accountsTable = AccountTable();
+  GroupTable groupsTable = GroupTable();
+  ParticipantsTable participantsTable = ParticipantsTable();
+  MessagesTable messagesTable = MessagesTable();
 
-  
+
   Future<String> getDatabasePath() async {
     Directory privateStorage = await getApplicationDocumentsDirectory();
     return join(privateStorage.path, 'steemitsentinels.db');
@@ -98,11 +49,76 @@ class DatabaseManager {
     try {
       String path = await getDatabasePath();
       db = await openDatabase(path, version: 1);
-      await db.execute("CREATE TABLE IF NOT EXISTS $accountTable(aid INTEGER PRIMARY KEY, username TEXT, ts DATETIME DEFAULT CURRENT_TIMESTAMP);");
-      await db.execute("CREATE TABLE IF NOT EXISTS $groupsTable(gid INTEGER PRIMARY KEY, serverIp TEXT, serverPort INTEGER, label TEXT, joinKey TEXT, privateKey TEXT, displayPicture LONGTEXT, username TEXT, ts DATETIME DEFAULT CURRENT_TIMESTAMP);");
-      await db.execute("CREATE TABLE IF NOT EXISTS $participantsTable(pid INTEGER PRIMARY KEY, gid INTEGER, username TEXT, profilePic LONGTEXT, publicKey TEXT, publicKey2 TEXT, recipient INTEGER DEFAULT 0, joined INTEGER, ts DATETIME DEFAULT CURRENT_TIMESTAMP, FOREIGN KEY(gid) REFERENCES $groupsTable(gid));");
-      await db.execute("CREATE TABLE IF NOT EXISTS $messagesTable(mid INTEGER PRIMARY KEY, gid INTEGER, pid INTEGER, midFromServer INTEGER, msg TEXT, receivedTime INTEGER, isSentMessage INTEGER DEFAULT 0, ts DATETIME DEFAULT CURRENT_TIMESTAMP, FOREIGN KEY(gid) REFERENCES $groupsTable(gid), FOREIGN KEY(pid) REFERENCES $participantsTable(pid));");
-      await db.rawInsert("INSERT INTO $accountTable (username) VALUES ('Anonymous')");
+      await db.execute("""
+      CREATE 
+      TABLE 
+      IF 
+      NOT 
+      EXISTS """+accountsTable.tableName.getTableName()+"""(
+        """+accountsTable.accountId.getColumnName()+""" INTEGER PRIMARY KEY, 
+        """+accountsTable.username.getColumnName()+""" TEXT, 
+        """+accountsTable.timestamp.getColumnName()+""" DATETIME DEFAULT CURRENT_TIMESTAMP
+      );""");
+      await db.execute("""
+      CREATE 
+      TABLE 
+      IF 
+      NOT 
+      EXISTS """+groupsTable.tableName.getTableName()+"""(
+        """+groupsTable.groupId.getColumnName()+""" INTEGER PRIMARY KEY, 
+        """+groupsTable.serverIp.getColumnName()+""" TEXT, 
+        """+groupsTable.serverPort.getColumnName()+""" INTEGER, 
+        """+groupsTable.label.getColumnName()+""" TEXT, 
+        """+groupsTable.joinKey.getColumnName()+""" TEXT, 
+        """+groupsTable.privateKey.getColumnName()+""" TEXT, 
+        """+groupsTable.displayPicture.getColumnName()+""" LONGTEXT, 
+        """+groupsTable.username.getColumnName()+""" TEXT, 
+        """+groupsTable.timestamp.getColumnName()+""" DATETIME DEFAULT CURRENT_TIMESTAMP
+      );""");
+      await db.execute("""
+      CREATE 
+      TABLE 
+      IF 
+      NOT 
+      EXISTS """+participantsTable.tableName.getTableName()+"""(
+        """+participantsTable.participantId.getColumnName()+""" INTEGER PRIMARY KEY, 
+        """+participantsTable.groupId.getColumnName()+""" INTEGER, 
+        """+participantsTable.username.getColumnName()+""" TEXT, 
+        """+participantsTable.profilePic.getColumnName()+""" LONGTEXT, 
+        """+participantsTable.publicKey.getColumnName()+""" TEXT, 
+        """+participantsTable.publicKey2.getColumnName()+""" TEXT, 
+        """+participantsTable.recipient.getColumnName()+""" INTEGER DEFAULT 0, 
+        """+participantsTable.joined.getColumnName()+""" INTEGER, 
+        """+participantsTable.timestamp.getColumnName()+""" DATETIME DEFAULT CURRENT_TIMESTAMP, 
+        FOREIGN KEY("""+participantsTable.groupId.getColumnName()+""") 
+        REFERENCES """+groupsTable.tableName.getTableName()+"""("""+groupsTable.groupId.getColumnName()+""")
+      );""");
+      await db.execute("""
+      CREATE 
+      TABLE 
+      IF 
+      NOT 
+      EXISTS """+messagesTable.tableName.getTableName()+"""(
+        """+messagesTable.messageId.getColumnName()+""" INTEGER PRIMARY KEY, 
+        """+messagesTable.groupId.getColumnName()+""" INTEGER, 
+        """+messagesTable.participantId.getColumnName()+""" INTEGER, 
+        """+messagesTable.messageIdFromServer.getColumnName()+""" INTEGER, 
+        """+messagesTable.message.getColumnName()+""" TEXT, 
+        """+messagesTable.receivedTime.getColumnName()+""" INTEGER, 
+        """+messagesTable.isSentMessage.getColumnName()+""" INTEGER DEFAULT 0, 
+        """+messagesTable.timestamp.getColumnName()+""" DATETIME DEFAULT CURRENT_TIMESTAMP, 
+        FOREIGN KEY("""+messagesTable.groupId.getColumnName()+""") 
+        REFERENCES """+groupsTable.tableName.getTableName()+"""("""+groupsTable.groupId.getColumnName()+"""), 
+        FOREIGN KEY("""+messagesTable.participantId.getColumnName()+""") 
+        REFERENCES """+participantsTable.tableName.getTableName()+"""("""+participantsTable.participantId.getColumnName()+"""));""");
+      await db.rawInsert("""
+      INSERT 
+      INTO """+accountsTable.tableName.getTableName()+""" (
+        """+accountsTable.username.getColumnName()+"""
+      ) 
+      VALUES (
+        'Anonymous'
+      )""");
       print("Database Created Successfully");
       return db;
     } catch (err) {
@@ -121,7 +137,11 @@ class DatabaseManager {
   Future<Map> getGroupInfo(int gid) async{
     var client = await getDatabase();
     try{
-      List query = await client.rawQuery("SELECT * FROM $groupsTable WHERE gid = '"+gid.toString()+"';");
+      List query = await client.rawQuery("""
+      SELECT 
+      * 
+      FROM """+groupsTable.tableName.getTableName()+""" 
+      WHERE """+groupsTable.groupId.getColumnName()+""" = '"""+gid.toString()+"""';""");
       return query[0];
     }
     catch(err){
@@ -134,7 +154,10 @@ class DatabaseManager {
     var client = await getDatabase();
     List query = [];
     try{
-      query = await client.rawQuery("SELECT MAX(gid) gid FROM $groupsTable");
+      query = await client.rawQuery("""
+      SELECT 
+      MAX("""+groupsTable.groupId.getColumnName()+""") gid 
+      FROM """+groupsTable.tableName.getTableName()+""";""");
       if(query.length > 0)
         return query[0]["gid"];
     }
@@ -148,9 +171,13 @@ class DatabaseManager {
     var client = await getDatabase();
     List query = [];
     try{
-      query = await client.rawQuery("SELECT joinKey FROM $groupsTable WHERE gid = '"+groupId.toString()+"'");
+      query = await client.rawQuery("""
+      SELECT 
+      """+groupsTable.joinKey.getColumnName()+"""  
+      FROM """+groupsTable.tableName.getTableName()+""" 
+      WHERE """+groupsTable.groupId.getColumnName()+""" = '"""+groupId.toString()+"""';""");
       if(query.length > 0)
-        return query[0]["joinKey"];
+        return query[0][groupsTable.joinKey.getColumnName()];
     }
     catch(err){
       print(err);
@@ -162,11 +189,38 @@ class DatabaseManager {
     var client = await getDatabase();
     List query = [];
     try{
-      query = await client.rawQuery("SELECT * FROM $groupsTable WHERE joinKey = '"+joinKey+"';");
+      query = await client.rawQuery("""
+      SELECT 
+      * 
+      FROM """+groupsTable.tableName.getTableName()+""" 
+      WHERE """+groupsTable.joinKey.getColumnName()+""" = '"""+joinKey+"""';""");
       if(query.length == 0)
-        await client.rawInsert("INSERT INTO $groupsTable (serverIp, serverPort, label, joinKey, privateKey, displayPicture, username) VALUES ('"+serverIp+"', '"+serverPort.toString()+"', '"+label+"', '"+joinKey+"', '"+privateKey+"', '"+defaultProfilePicBase64+"', '"+username+"');");
-      query = await client.rawQuery("SELECT gid FROM $groupsTable WHERE joinKey = '"+joinKey+"';");
-      return int.parse(query[0]["gid"].toString());
+        await client.rawInsert("""
+        INSERT 
+        INTO """+groupsTable.tableName.getTableName()+""" (
+          """+groupsTable.serverIp.getColumnName()+""", 
+          """+groupsTable.serverPort.getColumnName()+""",
+          """+groupsTable.label.getColumnName()+""",
+          """+groupsTable.joinKey.getColumnName()+""",
+          """+groupsTable.privateKey.getColumnName()+""",
+          """+groupsTable.displayPicture.getColumnName()+""",
+          """+groupsTable.username.getColumnName()+"""
+        ) 
+        VALUES (
+          '"""+serverIp+"""', 
+          '"""+serverPort.toString()+"""', 
+          '"""+label+"""', 
+          '"""+joinKey+"""', 
+          '"""+privateKey+"""', 
+          '"""+defaultProfilePicBase64+"""', 
+          '"""+username+"""'
+        );
+        """);
+      query = await client.rawQuery("""
+      SELECT """+groupsTable.groupId.getColumnName()+""" 
+      FROM """+groupsTable.tableName.getTableName()+""" 
+      WHERE """+groupsTable.joinKey.getColumnName()+""" = '"""+joinKey+"""';""");
+      return int.parse(query[0][groupsTable.groupId.getColumnName()].toString());
     }
     catch(err){
       print(err);
@@ -178,7 +232,10 @@ class DatabaseManager {
   Future<bool> updateGroupDisplayPicture(int gid, String newDisplayPicture) async{
     var client = await getDatabase();
     try{
-      await client.rawUpdate("UPDATE $groupsTable SET displayPicture = '"+newDisplayPicture+"' WHERE gid = '"+gid.toString()+"'");
+      await client.rawUpdate("""
+      UPDATE """+groupsTable.tableName.getTableName()+""" 
+      SET """+groupsTable.displayPicture.getColumnName()+""" = '"""+newDisplayPicture+"""' 
+      WHERE """+groupsTable.groupId.getColumnName()+""" = '"""+gid.toString()+"""';""");
     }
     catch(err){
       print(err);
@@ -191,9 +248,31 @@ class DatabaseManager {
     var client = await getDatabase();
     List query = [];
     try{
-      query = await client.rawQuery("SELECT * FROM $participantsTable WHERE gid = '"+groupId.toString()+"' AND username = '"+username+"';");
+      query = await client.rawQuery("""
+      SELECT 
+      * 
+      FROM """+participantsTable.tableName.getTableName()+""" 
+      WHERE """+participantsTable.groupId.getColumnName()+""" = '"""+groupId.toString()+"""' 
+      AND """+participantsTable.username.getColumnName()+""" = '"""+username+"""';""");
       if(query.length == 0)
-        await client.rawInsert("INSERT INTO $participantsTable (gid, username, profilePic, publicKey, publicKey2, joined) VALUES ('"+groupId.toString()+"', '"+username+"', '"+profilePic+"', '"+publicKey.toString()+"', '"+publicKey2.toString()+"', '"+joinedTimestamp.toString()+"');");
+        await client.rawInsert("""
+        INSERT 
+        INTO """+participantsTable.tableName.getTableName()+""" (
+          """+participantsTable.groupId.getColumnName()+""", 
+          """+participantsTable.username.getColumnName()+""", 
+          """+participantsTable.profilePic.getColumnName()+""", 
+          """+participantsTable.publicKey.getColumnName()+""", 
+          """+participantsTable.publicKey2.getColumnName()+""", 
+          """+participantsTable.joined.getColumnName()+"""
+        ) 
+        VALUES (
+          '"""+groupId.toString()+"""', 
+          '"""+username+"""', 
+          '"""+profilePic+"""', 
+          '"""+publicKey.toString()+"""', 
+          '"""+publicKey2.toString()+"""', 
+          '"""+joinedTimestamp.toString()+"""'
+        );""");
     }
     catch(err){
       print(err);
@@ -206,10 +285,17 @@ class DatabaseManager {
     var client = await getDatabase();
     List query = [];
     try{
-      query = await client.rawQuery("SELECT * FROM $groupsTable WHERE joinKey = '"+joinKey+"';");
+      query = await client.rawQuery("""
+      SELECT 
+      * 
+      FROM """+groupsTable.tableName.getTableName()+""" 
+      WHERE """+groupsTable.joinKey.getColumnName()+""" = '"""+joinKey+"""';""");
       if(query.length > 0){
-        int gid = query[0]["gid"];
-        await client.rawQuery("UPDATE $groupsTable SET label = '"+newLabel+"' WHERE gid = '"+gid.toString()+"';");
+        int gid = query[0][groupsTable.groupId.getColumnName()];
+        await client.rawQuery("""
+        UPDATE """+groupsTable.tableName.getTableName()+""" 
+        SET """+groupsTable.label.getColumnName()+""" = '"""+newLabel+"""' 
+        WHERE """+groupsTable.groupId.toString()+""" = '"""+gid.toString()+"""';""");
         return true;
       }
       return false;
@@ -223,7 +309,13 @@ class DatabaseManager {
   Future<Map> selectRandomPreviousServer() async{
     var client = await getDatabase();
     try{
-      List query = await client.rawQuery("SELECT serverIp ip, serverPort port FROM $groupsTable ORDER BY random() LIMIT 1");
+      List query = await client.rawQuery("""
+      SELECT 
+      """+groupsTable.serverIp.getColumnName()+""" ip, 
+      """+groupsTable.serverPort.getColumnName()+""" port 
+      FROM """+groupsTable.tableName.getTableName()+""" 
+      ORDER BY random() 
+      LIMIT 1;""");
       return query[0];
     }
     catch(err){
@@ -236,12 +328,21 @@ class DatabaseManager {
     var client = await getDatabase();
     List query = [];
     try{
-      query = await client.rawQuery("SELECT username FROM $accountTable");
-      String currentUsername = query[0]["username"];
-      query = await client.rawQuery("SELECT publicKey FROM $participantsTable WHERE gid = '"+gid.toString()+"' AND recipient = '1' AND username != '"+currentUsername+"'");
+      query = await client.rawQuery("""
+      SELECT 
+      """+accountsTable.username.getColumnName()+"""  
+      FROM """+accountsTable.tableName.getTableName()+""";""");
+      String currentUsername = query[0][accountsTable.username.getColumnName()];
+      query = await client.rawQuery("""
+      SELECT 
+      """+participantsTable.publicKey.getColumnName()+""" 
+      FROM """+participantsTable.tableName.getTableName()+""" 
+      WHERE """+participantsTable.groupId.getColumnName()+""" = '"""+gid.toString()+"""' 
+      AND """+participantsTable.recipient.getColumnName()+""" = '1' 
+      AND """+participantsTable.username.getColumnName()+""" != '"""+currentUsername+"""';""");
       BigInt compositeKey = BigInt.parse("1");
       for(var x = 0; x < query.length; x++){
-        compositeKey *= BigInt.parse(query[x]["publicKey"]);
+        compositeKey *= BigInt.parse(query[x][participantsTable.publicKey.getColumnName()]);
       }
       return compositeKey;
     }
@@ -258,13 +359,21 @@ class DatabaseManager {
     List query = [];
     try{
       String currentUser = await getUsername();
-      query = await client.rawQuery("SELECT username, publicKey FROM $participantsTable WHERE gid = '"+gid.toString()+"' AND recipient = '1' OR username = '"+currentUser+"' GROUP BY username");
+      query = await client.rawQuery("""
+      SELECT 
+      """+participantsTable.username.getColumnName()+""" username, 
+      """+participantsTable.publicKey.getColumnName()+""" publicKey 
+      FROM """+participantsTable.tableName.getTableName()+""" 
+      WHERE """+participantsTable.groupId.getColumnName()+""" = '"""+gid.toString()+"""' 
+      AND """+participantsTable.recipient.getColumnName()+""" = '1' 
+      OR """+participantsTable.username.getColumnName()+""" = '"""+currentUser+"""' 
+      GROUP BY """+participantsTable.username.getColumnName()+""";""");
       for(var x = 0; x < query.length; x++){
-        result[query[x]["username"]] = BigInt.parse("1");
+        result[query[x][participantsTable.username.getColumnName()]] = BigInt.parse("1");
         for(var y = 0; y < query.length; y++){
           try{
-          if(query[y]["username"] != query[x]["username"])
-            result[query[x]["username"]] *= BigInt.parse(query[y]["publicKey"]);            
+          if(query[y][participantsTable.username.getColumnName()] != query[x][participantsTable.username.getColumnName()])
+            result[query[x][participantsTable.username.getColumnName()]] *= BigInt.parse(query[y][participantsTable.publicKey.getColumnName()]);            
           }
           catch(err){
             continue;
@@ -288,7 +397,10 @@ class DatabaseManager {
     var client = await getDatabase();
     List query = [];
     try{
-      query = await client.rawQuery("SELECT username FROM $groupsTable WHERE gid = '"+gid.toString()+"';");
+      query = await client.rawQuery("""
+      SELECT """+groupsTable.username.getColumnName()+""" username 
+      FROM """+groupsTable.tableName.getTableName()+""" 
+      WHERE """+groupsTable.groupId.getColumnName()+""" = '"""+gid.toString()+"""';""");
       return query[0]["username"];
     }
     catch(err){
@@ -301,7 +413,9 @@ class DatabaseManager {
     var client = await getDatabase();
     List query = [];
     try{
-      query = await client.rawQuery("SELECT label FROM $groupsTable WHERE gid = '"+gid.toString()+"';");
+      query = await client.rawQuery("""
+      SELECT """+groupsTable.label.getColumnName()+""" label FROM """+groupsTable.tableName.getTableName()+""" 
+      WHERE """+groupsTable.groupId.getColumnName()+""" = '"""+gid.toString()+"""';""");
       return query[0]["label"];
     }
     catch(err){
@@ -313,7 +427,9 @@ class DatabaseManager {
   Future<bool> setGroupName(int gid, String newLabel) async{
     var client = await getDatabase();
     try{
-      await client.rawQuery("UPDATE $groupsTable SET label = '"+newLabel+"'");
+      await client.rawQuery("""
+      UPDATE """+groupsTable.tableName.getTableName()+""" 
+      SET """+groupsTable.label.getColumnName()+""" = '"""+newLabel+"';""");
     }
     catch(err){
       print(err);
@@ -339,9 +455,15 @@ class DatabaseManager {
     var client = await getDatabase();
     try{
       if(isOn)
-        await client.rawQuery("UPDATE participants SET recipient = '1' WHERE username = '"+username+"'");
+        await client.rawQuery("""
+        UPDATE """+participantsTable.tableName.getTableName()+""" 
+        SET """+participantsTable.recipient.getColumnName()+""" = '1' 
+        WHERE """+participantsTable.username.getColumnName()+""" = '"""+username+"""';""");
       else
-        await client.rawQuery("UPDATE participants SET recipient = '0' WHERE username = '"+username+"'");
+        await client.rawQuery("""
+        UPDATE """+participantsTable.tableName.getTableName()+""" 
+        SET """+participantsTable.recipient.getColumnName()+"""" = '0' 
+        WHERE """+participantsTable.username.getColumnName()+""" = '"""+username+"""';""");
       return true;
     }
     catch(err){
@@ -355,7 +477,10 @@ class DatabaseManager {
     var client = await getDatabase();
     List query;
     try{
-      query = await client.rawQuery("SELECT MAX(gid) lastGroupId FROM $groupsTable");
+      query = await client.rawQuery("""
+      SELECT 
+      MAX("""+groupsTable.groupId.getColumnName()+""") lastGroupId 
+      FROM """+groupsTable.tableName.getTableName()+""";""");
       return query[0]["lastGroupId"];
     }
     catch(err){
@@ -365,20 +490,57 @@ class DatabaseManager {
 
   ///Returns A list of the past conversation and the last message
   ///of each conversation
-  Future<List> getAllGroups(int offset, String filter) async{
+  Future<Map> getAllGroups(int offset, String filter) async{
     var client = await getDatabase();
     List query = [];
     try{
-      /*
-      if(filter.length == 0)
-        query = await client.rawQuery("SELECT * FROM $groupsTable JOIN $messagesTable ON  $groupsTable.gid = $messagesTable.gid JOIN $participantsTable ON $messagesTable.pid = $participantsTable.pid WHERE $groupsTable.gid > '"+offset.toString()+"' GROUP BY $groupsTable.gid HAVING MAX($messagesTable.mid) ORDER BY $messagesTable.ts DESC LIMIT 60");
-      else
-        query = await client.rawQuery("SELECT * FROM $groupsTable JOIN $messagesTable ON  $groupsTable.gid = $messagesTable.gid JOIN $participantsTable ON $messagesTable.pid = $participantsTable.pid WHERE $groupsTable.label LIKE '%$filter%' GROUP BY $groupsTable.gid HAVING MAX($messagesTable.mid) ORDER BY $messagesTable.ts DESC LIMIT 60");
-      for(var x = 0; x < query.length; x++){
-        List members = await client.rawQuery("SELECT COUNT(*) FROM $groupsTable JOIN $participantsTable ON $groupsTable.gid = $participantsTable.pid GROUP BY $participantsTable.pid");
-        query[x]["members"] = members.length;
-      }*/
-      return query;
+      query = await client.rawQuery("""
+      SELECT
+      *, 
+      STRFTIME('%s', """+messagesTable.tableName.getTableName()+"""."""+messagesTable.timestamp.getColumnName()+""")*1000 tme 
+      FROM """+groupsTable.tableName.getTableName()+""" 
+      JOIN """+messagesTable.tableName.getTableName()+"""
+      ON """+groupsTable.tableName.getTableName()+"""."""+groupsTable.groupId.getColumnName()+""" = """+messagesTable.tableName.getTableName()+"""."""+messagesTable.groupId.getColumnName()+"""
+      WHERE """+groupsTable.tableName.getTableName()+"""."""+groupsTable.label.getColumnName()+""" 
+      LIKE '%$filter%'
+      GROUP 
+      BY """+groupsTable.tableName.getTableName()+"""."""+groupsTable.groupId.getColumnName()+"""
+      ORDER 
+      BY """+messagesTable.tableName.getTableName()+"""."""+messagesTable.timestamp.getColumnName()+"""
+      DESC
+      LIMIT 100;
+      """);
+      
+      List maxGidFinder = query;
+      maxGidFinder.sort((a, b) => a.gid.compareTo(b.gid));
+      maxGidFinder = maxGidFinder.reversed.toList();
+      int maxMessageId  = 0;
+      List futureMessages = [];
+      try{
+        maxMessageId = maxGidFinder[0]["gid"];
+        futureMessages = await client.rawQuery("""
+        SELECT
+        *
+        FROM """+messagesTable.tableName.getTableName()+""" 
+        JOIN """+groupsTable.tableName.getTableName()+"""
+        ON """+messagesTable.tableName.getTableName()+"""."""+messagesTable.groupId.getColumnName()+""" = """+groupsTable.tableName.getTableName()+"""."""+groupsTable.groupId.getColumnName()+""" 
+        WHERE """+messagesTable.tableName.getTableName()+"""."""+messagesTable.messageId.getColumnName()+""" > '"""+maxMessageId.toString()+"""'
+        AND """+groupsTable.tableName.getTableName()+"""."""+groupsTable.label.getColumnName()+""" 
+        LIKE '%$filter%';
+        """);
+      }
+      catch(err){
+        //indexing error
+      }
+
+      bool hasMoreGroups = false;
+      if(futureMessages.length > 0)
+        hasMoreGroups = true; 
+
+      return {
+        "results": query,
+        "hasMoreGroups": hasMoreGroups
+      };
     }
     catch(err){
       print("AN ERROR OCCURRED DURING LOADING");
@@ -392,19 +554,24 @@ class DatabaseManager {
     var client = await getDatabase();
     List query = [];
     try{
-      query = await client.rawQuery("SELECT username FROM $accountTable");
+      query = await client.rawQuery("""
+      SELECT 
+      """+accountsTable.username.getColumnName()+"""  
+      FROM """+accountsTable.tableName.getTableName()+""";""");
     }
     catch(err){
       print(err);
       return null;
     }    
-    return query[0]["username"];
+    return query[0][accountsTable.username.getColumnName()];
   }
    
   Future<bool> updateUsername(String username) async{
     var client = await getDatabase();
     try{
-      await client.rawQuery("UPDATE $accountTable SET username = '"+username+"'");
+      await client.rawQuery("""
+      UPDATE """+accountsTable.tableName.getTableName()+""" 
+      SET """+accountsTable.username.getColumnName()+""" = '$username';""");
       return true;
     }
     catch(err){
@@ -417,9 +584,31 @@ class DatabaseManager {
     var client = await getDatabase();
     List query = [];
     try{
-      query = await client.rawQuery("SELECT privateKey FROM $groupsTable WHERE gid = '"+currentGroupId.toString()+"'");
+      query = await client.rawQuery("""
+      SELECT 
+      """+groupsTable.privateKey.getColumnName()+"""  
+      FROM """+groupsTable.tableName.getTableName()+""" 
+      WHERE """+groupsTable.groupId.getColumnName()+""" = '"""+currentGroupId.toString()+"""';""");
       if(query.length > 0)
-        return BigInt.parse(query[0]["privateKey"]);
+        return BigInt.parse(query[0][groupsTable.privateKey.getColumnName()]);
+    }
+    catch(err){
+      print(err);
+    }    
+    return null;
+  }
+
+  Future<BigInt> getPrivateKeyFromJoinKey(int joinKey) async{
+    var client = await getDatabase();
+    List query = [];
+    try{
+      query = await client.rawQuery("""
+      SELECT 
+      """+groupsTable.privateKey.getColumnName()+"""  
+      FROM """+groupsTable.tableName.getTableName()+""" 
+      WHERE """+groupsTable.joinKey.getColumnName()+""" = '"""+joinKey.toString()+"""';""");
+      if(query.length > 0)
+        return BigInt.parse(query[0][groupsTable.privateKey.getColumnName()]);
     }
     catch(err){
       print(err);
@@ -431,8 +620,12 @@ class DatabaseManager {
   Future<String> getSenderOfMessageFromPublicKey2(int currentGroupId, BigInt publicKey2) async{
     var client = await getDatabase();
     try{
-      List query = await client.rawQuery("SELECT username FROM $participantsTable WHERE publicKey2 = '"+publicKey2.toString()+"' AND gid = '"+currentGroupId.toString()+"';"); 
-      return query[0]["username"];
+      List query = await client.rawQuery("""
+      SELECT """+participantsTable.username.getColumnName()+"""  
+      FROM """+participantsTable.tableName.getTableName()+""" 
+      WHERE """+participantsTable.publicKey2.getColumnName()+""" = '"""+publicKey2.toString()+"""' 
+      AND """+participantsTable.groupId.getColumnName()+""" = '"""+currentGroupId.toString()+"""';"""); 
+      return query[0][participantsTable.username.getColumnName()];
     }
     catch(err){
       return null;
@@ -445,20 +638,26 @@ class DatabaseManager {
     Map result = {};
     try{
       String currentUser = await databaseManager.getUsername();
-      query = await client.rawQuery("SELECT * FROM $participantsTable WHERE gid = '"+gid.toString()+"' ORDER BY username");
+      query = await client.rawQuery("""
+      SELECT 
+      * FROM """+participantsTable.tableName.getTableName()+""" 
+      WHERE """+participantsTable.groupId.getColumnName()+""" = '"""+gid.toString()+"""' 
+      ORDER BY """+participantsTable.username.getColumnName()+""";""");
       for(var x = 0; x < query.length; x++){
-        int joined = int.parse(query[x]["joined"].toString());
-        if(query[x]["username"] != currentUser){ 
-          result[query[x]["username"]] = {
-            "pid": query[x]["pid"],
+        int joined = int.parse(query[x][participantsTable.joined.getColumnName()].toString());
+        if(query[x][participantsTable.username.getColumnName()] != currentUser){ 
+          result[query[x][participantsTable.username.getColumnName()]] = {
+            "pid": query[x][participantsTable.participantId.getColumnName()],
             "joined": joined,
+            "isRecipient": int.parse(query[x][participantsTable.recipient.getColumnName()].toString()) > 0,
             "currentUser": false
           };
         }
         else{
-          result[query[x]["username"]] = {
-            "pid": query[x]["pid"],
+          result[query[x][participantsTable.username.getColumnName()]] = {
+            "pid": query[x][participantsTable.participantId.getColumnName()],
             "joined": joined,
+            "isRecipient": int.parse(query[x][participantsTable.recipient.getColumnName()].toString()) > 0,
             "currentUser": true
           };
         }
@@ -478,10 +677,15 @@ class DatabaseManager {
     try{
       if(userProfilePic){
         base64profilePic = json.encode(base64profilePic);
-        await client.rawUpdate("UPDATE $accountTable SET profilePic = '$base64profilePic'");
+        await client.rawUpdate("""
+        UPDATE """+accountsTable.tableName.getTableName()+""" 
+        SET """+accountsTable.profilePic.getColumnName()+""" = '$base64profilePic';""");
       }
       else{
-        await client.rawUpdate("UPDATE $participantsTable SET profilePic = '$base64profilePic' WHERE pid = '"+pid+"' AND gid = '"+gid+"';");
+        await client.rawUpdate("""
+        UPDATE """+participantsTable.tableName.getTableName()+""" 
+        SET """+participantsTable.profilePic.getColumnName()+""" = '$base64profilePic' 
+        WHERE """+participantsTable.participantId.getColumnName()+""" = '$pid' AND """+participantsTable.groupId.getColumnName()+""" = '$gid';""");
       }
     }
     catch(err){
@@ -494,18 +698,69 @@ class DatabaseManager {
   Future<bool> saveMessage(int currentGroupId, int midFromServer, String message, String sender, int receivedTime, int isSentMessage) async{
     var client = await getDatabase();
     try{
-      List query = await client.rawQuery("SELECT pid FROM $participantsTable WHERE username = '"+sender+"' AND gid = '$currentGroupId';");
+      List query = await client.rawQuery("""
+      SELECT 
+      """+participantsTable.participantId.getColumnName()+""" 
+      FROM """+participantsTable.tableName.getTableName()+""" 
+      WHERE """+participantsTable.username.getColumnName()+""" = '$sender' 
+      AND """+participantsTable.groupId.getColumnName()+""" = '$currentGroupId';""");
       int participantId = query[0]["pid"];      
-      List previousMessages = await client.rawQuery("SELECT mid FROM $messagesTable WHERE midFromServer = '"+midFromServer.toString()+"' AND pid = '"+participantId.toString()+"';");
+      List previousMessages = await client.rawQuery("""
+      SELECT 
+      """+messagesTable.messageId.getColumnName()+""" 
+      FROM """+messagesTable.tableName.getTableName()+""" 
+      WHERE """+messagesTable.messageIdFromServer.getColumnName()+""" = '"""+midFromServer.toString()+"""' 
+      AND """+messagesTable.participantId.getColumnName()+""" = '"""+participantId.toString()+"""';""");
       if(previousMessages.length == 0){
         //Message not yet saved
         try{
-            List messageInserted = await client.rawQuery("SELECT * FROM messages WHERE midFromServer = '"+midFromServer.toString()+"' AND gid = '$currentGroupId';");
+            List messageInserted = await client.rawQuery("""
+            SELECT 
+            * 
+            FROM """+messagesTable.tableName.getTableName()+""" 
+            WHERE """+messagesTable.messageIdFromServer.getColumnName()+""" = '"""+midFromServer.toString()+"""' 
+            AND """+messagesTable.groupId.getColumnName()+""" = '$currentGroupId';""");
             if(messageInserted.length == 0){
-              if(isSentMessage > 0)
-                await client.rawInsert("INSERT INTO $messagesTable (pid, gid, midFromServer, msg, receivedTime, isSentMessage) VALUES ('$participantId', '"+currentGroupId.toString()+"', '"+midFromServer.toString()+"', '"+message+"', '"+receivedTime.toString()+"', '1');");
-              else
-                await client.rawInsert("INSERT INTO $messagesTable (pid, gid, midFromServer, msg, receivedTime, isSentMessage) VALUES ('$participantId', '"+currentGroupId.toString()+"', '"+midFromServer.toString()+"', '"+message+"', '"+receivedTime.toString()+"', '0');");
+              if(isSentMessage > 0){
+                await client.rawInsert("""
+                INSERT 
+                INTO """+messagesTable.tableName.getTableName()+""" (
+                  """+messagesTable.participantId.getColumnName()+""", 
+                  """+messagesTable.groupId.getColumnName()+""", 
+                  """+messagesTable.messageIdFromServer.getColumnName()+""", 
+                  """+messagesTable.message.getColumnName()+""", 
+                  """+messagesTable.receivedTime.getColumnName()+""", 
+                  """+messagesTable.isSentMessage.getColumnName()+""" 
+                ) 
+                VALUES (
+                  '$participantId', 
+                  '"""+currentGroupId.toString()+"""', 
+                  '"""+midFromServer.toString()+"""', 
+                  '"""+message+"""', 
+                  '"""+receivedTime.toString()+"""', 
+                  '1'
+                );""");
+              }
+              else{
+                await client.rawInsert("""
+                INSERT 
+                INTO """+messagesTable.tableName.getTableName()+""" (
+                  """+messagesTable.participantId.getColumnName()+""", 
+                  """+messagesTable.groupId.getColumnName()+""", 
+                  """+messagesTable.messageIdFromServer.getColumnName()+""", 
+                  """+messagesTable.message.getColumnName()+""", 
+                  """+messagesTable.receivedTime.getColumnName()+""", 
+                  """+messagesTable.isSentMessage.getColumnName()+""", 
+                ) 
+                VALUES (
+                  '$participantId', 
+                  '"""+currentGroupId.toString()+"""', 
+                  '"""+midFromServer.toString()+"""', 
+                  '"""+message+"""', 
+                  '"""+receivedTime.toString()+"""', 
+                  '0'
+                );""");
+              }
             }
         }
         catch(err){
@@ -527,36 +782,81 @@ class DatabaseManager {
     Map result = {};
     List query = [];
     if(offset != null){
-        query = await client.rawQuery("SELECT *, STRFTIME('%s', $messagesTable.ts)*1000 tme FROM $messagesTable JOIN $participantsTable ON $messagesTable.gid = $participantsTable.gid WHERE $messagesTable.gid = '$gid' AND $messagesTable.midFromServer > '"+offset.toString()+"'  GROUP BY $messagesTable.mid ORDER BY $messagesTable.ts DESC LIMIT $limitPerMessagesFetchFromDatabase;");
+        query = await client.rawQuery("""
+        SELECT 
+        *, 
+        STRFTIME('%s', """+messagesTable.tableName.getTableName()+"""."""+messagesTable.timestamp.getColumnName()+""")*1000 tme 
+        FROM """+messagesTable.tableName.getTableName()+""" 
+        JOIN """+participantsTable.tableName.getTableName()+""" 
+        ON """+participantsTable.tableName.getTableName()+"""."""+participantsTable.groupId.getColumnName()+""" = """+messagesTable.tableName.getTableName()+"""."""+messagesTable.groupId.getColumnName()+""" 
+        WHERE """+messagesTable.tableName.getTableName()+"""."""+messagesTable.groupId.getColumnName()+""" = '$gid' 
+        AND """+messagesTable.tableName.getTableName()+"""."""+messagesTable.messageIdFromServer.getColumnName()+""" > '"""+offset.toString()+"""'  
+        GROUP BY """+messagesTable.tableName.getTableName()+"""."""+messagesTable.messageId.getColumnName()+""" 
+        ORDER BY """+messagesTable.tableName.getTableName()+"""."""+messagesTable.timestamp.getColumnName()+""" 
+        DESC LIMIT $limitPerMessagesFetchFromDatabase;""");
     }
     else{
-      query = await client.rawQuery("SELECT *, STRFTIME('%s', $messagesTable.ts)*1000 tme FROM $messagesTable JOIN $participantsTable ON $messagesTable.gid = $participantsTable.gid WHERE $messagesTable.gid = '$gid' GROUP BY $messagesTable.mid ORDER BY $messagesTable.ts DESC LIMIT $limitPerMessagesFetchFromDatabase;");
+      query = await client.rawQuery("""
+      SELECT 
+      *, 
+      STRFTIME('%s', """+messagesTable.tableName.getTableName()+"""."""+messagesTable.timestamp.getColumnName()+""")*1000 tme 
+      FROM """+messagesTable.tableName.getTableName()+""" 
+      JOIN """+participantsTable.tableName.getTableName()+""" 
+      ON """+messagesTable.tableName.getTableName()+"""."""+messagesTable.groupId.getColumnName()+""" = """+participantsTable.tableName.getTableName()+"""."""+participantsTable.groupId.getColumnName()+""" 
+      WHERE """+messagesTable.tableName.getTableName()+"""."""+messagesTable.groupId.getColumnName()+""" = '$gid' 
+      AND """+messagesTable.tableName.getTableName()+"""."""+messagesTable.messageId.getColumnName()+""" > '$offset' 
+      GROUP BY """+messagesTable.tableName.getTableName()+"""."""+messagesTable.messageId.getColumnName()+""" 
+      ORDER BY """+messagesTable.tableName.getTableName()+"""."""+messagesTable.timestamp.getColumnName()+""" 
+      DESC LIMIT $limitPerMessagesFetchFromDatabase;""");
     }
-    print("THE INITIAL MESSAGES ARE: ");
-    print("THE INITIAL MESSAGES ARE: ");
-    print("THE INITIAL MESSAGES ARE: ");
-    print(await client.rawQuery("SELECT midFromServer, msg FROM $messagesTable WHERE midFromServer > '"+offset.toString()+"';"));
+
+    List maxMidFinder = query;
+    maxMidFinder.sort((a, b) => a.mid.compareTo(b.mid));
+    maxMidFinder = maxMidFinder.reversed.toList();
+    int maxMessageId  = 0;
+    List futureMessages = [];
+    try{
+      maxMessageId = maxMidFinder[0]["gid"];
+      futureMessages = await client.rawQuery("""
+      SELECT
+      *
+      FROM """+messagesTable.tableName.getTableName()+""" 
+      JOIN """+groupsTable.tableName.getTableName()+"""
+      ON """+messagesTable.tableName.getTableName()+"""."""+messagesTable.groupId.getColumnName()+""" = """+groupsTable.tableName.getTableName()+"""."""+groupsTable.groupId.getColumnName()+""" 
+      WHERE """+messagesTable.tableName.getTableName()+"""."""+messagesTable.messageId.getColumnName()+""" > '"""+maxMessageId.toString()+"""';
+      """);
+    }
+    catch(err){
+      //indexing error
+    }
+
+    bool hasMoreMessages = false;
+    if(futureMessages.length > 0)
+      hasMoreMessages = true;
+
     print(query.length);
     for(var x = 0; x < query.length; x++){
-      if(query[x]["isSentMessage"] > 0){
-        result[query[x]["midFromServer"]] = {
-          "pid": query[x]["pid"],
-          "num": participants[query[x]["username"]],
-          "sender": query[x]["username"],
-          "profilePic": query[x]["profilePic"],
-          "message": query[x]["msg"],
+      if(query[x][messagesTable.isSentMessage.getColumnName()] > 0){
+        result[query[x][messagesTable.messageIdFromServer.getColumnName()]] = {
+          "pid": query[x][messagesTable.participantId.getColumnName()],
+          "num": participants[query[x][participantsTable.username.getColumnName()]],
+          "sender": query[x][participantsTable.username.getColumnName()],
+          "profilePic": query[x][participantsTable.profilePic.getColumnName()],
+          "message": query[x][messagesTable.message.getColumnName()],
           "isSentMessage": true,
+          "hasMoreMessages": hasMoreMessages,
           "ts": int.parse(query[x]["tme"].toString())
         };
       }
       else{
         result[query[x]["midFromServer"]] = {
-          "pid": query[x]["pid"],
-          "num": participants[query[x]["username"]],
-          "sender": query[x]["username"],
-          "profilePic": query[x]["profilePic"],
-          "message": query[x]["msg"],
+          "pid": query[x][messagesTable.participantId.getColumnName()],
+          "num": participants[query[x][participantsTable.username.getColumnName()]],
+          "sender": query[x][participantsTable.username.getColumnName()],
+          "profilePic": query[x][participantsTable.profilePic.getColumnName()],
+          "message": query[x][messagesTable.message.getColumnName()],
           "isSentMessage": false,
+          "hasMoreMessages": hasMoreMessages,
           "ts": int.parse(query[x]["tme"].toString())
         };
       }
@@ -568,9 +868,14 @@ class DatabaseManager {
     var client = await getDatabase();
     Map participants = {};
     try{
-      List query = await client.rawQuery("SELECT * FROM $participantsTable WHERE gid = '"+gid.toString()+"' ORDER BY pid");
+      List query = await client.rawQuery("""
+      SELECT 
+      * 
+      FROM """+participantsTable.tableName.getTableName()+""" 
+      WHERE """+participantsTable.groupId.getColumnName()+""" = '"""+gid.toString()+"""' 
+      ORDER BY """+participantsTable.participantId.getColumnName()+""";""");
       for(var x = 0; x < query.length; x++){
-        participants[query[x]["username"]] = x+1;
+        participants[query[x][participantsTable.username.getColumnName()]] = x+1;
       }
       return participants;
     }
@@ -585,7 +890,11 @@ class DatabaseManager {
   Future<int> getLastMessageId(int gid) async{
     var client = await getDatabase();
     try{
-      List query = await client.rawQuery("SELECT MAX(midFromServer) lastMessage FROM $messagesTable WHERE gid = '"+gid.toString()+"'");
+      List query = await client.rawQuery("""
+      SELECT 
+      MAX("""+messagesTable.messageIdFromServer.getColumnName()+""") lastMessage 
+      FROM """+messagesTable.tableName.getTableName()+""" 
+      WHERE """+messagesTable.groupId.getColumnName()+""" = '"""+gid.toString()+"""';""");
       if(query.length > 0){
         if(query[0]["lastMessage"] != null){
           return int.parse(query[0]["lastMessage"].toString());
@@ -602,9 +911,11 @@ class DatabaseManager {
   Future<int> isGroupSaved(String joinKey) async{
     var client = await getDatabase();
     try{
-      List query = await client.rawQuery("SELECT gid FROM $groupsTable WHERE joinKey = '"+joinKey+"'");
+      List query = await client.rawQuery("""
+      SELECT """+groupsTable.groupId.getColumnName()+""" FROM """+groupsTable.tableName.getTableName()+""" 
+      WHERE """+groupsTable.joinKey.getColumnName()+""" = '"""+joinKey+"""';""");
       if(query.length > 0)
-        return int.parse(query[0]["gid"].toString());
+        return int.parse(query[0][groupsTable.groupId.getColumnName()].toString());
       return -1;
     }
     catch(err){
@@ -669,7 +980,6 @@ class TableColumn{
   }
 }
 
-
 class AccountTable{
   final TableName tableName = TableName("accountInfo");
   final TableColumn accountId = TableColumn("aid");
@@ -700,7 +1010,7 @@ class GroupTable{
 class ParticipantsTable{
   final TableName tableName = TableName("participants");
   final TableColumn participantId = TableColumn("pid");
-  final TableColumn groupid = TableColumn("gid");
+  final TableColumn groupId = TableColumn("gid");
   final TableColumn username = TableColumn("username");
   final TableColumn profilePic = TableColumn("profilePic");
   final TableColumn publicKey = TableColumn("publicKey");
@@ -717,7 +1027,7 @@ class MessagesTable{
   final TableName tableName = TableName("messages");
   final TableColumn messageId = TableColumn("mid");
   final TableColumn participantId = TableColumn("pid");
-  final TableColumn groupid = TableColumn("gid");
+  final TableColumn groupId = TableColumn("gid");
   final TableColumn messageIdFromServer = TableColumn("midFromServer");
   final TableColumn message = TableColumn("msg");
   final TableColumn receivedTime = TableColumn("receivedTime");

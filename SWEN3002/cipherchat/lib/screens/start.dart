@@ -300,10 +300,33 @@ class StartState extends State<Start> {
                         ),
                         onPressed: () {
                           showPrompt("Enter Join Key", context, joinKeyFieldController, () async{
-                            try{
+                            await showCustomProcessDialog("Please Wait", context);
+                            int joinStatus = await joinOldChat(joinKeyFieldController.text, true);
+                            await Future.delayed(Duration(seconds: 2));  
+                            Navigator.pop(context);                              
+                            switch(joinStatus){
+                              case 1:
+                                Navigator.pushNamed(context, "/chat");
+                                break;                                
+                              case -1:
+                                toastMessageBottomShort("Invalid Join Key", context);
+                                break;
+                              case -2:
+                                toastMessageBottomShort("Username Taken For Server", context);
+                                break;
+                              case -3:
+                                toastMessageBottomShort("Invalid Join Key", context);
+                                break;
+                            }                           
+                            /*try{
                               await showCustomProcessDialog("Please Wait", context);
+
                               String rawJoinKey = utf8.decode(base64.decode(joinKeyFieldController.text));
                               Map fullJoinKey = json.decode(rawJoinKey);
+                              print("THE FULL JOIN KEY IS: ");
+                              print(fullJoinKey);
+                              print("THE JOIN KEY ALONE IS: ");
+                              print(fullJoinKey["joinKey"]);
                               BigInt privateKey = await secp256k1EllipticCurve.generatePrivateKey();
                               currentPrivateKey = privateKey;
                               Map publicKey  = await secp256k1EllipticCurve.generatePublicKey(privateKey.toString());
@@ -343,7 +366,7 @@ class StartState extends State<Start> {
                               await Future.delayed(Duration(seconds: 2)); 
                               Navigator.pop(context);                                
                               toastMessageBottomShort("Invalid Join Key", context);
-                            }
+                            }*/
                           }); 
                         },
                       ),

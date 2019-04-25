@@ -7,5 +7,4 @@ then
 else
     cd "./bin";
     ./node boot.js;
-    ./npx forever -c ./node start index.js;    
 fi

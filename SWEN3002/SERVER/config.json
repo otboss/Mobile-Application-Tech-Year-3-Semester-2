@@ -6,13 +6,10 @@
     "enableHTTPS": true,
     "keyPath":"./key.pem",
     "certPath":"./cert.pem",
-    "sha256Password": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "saveExternalServers": true,
+    "sha256Password": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
     "maxParticipantsPerGroup": 100,
     "port": 6333,
-    "numberOfLocalhostServers": 1,
-    "remoteServerUrls": [
-
-    ],
     "databaseConfig":{
         "host":"localhost",
         "user":"root",

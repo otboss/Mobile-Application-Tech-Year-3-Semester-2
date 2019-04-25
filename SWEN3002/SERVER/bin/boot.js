@@ -1,5 +1,22 @@
+
+new Promise(function(resolve, reject){
+
+});
+
 const fs = require("fs");
 const request = require("request");
+const os = require('os');
+const readline = require('readline').createInterface({
+    input: process.stdin,
+    output: process.stdout
+});
+const exec = require('child_process').exec;
+
+const execute = function (command, callback) {
+    exec(command, { maxBuffer: 1024 * 250 }, function (error, stdout, stderr) {
+        callback(error, stdout, stderr);
+    });
+};
 
 /** Generates a new HTTPS certificate*/
 const generateNewCertificate = function(){
@@ -33,7 +50,9 @@ if(fs.existsSync("./config.json") == false){
 }
 const config = JSON.parse(fs.readFileSync("./config.json",{encoding: "utf8"}));
 
-console.log(`
+readline.question("Launch in debugging mode? [y/N] ", function(debuggingMode){
+    readline.close();
+    console.log(`
 ==========================
 BOOTED A CipherChat SERVER
 ==========================
@@ -44,53 +63,53 @@ Debug Mode: false
 
 Starting Server..
 `);
-
-new Promise(async function(resolve, reject){
-    if(config.enableHTTPS){
-        const checkForCertificate = async function(){
-            return new Promise(function(resolve, reject){
-                try{
-                    if(!fs.existsSync(config.keyPath) || !fs.existsSync(config.certPath))
-                        throw new Error();
-                    else
-                        resolve();
-                }
-                catch(err){
-                    if(os.platform == "linux"){
-                        console.log("It appears HTTPS is enabled, however the key/certificate files are missing.");
-                        readline.question("Would you like to generate them now? (requires openssl) [Y/n] ", function(response){
-                            readline.close();
-                            if(response != "n" && response != "N"){
-                                console.log("\nGenerating 4096 bit Certificate..");
-                                generateNewCertificate().then(function(){
-                                    console.log("Done!\n");
-                                    resolve();
-                                });
-                            }
-                            else{
-                                console.log("\n\nExiting..\n");
-                                throw new Error();
-                            }
-                        });
+    
+    new Promise(async function(resolve, reject){
+        if(config.enableHTTPS){
+            const checkForCertificate = async function(){
+                return new Promise(async function(resolve, reject){
+                    try{
+                        if(!fs.existsSync(config.keyPath) || !fs.existsSync(config.certPath))
+                            throw new Error();
+                        else
+                            resolve();
                     }
-                    else{
-                        throw new Error("Unable to find key/certificate file(s)");
+                    catch(err){
+                        if(os.platform() == "linux"){
+                            console.log("It appears HTTPS is enabled, however the key/certificate files are missing.");
+                            readline.question("Would you like to generate them now? (requires openssl) [Y/n] ", function(response){
+                                if(response != "n" && response != "N"){
+                                    console.log("\nGenerating 4096 bit Certificate..");
+                                    generateNewCertificate().then(function(){
+                                        console.log("Done!\n");
+                                        resolve();
+                                    });
+                                }
+                                else{
+                                    console.log("\n\nExiting..\n");
+                                    throw new Error();
+                                }
+                                readline.close();
+                            });
+                        }
+                        else{
+                            throw new Error("Unable to find key/certificate file(s)");
+                        }
                     }
-                }
-            });
-        }
-        checkForCertificate();
-        console.log("CipherChat SERVER STARTED. Now Listening on port "+config.port);
-        console.log("You may check the server at https://127.0.0.1:"+config.port+"/");
-        var ip = "<Your Public IP Address>";
-        try{
-            ip = await getServerIp();
-            ip = ip.split(":")[0];
-        }
-        catch(err){
-            //Connection Error
-        }
-        console.log(`\nThis server may be submitted at:
+                });
+            }
+            await checkForCertificate();
+            console.log("CipherChat SERVER STARTED. Now Listening on port "+config.port);
+            console.log("You may check the server at https://127.0.0.1:"+config.port+"/");
+            var ip = "<Your Public IP Address>";
+            try{
+                ip = await getServerIp();
+                ip = ip.split(":")[0];
+            }
+            catch(err){
+                //Connection Error
+            }
+            console.log(`\nThis server may be submitted at:
 'https://github.com/CipherChat/CipherChat/issues/new'
 with the title 'Public Server Submission' and the comment of: 
 
@@ -99,10 +118,25 @@ with the title 'Public Server Submission' and the comment of:
     "port": "`+config.port+`"
 }
 `);
-        console.log("=========================================================")
-        console.log("| Remember to forward port "+config.port+" in your router settings |");
-        console.log("| for global access this server.                        |")    
-        console.log("=========================================================")
-        console.log("");        
-    }
+            console.log("=========================================================")
+            console.log("| Remember to forward port "+config.port+" in your router settings |");
+            console.log("| for global access this server.                        |")    
+            console.log("=========================================================")
+            console.log(""); 
+            resolve(debuggingMode);       
+        }
+    }).then(function(debuggingMode){
+        if(debuggingMode != "y" && debuggingMode != "y"){
+            execute("./npx forever -c ./node start index.js;", function(error, stdout, stderr){
+                if(error)
+                    console.log(error);
+                console.log(stdout);
+                process.exit();
+            });
+        }
+        else{
+            process.stdin.resume();
+        }
+    });    
 });
+

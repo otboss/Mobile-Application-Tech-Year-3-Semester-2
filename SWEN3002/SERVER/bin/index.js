@@ -232,9 +232,7 @@ const verifySignature = function(gid, pid, message, r, s, recoveryParam){
                     SELECT * FROM `+databaseTables.participantsTable.tableName+` 
                     WHERE `+databaseTables.participantsTable.columns.groupId+` = '`+gid+`' 
                     AND `+databaseTables.participantsTable.columns.publicKey2+` = '`+pubKeyRecovered[`x`].toString()+`';`, function(error, results, fields){
-                        console.log("THE RESULTS FROM SIGNATURE QUERY IS: ");
-                        console.log(results);
-                        if(results.length > 0){
+                        if(results.length > 0){;
                             resolve({
                                 "isValid": ec.verify(hashedMessage, signature, pubKeyRecovered),
                                 "publicKey": pubKeyRecovered["x"].toString()
@@ -254,7 +252,7 @@ const verifySignature = function(gid, pid, message, r, s, recoveryParam){
             }
         }
         catch(err){
-
+            console.log(err);
         }
     });
 }
@@ -821,6 +819,7 @@ router.get('/participants', async function(req, res){
     const joinKey = addslashes(req.query.joinKey);
     const username = addslashes(req.query.username);
     const groupId = await getGroupIdFromJoinKey(joinKey);
+    console.log(req.query);
     const participantId = await getParticipantIdFromGroupId(groupId, username);
     try{
         const signatureVerification = await verifySignature(groupId, participantId, encryptedMessage, signature["r"], signature["s"], signature["recoveryParam"]);  

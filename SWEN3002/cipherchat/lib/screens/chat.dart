@@ -20,7 +20,7 @@ class ChatState extends State<Chat> {
   String passphrase = "";
   TextEditingController passphraseFieldController = TextEditingController();
   TextEditingController groupNameFieldController = TextEditingController();
-  int offsetForMessages = 1;
+  int offsetForMessages = -1;
   String currentServerUrl = "https://" + currentServer + ":" + currentPort.toString() + "/";
   bool connected = false;
   bool isGroupChat = false;
@@ -46,6 +46,10 @@ class ChatState extends State<Chat> {
 
   Future<bool> joinGroup(String ip, int port, Map signature, String encryptedMessage, String joinKey, String publicKey, String publicKey2, String username) async{
     try{
+      print("THE JOIN KEY WHILE CONNECTING TO SERVER IS: ");
+      print(joinKey);
+      if(await databaseManager.isGroupSaved(joinKey) > -1)
+        return true;
       String currentServerUrl = "https://" + ip + ":" + port.toString() + "/";
       Response response = await dio.post(currentServerUrl+"joingroup", data: {
         "encryptedMessage": encryptedMessage,
@@ -64,29 +68,7 @@ class ChatState extends State<Chat> {
     return false;
   }  
 
-  ///Creates a base64 encoded Map of the required credentials to join a server
-  Future<String> generateJoinKey() async {
-    try {
-      Map groupInfo = await databaseManager.getGroupInfo(currentGroupId);
-      Map completeJoinKey = {};
-      completeJoinKey["ip"] = groupInfo["serverIp"];
-      completeJoinKey["port"] = groupInfo["serverPort"];
-      completeJoinKey["joinKey"] = groupInfo["joinKey"];
-      completeJoinKey["encryptedMessage"] = secp256k1EllipticCurve.generateRandomString(100);
-      String messageHash = sha256
-          .convert(utf8.encode(completeJoinKey["encryptedMessage"]))
-          .toString();
-      completeJoinKey["signature"] = await secp256k1EllipticCurve.signMessage(
-          messageHash, currentPrivateKey);
-      return base64
-          .encode(utf8.encode(json.encode(completeJoinKey)))
-          .toString();
-    } catch (err) {
-      print("ERROR OCCURRED");
-      print(err);
-    }
-    return "";
-  }
+
 
   ///Parses a join key received from another peer (join keys are base64 encoded)
   Map parseJoinKey(String joinKey) {
@@ -399,8 +381,12 @@ class ChatState extends State<Chat> {
   }
 
 
-  Widget generateRecipientRow(String username) {
+  Widget generateRecipientRow(String username, bool isRecipient) {
     if (participantCheckboxIndicators[username] == null)
+      participantCheckboxIndicators[username] = false;
+    if (isRecipient)
+      participantCheckboxIndicators[username] = true;
+    else
       participantCheckboxIndicators[username] = false;
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -868,9 +854,7 @@ class ChatState extends State<Chat> {
 
   @override
   void initState() {
-    databaseManager.getLastMessageId(currentGroupId).then((offsetVal) {
-      offsetForMessages = offsetVal;
-    });
+    offsetForMessages = -1;
     chatLabel = currentServer;
     super.initState();
   }
@@ -1001,7 +985,7 @@ class ChatState extends State<Chat> {
                     ],
                   ));
                 } else
-                  users.add(generateRecipientRow(usernames[x]));
+                  users.add(generateRecipientRow(usernames[x], result[usernames[x]]["isRecipient"]));
               }
             }
             catch(err){
@@ -1070,7 +1054,8 @@ class ChatState extends State<Chat> {
                 return loadingIndicator(color: Colors.blue);
               break;
             case ConnectionState.done:
-              if (snapshot.hasError) return Text('Error: ${snapshot.error}');
+              if (snapshot.hasError) 
+                return Text('Error: ${snapshot.error}');
               if(messagesContainer.length + snapshot.data.keys.toList().length == 0){
                 return Center(
                   child: GestureDetector(
@@ -1109,7 +1094,6 @@ class ChatState extends State<Chat> {
                     ),
                     onTap: () async{
                       try{
-                        print("NO ERROR FOR GETTING NEW MESSAGES!");
                         fetchAndSaveNewMessages();
                         Map olderMessages = await getOlderMessages();
                         if(olderMessages.keys.length > 0){
@@ -1189,11 +1173,13 @@ class ChatState extends State<Chat> {
                   )
                 ],
               );
-              if(messagesContainer.length == 0)
-                messagesContainer.insert(0, loadMoreButton);
+
               print("NEW MESSAGES ARE: ");
               print(initialMessages.keys);               
               for(var x = 0; x < messageIds.length; x++){
+                if(x == 0)
+                  if(initialMessages[messageIds[x]]["hasMoreMessages"])
+                    messagesContainer.insert(0, loadMoreButton);
                 print(initialMessages[messageIds[x]]);
                 print([initialMessages[messageIds[x]]["sender"], initialMessages[messageIds[x]]["message"], int.parse(initialMessages[messageIds[x]]["ts"].toString())]);
                 if(initialMessages[messageIds[x]]["isSentMessage"]){
@@ -1316,7 +1302,7 @@ class ChatState extends State<Chat> {
               ),
               onPressed: () async {
                 if (connected) {
-                  String joinKey = await generateJoinKey();
+                  String joinKey = await generateJoinKey(currentGroupId);
                   print(utf8.decode(base64.decode(joinKey))); 
                   Share.share(joinKey);
                 } else {

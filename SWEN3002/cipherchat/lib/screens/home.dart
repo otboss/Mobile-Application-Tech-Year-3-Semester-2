@@ -20,7 +20,7 @@ class HomeState extends State<Home> {
   TextEditingController accountUsernameInputController = TextEditingController();
   TextEditingController peerIpInputController = TextEditingController();
 
-  Widget generateRecentConvoCard(String label, String profilePic, int timestamp, String lastMessage, String lastSender, String serverIp, int port, bool isGroup, BigInt privateKey) {
+  Widget generateRecentConvoCard(String label, String profilePic, int timestamp, String lastMessage, String lastSender, String serverIp, int port, bool isGroup, BigInt privateKey, String joinKey, int groupId) {
     try {
       base64ToImageConverter(profilePic);
     } catch (err) {
@@ -45,13 +45,26 @@ class HomeState extends State<Home> {
           child: Material(
             color: Colors.transparent,
             child: InkWell(
-              onTap: () {
+              onTap: () async{
                 //Navigate to chat screen and show previous messages
-                currentServer = serverIp;
-                currentPort = port;
-                currentPrivateKey = privateKey;
-                newGroupConnection = false;
-                Navigator.pushNamed(context, "/chat");
+                await showCustomProcessDialog("Please Wait", context, dissmissable: true);
+                int joinStatus = await joinOldChat(await generateJoinKey(groupId), false, groupId: groupId);
+                await Future.delayed(Duration(seconds: 2));  
+                Navigator.pop(context);                              
+                switch(joinStatus){
+                  case 1:
+                    Navigator.pushNamed(context, "/chat");
+                    break;                                
+                  case -1:
+                    toastMessageBottomShort("Invalid Join Key", context);
+                    break;
+                  case -2:
+                    toastMessageBottomShort("Username Taken For Server", context);
+                    break;
+                  case -3:
+                    toastMessageBottomShort("Invalid Join Key", context);
+                    break;
+                }
               },
               child: Container(
                 padding: EdgeInsets.fromLTRB(10, 10, 10, 10),
@@ -87,7 +100,7 @@ class HomeState extends State<Home> {
                             ),
                             Row(
                               children: <Widget>[
-                                ConstrainedBox(
+                                ConstrainedBox( 
                                   constraints: BoxConstraints(
                                     maxWidth: 80
                                   ), 
@@ -130,12 +143,26 @@ class HomeState extends State<Home> {
           child: Material(
             color: Colors.transparent,
             child: InkWell(
-              onTap: () {
+              onTap: () async{
                 //Navigate to chat screen and show previous messages 
-                currentServer = serverIp;
-                currentPort = port;      
-                currentPrivateKey = privateKey;          
-                Navigator.pushNamed(context, "/chat");
+              await showCustomProcessDialog("Please Wait", context, dissmissable: true);
+                int joinStatus = await joinOldChat(await generateJoinKey(groupId), false, groupId: groupId);
+                await Future.delayed(Duration(seconds: 2));  
+                Navigator.pop(context);                              
+                switch(joinStatus){
+                  case 1:
+                    Navigator.pushNamed(context, "/chat");
+                    break;                                
+                  case -1:
+                    toastMessageBottomShort("Invalid Join Key", context);
+                    break;
+                  case -2:
+                    toastMessageBottomShort("Username Taken For Server", context);
+                    break;
+                  case -3:
+                    toastMessageBottomShort("Invalid Join Key", context);
+                    break;
+                }
               },
               child: Container(
                 padding: EdgeInsets.fromLTRB(10, 10, 10, 10),
@@ -276,10 +303,18 @@ class HomeState extends State<Home> {
   }
 
   Future<List> loadConversations(int offset) async{
-    List queryResults = await databaseManager.getAllGroups(offset, searchFieldController.text);
-    List results = [];
+    print(offset);
+    Map query = await databaseManager.getAllGroups(offset, searchFieldController.text);
+    List queryResults = query["results"];
+    bool moreConversations = query["hasMoreGroups"];
+    List<Widget> results = [];
     for (var x = 0; x < queryResults.length; x++) {
-      results.add(generateRecentConvoCard(queryResults[x]["label"], queryResults[x]["profilePic"], queryResults[x]["ts"], queryResults[x]["msg"], queryResults[x]["username"], queryResults[x]["serverIp"], queryResults[x]["serverPort"], true, queryResults[x]["privateKey"]));
+      try{
+        results.add(generateRecentConvoCard(queryResults[x]["label"], queryResults[x]["profilePic"], int.parse(queryResults[x]["tme"].toString()), queryResults[x]["msg"], queryResults[x]["username"], queryResults[x]["serverIp"], int.parse(queryResults[x]["serverPort"].toString()), true, BigInt.parse(queryResults[x]["privateKey"]), queryResults[x]["joinKey"], int.parse(queryResults[x]["gid"].toString())));
+      }
+      catch(err){
+        print(err);
+      }
     }
     try{   
       if(searchFieldController.text.length == 0){
@@ -322,8 +357,8 @@ class HomeState extends State<Home> {
           )                                                    
         ],
       ); 
-      if(results.length > 0){
-        results.insert(0, loadMoreButton);
+      if(results.length > 0 && moreConversations){
+        results.add(loadMoreButton);
       }
     }
     catch(err){

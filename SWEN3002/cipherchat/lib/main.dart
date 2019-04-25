@@ -50,6 +50,7 @@ Map serverEntrypoints = {
   "/isusernametaken": "post"
 };
 
+
 final int limitPerChatsFetchFromDatabase = 20;
 final int limitPerMessagesFetchFromDatabase = 20;
 final int publicServersPerRequest = 10;
@@ -364,6 +365,79 @@ Future<bool> isUsernameTakenForServer(String ip, int port, String username, Stri
   return false;   
 }
 
+  ///Creates a base64 encoded Map of the required credentials to join a server
+Future<String> generateJoinKey(int gid) async {
+  try {
+    Map groupInfo = await databaseManager.getGroupInfo(gid);
+    Map completeJoinKey = {};
+    completeJoinKey["ip"] = groupInfo["serverIp"];
+    completeJoinKey["port"] = groupInfo["serverPort"];
+    completeJoinKey["joinKey"] = groupInfo["joinKey"];
+    completeJoinKey["encryptedMessage"] = secp256k1EllipticCurve.generateRandomString(100);
+    String messageHash = sha256
+        .convert(utf8.encode(completeJoinKey["encryptedMessage"]))
+        .toString();
+    completeJoinKey["signature"] = await secp256k1EllipticCurve.signMessage(
+        messageHash, currentPrivateKey);
+    return base64
+        .encode(utf8.encode(json.encode(completeJoinKey)))
+        .toString();
+  } catch (err) {
+    print("ERROR OCCURRED");
+    print(err);
+  }
+  return "";
+}
+
+Future<int> joinOldChat(String joinKey, bool initialJoin, {int groupId}) async{
+  print(joinKey);
+  try{
+    String  rawJoinKey = utf8.decode(base64.decode(joinKey));
+    Map fullJoinKey = json.decode(rawJoinKey);
+    print("THE FULL JOIN KEY IS: ");
+    print(fullJoinKey);
+    print("THE JOIN KEY ALONE IS: ");
+    print(fullJoinKey["joinKey"]);
+    BigInt privateKey = await secp256k1EllipticCurve.generatePrivateKey();
+    if(!initialJoin)
+      privateKey = await databaseManager.getPrivateKey(groupId);
+    currentPrivateKey = privateKey;
+    Map publicKey  = await secp256k1EllipticCurve.generatePublicKey(privateKey.toString());
+    String username = await databaseManager.getUsername();
+    Map signature = {
+      "r": (fullJoinKey["signature"]["r"]).toString(),
+      "s": (fullJoinKey["signature"]["s"]).toString(),
+      "recoveryParam": (fullJoinKey["signature"]["recoveryParam"]).toString(),
+    };
+    globalGroupJoinKey = JoinKey(fullJoinKey["ip"].toString(), int.parse(fullJoinKey["port"].toString()), fullJoinKey["encryptedMessage"].toString(), signature, fullJoinKey["joinKey"].toString(), BigInt.parse(publicKey["x2"].toString()), BigInt.parse(publicKey["x"].toString()), username.toString());
+    if(initialJoin){
+      if(await checkServerRoutes(globalGroupJoinKey.ip, globalGroupJoinKey.port) == false){
+        return -1;
+      }
+      int dbSaved = await databaseManager.isGroupSaved(globalGroupJoinKey.joinKey);
+      if(dbSaved > -1){
+        currentGroupId = dbSaved;
+        currentPrivateKey = await databaseManager.getPrivateKey(currentGroupId);
+        String pastUsername = await databaseManager.getPastUsername(currentGroupId);
+        await databaseManager.updateUsername(pastUsername);
+      }
+      else{
+        if(await isUsernameTakenForServer(globalGroupJoinKey.ip, globalGroupJoinKey.port, globalGroupJoinKey.username, globalGroupJoinKey.joinKey, globalGroupJoinKey.encryptedMessage, globalGroupJoinKey.signature)){
+          return -2;
+        }
+      }
+    }
+    currentServer = globalGroupJoinKey.ip;
+    currentPort = globalGroupJoinKey.port;
+    currentPublicKey = await secp256k1EllipticCurve.generatePublicKey(currentPrivateKey.toString());                               
+    newGroupConnection = false;
+    return 1;
+  }
+  catch(err){
+    print(err); 
+    return -3;
+  }
+}
 class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {

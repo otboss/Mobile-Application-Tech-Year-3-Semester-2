@@ -1,0 +1,30 @@
+[3002, false]
+
+
+==========================
+BOOTED A CipherChat SERVER
+==========================
+Selected Port: 6333
+HTTPS: true
+Admob ID: ca-app-pub-3940256099942544/6300978111
+Debug Mode: true
+
+Starting Server..
+
+CipherChat SERVER STARTED. Now Listening on port 6333
+You may check the server at https://127.0.0.1:6333/
+
+This server may be submitted at:
+'https://github.com/CipherChat/CipherChat/issues/new'
+with the title 'Public Server Submission' and the comment of: 
+
+{
+    "ip": "<Your Public IP Address>",
+    "port": "6333"
+}
+    
+=========================================================
+| Remember to forward port 6333 in your router settings |
+| for global access this server.                        |
+=========================================================
+

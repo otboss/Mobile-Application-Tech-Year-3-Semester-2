@@ -9,7 +9,8 @@
     "sha256Password": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
     "maxParticipantsPerGroup": 100,
     "port": 6333,
-    "numberOfLocalhostServers": 1,
+    "instanceServerStartingPort": 3000,
+    "numberOfLocalhostServers": 3,
     "remoteServerUrls": [
 
     ],

@@ -21,7 +21,7 @@ const startLocalServers = async function(){
             request("http://127.0.0.1:"+startingPort, async function(error, response, body){
                 if(error){
                     await new Promise(function(resolve, reject){
-                        execute("export PORT="+startingPort+"; export DEBUGGING=false; ./npx forever start -o logs/outputs"+startingPort+".log -e logs/errors"+startingPort+".log server.js", function(error, stdout, stderr){
+                        execute("export PORT="+startingPort+"; export DEBUGGING=false; ./node_modules/forever/bin/forever start -o logs/outputs"+startingPort+".log -e logs/errors"+startingPort+".log -c ./node server.js", function(error, stdout, stderr){
                             console.log(stdout);
                             servers.push("http://127.0.0.1:"+startingPort);
                             resolve();
@@ -31,7 +31,7 @@ const startLocalServers = async function(){
                 resolve();
             });
         });
-        console.log("TOTAL SERVERS STARTED: ");
+        console.log("SERVERS STARTED: ");
         console.log(servers);
         startingPort++;
     }

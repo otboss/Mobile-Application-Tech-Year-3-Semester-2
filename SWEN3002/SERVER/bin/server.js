@@ -13,7 +13,6 @@ const execute = function (command, callback) {
 execute("echo [$PORT, $DEBUGGING]", async function(error, stdout, stderr){
     var envVariables;
     try{
-        console.log(stdout);
         envVariables = JSON.parse(stdout);
         if(typeof(envVariables[1]) != "boolean")
             envVariables[1] = true;
@@ -704,12 +703,15 @@ with the title 'Public Server Submission' and the comment of:
         try{
             const signatureVerification = await verifySignature(groupId, participantId, encryptedMessage, signature["r"], signature["s"], signature["recoveryParam"]);  
             if(signatureVerification["isValid"]){
+                //Get user join timestamp. Users will only receive messages
+                //with a timestamp greater than their join timestamp.
                 connection.query(`
                 SELECT `+databaseTables.participantsTable.columns.timestamp+` ts
                 FROM `+databaseTables.participantsTable.tableName+` 
                 WHERE `+databaseTables.participantsTable.columns.particpantId+` = '`+participantId+`' 
                 AND `+databaseTables.participantsTable.columns.groupId+` = '`+groupId+`';`, function(error, userInfo, fields){
                     const userJoinTs = userInfo[0]["ts"];
+                    //Get all message ids related to this group
                     connection.query(`
                     SELECT `+databaseTables.messagesTable.columns.messageId+` mid
                     FROM `+databaseTables.messagesTable.tableName+` 
@@ -719,13 +721,15 @@ with the title 'Public Server Submission' and the comment of:
                     AND `+databaseTables.messagesTable.columns.messageId+` > '`+offset+`' 
                     AND `+databaseTables.messagesTable.columns.timestamp+` > '`+userJoinTs+`' 
                     ORDER BY `+databaseTables.messagesTable.columns.timestamp+` 
-                    DESC LIMIT 20;`, function(error, messageResults, fields){
+                    DESC 
+                    LIMIT 20;`, function(error, messageResults, fields){
                         if(error)
                             res.send("0");
                         else{
                             var messages = {};
                             for(var x = 0; x < messageResults.length; x++){
                                 const messageId = messageResults[x]["mid"];
+                                //Get composite keys for message
                                 connection.query(`
                                 SELECT `+databaseTables.messagesTable.columns.messageId+` messageId, 
                                 `+databaseTables.participantsTable.columns.username+` sender, 
@@ -741,22 +745,22 @@ with the title 'Public Server Submission' and the comment of:
                                 WHERE `+databaseTables.compositeKeysTable.columns.messageId+` = '`+messageId+`' 
                                 GROUP BY `+databaseTables.compositeKeysTable.columns.compositeKeyId+`;`, function(error, results, fields){                  
                                     for(var x = 0; x < results.length; x++){
+                                        //Get username for composite key
                                         connection.query(`
                                         SELECT `+databaseTables.participantsTable.columns.username+` 
                                         FROM `+databaseTables.participantsTable.tableName+` 
                                         WHERE `+databaseTables.participantsTable.columns.particpantId+` = '`+results[x]["compositeKeyPid"]+`';`, function(error, usernameResult, fields){
-                                            var compositeKeys = {};
                                             var compositeKeyUsername = usernameResult[0]["username"];
                                             var compositeKeyObj = {};                                                  
-                                            /*compositeKeyObj[compositeKeyUsername] = results[x]["compositeKey"];
+                                            compositeKeyObj[compositeKeyUsername] = results[x]["compositeKey"];
                                             if(messages[messageId] != null)
                                                 compositeKeyObj = {...compositeKeyObj, ...messages[messageId]["compositeKeys"]};
                                             messages[messageId] = {
                                                 "sender": results[x]["sender"],
                                                 "encryptedMessage": results[x]["encryptedMessage"],
-                                                "compositeKeys": compositeKeys,
+                                                "compositeKeys": compositeKeyObj,
                                                 "ts": results[x]["sentTime"]
-                                            }*/
+                                            }
                                         });
                                     }
                                 });
@@ -802,13 +806,12 @@ with the title 'Public Server Submission' and the comment of:
         signature["recoveryParam"] = addslashes(signature["recoveryParam"]);
         const joinKey = addslashes(req.query.joinKey);
         const username = addslashes(req.query.username);  
-        var offset = JSON.parse(addslashes(req.query.offset));
+        var offset = addslashes(req.query.offset);
         const groupId = await getGroupIdFromJoinKey(joinKey);
         const participantId = await getParticipantIdFromGroupId(groupId, username);  
         try{
             const signatureVerification = await verifySignature(groupId, participantId, encryptedMessage, signature["r"], signature["s"], signature["recoveryParam"]);  
             if(signatureVerification["isValid"]){
-                offset = jsArrayToSqlArray(offset);
                 connection.query("SELECT "+databaseTables.participantsTable.columns.timestamp+" FROM "+databaseTables.participantsTable.tableName+" WHERE pid = '"+participantId+"' AND gid = '"+groupId+"';", function(error, results, fields){
                     const userJoinTs = results[0]["ts"];
                     connection.query(`

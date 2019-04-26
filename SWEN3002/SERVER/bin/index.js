@@ -116,7 +116,7 @@ with the title 'Public Server Submission' and the comment of:
     console.log("| for global access this server.                        |")    
     console.log("=========================================================")
     console.log(""); 
-    execute("forever stopall; ./npx forever start loadBalancer.js;", function(error, stdout, stderr){
+    execute("./node_modules/forever/bin/forever stopall; ./node_modules/forever/bin/forever start -c ./node loadBalancer.js;", function(error, stdout, stderr){
         process.exit();
     });
 }); 

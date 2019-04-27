@@ -19,6 +19,22 @@ class HomeState extends State<Home> {
   TextEditingController accountPortInputController = TextEditingController();
   TextEditingController accountUsernameInputController = TextEditingController();
   TextEditingController peerIpInputController = TextEditingController();
+  Widget loadedGroupsWidget = Center(
+    child: ListView(
+      shrinkWrap: true,
+      padding: EdgeInsets.fromLTRB(20, 15, 20, 30),
+      children: [
+        Center(
+          child: Text(
+            'Your past conversations will show here',
+            style: TextStyle(
+              color: themeColor,
+            ),
+          ),
+        ),
+      ],
+    ),
+  );
 
   Widget generateRecentConvoCard(String label, String profilePic, int timestamp, String lastMessage, String lastSender, String serverIp, int port, bool isGroup, BigInt privateKey, String joinKey, int groupId) {
     try {
@@ -303,8 +319,7 @@ class HomeState extends State<Home> {
   }
 
   Future<List> loadConversations(int offset) async{
-    print(offset);
-    Map query = await databaseManager.getAllGroups(offset, searchFieldController.text);
+    Map query = await databaseManager.getPastConversations(offset, searchFieldController.text);
     List queryResults = query["results"];
     bool moreConversations = query["hasMoreGroups"];
     List<Widget> results = [];
@@ -316,55 +331,61 @@ class HomeState extends State<Home> {
         print(err);
       }
     }
-    try{   
-      if(searchFieldController.text.length == 0){
-        queryResults.sort((a, b) => b.gid.compareTo(a.gid));
-        groupsOffset = queryResults[queryResults.length - 1]["gid"];
+    try{
+      for(var x= 0; x < results.length; x++){
+        loadedConversationsWidgets.add(results[x]);
       }
-      for(var x = 0; x < results.length; x++){
-        loadedConversations.add(results[x]);
+      List gidArray = [];
+      for(var x = 0; x < queryResults.length; x++){
+        gidArray.add(queryResults[x]["gid"]);
       }
-      Widget loadMoreButton = Row(
-        children: <Widget>[
-          Flexible(
-            flex: 1,
-            child: Container(),
-          ),
-          Container(
-            margin: EdgeInsets.fromLTRB(0, 0, 0, 10),
-            decoration: BoxDecoration(
-              color: sentMessageWidgetColor,
-              borderRadius: BorderRadius.circular(100)
-            ),
-            child: IconButton( 
-              padding: EdgeInsets.all(0),
-              highlightColor: sentMessageWidgetColor,
-              icon: Icon(Icons.restore, color: Colors.white,),
-              onPressed: () async{
-                try{
-                  await loadConversations(groupsOffset);
-                  setState(() {});  
-                }
-                catch(err){
-                  print(err);
-                }
-              },
-            )
-          ),
-          Flexible(
-            flex: 1,
-            child: Container(),
-          )                                                    
-        ],
-      ); 
-      if(results.length > 0 && moreConversations){
-        results.add(loadMoreButton);
-      }
+      int maxGid = largest(gidArray);
+      groupsOffset = maxGid; 
     }
     catch(err){
       //No more conversations to load
     }      
-    return results; 
+    Widget loadMoreButton = Row(
+      children: <Widget>[
+        Flexible(
+          flex: 1,
+          child: Container(),
+        ),
+        Container(
+          margin: EdgeInsets.fromLTRB(0, 0, 0, 10),
+          decoration: BoxDecoration(
+            color: sentMessageWidgetColor,
+            borderRadius: BorderRadius.circular(100)
+          ),
+          child: IconButton( 
+            padding: EdgeInsets.all(0),
+            highlightColor: sentMessageWidgetColor,
+            icon: Icon(Icons.restore, color: Colors.white,),
+            onPressed: () async{
+              try{
+                await loadConversations(groupsOffset);
+                setState(() {});  
+              }
+              catch(err){
+                print(err);
+              }
+            },
+          )
+        ),
+        Flexible(
+          flex: 1,
+          child: Container(),
+        )                                                    
+      ],
+    );    
+    if(results.length > 0 && moreConversations){
+      List loadConversationsWisgetsWithButton = loadedConversationsWidgets;
+      loadConversationsWisgetsWithButton.add(loadMoreButton);
+      return loadConversationsWisgetsWithButton; 
+    }
+    else{
+      return loadedConversationsWidgets; 
+    }
   }
 
   var loadProfilePicForSettingsMenu;
@@ -375,7 +396,8 @@ class HomeState extends State<Home> {
   TextEditingController searchFieldController = TextEditingController();
 
   int groupsOffset = -1;
-  List<Widget> loadedConversations = [];
+  List<Widget> loadedConversationsWidgets = [];
+  List<Map> loadedConversations = [];
   
 
   @override
@@ -408,8 +430,9 @@ class HomeState extends State<Home> {
             if (snapshot.hasError) 
               return Text('Error: ${snapshot.error}');
             List pastConvos = snapshot.data;
-            if (pastConvos.length == 0 && loadedConversations.length == 0) {
-              return Center(
+            print(loadedConversations); 
+            if (pastConvos.length == 0 && loadedConversationsWidgets.length == 0) {
+              loadedGroupsWidget = Center(
                 child: ListView(
                   shrinkWrap: true,
                   padding: EdgeInsets.fromLTRB(20, 15, 20, 30),
@@ -425,11 +448,12 @@ class HomeState extends State<Home> {
                   ],
                 ),
               );
-            }           
+              return loadedGroupsWidget;
+            }
             return ListView(
               shrinkWrap: true,
               padding: EdgeInsets.fromLTRB(4, 4, 4, 4),
-              children: pastConvos,
+              children: loadedConversationsWidgets,
             );
         }
       },

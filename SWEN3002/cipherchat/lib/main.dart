@@ -53,6 +53,7 @@ Map serverEntrypoints = {
 
 final int limitPerChatsFetchFromDatabase = 20;
 final int limitPerMessagesFetchFromDatabase = 20;
+final int limitPerGroupsFetchFromDatabase = 100;
 final int publicServersPerRequest = 10;
 
 int currentGroupId = 0;
@@ -90,6 +91,16 @@ Future<bool> launchUrlInWebview(String url, bool hidden) async {
     await flutterWebviewPlugin.launch(url, hidden: hidden);
   }
   return true;
+}
+
+int largest(List array){
+  int largest = int.parse(array[0].toString());
+  for(var x = 0; x < array.length; x++){
+    if (int.parse(array[x].toString()) > largest){
+      largest = int.parse(array[x].toString()); 
+    }
+  }
+  return largest;
 }
 
 Future<bool> showCustomProcessDialog(String text, BuildContext context, {bool dissmissable, TextAlign alignment}) async {
@@ -410,6 +421,7 @@ Future<int> joinOldChat(String joinKey, bool initialJoin, {int groupId}) async{
       "recoveryParam": (fullJoinKey["signature"]["recoveryParam"]).toString(),
     };
     globalGroupJoinKey = JoinKey(fullJoinKey["ip"].toString(), int.parse(fullJoinKey["port"].toString()), fullJoinKey["encryptedMessage"].toString(), signature, fullJoinKey["joinKey"].toString(), BigInt.parse(publicKey["x2"].toString()), BigInt.parse(publicKey["x"].toString()), username.toString());
+    
     if(initialJoin){
       if(await checkServerRoutes(globalGroupJoinKey.ip, globalGroupJoinKey.port) == false){
         return -1;

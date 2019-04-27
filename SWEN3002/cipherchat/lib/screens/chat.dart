@@ -202,13 +202,15 @@ class ChatState extends State<Chat> {
     }
     List result = [];
     Map data = json.decode(json.encode(response.data));
+    print("THE RESPONSE FROM THE SERVER IS: ");
+    print(data);
     List messageIds = data.keys.toList();
     for(var x = 0; x < messageIds.length; x++){
-      result.add(NewMessagesResponse(int.parse(messageIds[x]), response.data.sender, response.data.encryptedMessage, json.decode(json.encode(response.data.compositeKeys)), int.parse(response.data.ts)));
-    }
-    result.sort((a, b) => a.messageId.compareTo(b.messageId));
+      result.add(NewMessagesResponse(int.parse(messageIds[x].toString()), data[messageIds[x]]["sender"], data[messageIds[x]]["encryptedMessage"], BigInt.parse(data[messageIds[x]]["compositeKey"]), int.parse(data[messageIds[x]]["ts"].toString())));
+    } 
+    result.sort((a, b) => a.messageId.compareTo(b.messageId)); 
     return result;
-  }
+  } 
 
   Future<Map> getOlderMessages() async {
     Map oldMessages = {};
@@ -268,12 +270,13 @@ class ChatState extends State<Chat> {
   Future<bool> fetchAndSaveNewMessages() async{
     try{ 
       print("FETCHING MESSAGES FROM SERVER");
-      List newMessages = await getNewMessages();
-      String username = await databaseManager.getUsername();
+      List newMessages = await getNewMessages(); 
+      print("THE NEW MESSAGES RESPONSE IS: ");
+      print(newMessages);
       for(var x = 0; x < newMessages.length; x++){
         try{
           NewMessagesResponse currentMessage = newMessages[x];
-          BigInt compositeKey = BigInt.parse(currentMessage.compositeKeys[username]);
+          BigInt compositeKey = currentMessage.compositeKey;
           BigInt symmetricKey = await secp256k1EllipticCurve.generateSymmetricKey(currentPrivateKey, [compositeKey]);
           String decryptedMessage = await secp256k1EllipticCurve.decryptMessage(currentMessage.encryptedMessage, symmetricKey);
           print("THE DECRYPTED MESSAGE IS: ");
@@ -1745,13 +1748,13 @@ class NewMessagesResponse{
   int messageId;
   String sender;
   String encryptedMessage;  
-  Map<String, String> compositeKeys;  
+  BigInt compositeKey;  
   int timestamp;
-  NewMessagesResponse(messageId, sender, encryptedMessage, compositeKeys, timestamp){
+  NewMessagesResponse(int messageId, String sender, String encryptedMessage, BigInt compositeKey, int timestamp){
     this.messageId = messageId;
     this.sender = sender;
     this.encryptedMessage = encryptedMessage;
-    this.compositeKeys = compositeKeys;
+    this.compositeKey = compositeKey;
     this.timestamp = timestamp;
   }
   Map toJSON(){
@@ -1759,7 +1762,7 @@ class NewMessagesResponse{
       "messageId": messageId,
       "sender": sender,
       "encryptedMessage": encryptedMessage,
-      "compositeKeys": compositeKeys,
+      "compositeKeys": compositeKey,
       "timestamp": timestamp,
     };
   }

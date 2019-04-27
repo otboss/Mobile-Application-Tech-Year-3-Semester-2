@@ -55,9 +55,9 @@ class DatabaseManager {
       IF 
       NOT 
       EXISTS """+accountsTable.tableName.getTableName()+"""(
-        """+accountsTable.accountId.getColumnName()+""" INTEGER PRIMARY KEY, 
-        """+accountsTable.username.getColumnName()+""" TEXT, 
-        """+accountsTable.timestamp.getColumnName()+""" DATETIME DEFAULT CURRENT_TIMESTAMP
+        """+accountsTable.accountId.standAloneColumnName+""" INTEGER PRIMARY KEY, 
+        """+accountsTable.username.standAloneColumnName+""" TEXT, 
+        """+accountsTable.timestamp.standAloneColumnName+""" DATETIME DEFAULT CURRENT_TIMESTAMP
       );""");
       await db.execute("""
       CREATE 
@@ -65,15 +65,15 @@ class DatabaseManager {
       IF 
       NOT 
       EXISTS """+groupsTable.tableName.getTableName()+"""(
-        """+groupsTable.groupId.getColumnName()+""" INTEGER PRIMARY KEY, 
-        """+groupsTable.serverIp.getColumnName()+""" TEXT, 
-        """+groupsTable.serverPort.getColumnName()+""" INTEGER, 
-        """+groupsTable.label.getColumnName()+""" TEXT, 
-        """+groupsTable.joinKey.getColumnName()+""" TEXT, 
-        """+groupsTable.privateKey.getColumnName()+""" TEXT, 
-        """+groupsTable.displayPicture.getColumnName()+""" LONGTEXT, 
-        """+groupsTable.username.getColumnName()+""" TEXT, 
-        """+groupsTable.timestamp.getColumnName()+""" DATETIME DEFAULT CURRENT_TIMESTAMP
+        """+groupsTable.groupId.standAloneColumnName+""" INTEGER PRIMARY KEY, 
+        """+groupsTable.serverIp.standAloneColumnName+""" TEXT, 
+        """+groupsTable.serverPort.standAloneColumnName+""" INTEGER, 
+        """+groupsTable.label.standAloneColumnName+""" TEXT, 
+        """+groupsTable.joinKey.standAloneColumnName+""" TEXT, 
+        """+groupsTable.privateKey.standAloneColumnName+""" TEXT, 
+        """+groupsTable.displayPicture.standAloneColumnName+""" LONGTEXT, 
+        """+groupsTable.username.standAloneColumnName+""" TEXT, 
+        """+groupsTable.timestamp.standAloneColumnName+""" DATETIME DEFAULT CURRENT_TIMESTAMP
       );""");
       await db.execute("""
       CREATE 
@@ -81,17 +81,17 @@ class DatabaseManager {
       IF 
       NOT 
       EXISTS """+participantsTable.tableName.getTableName()+"""(
-        """+participantsTable.participantId.getColumnName()+""" INTEGER PRIMARY KEY, 
-        """+participantsTable.groupId.getColumnName()+""" INTEGER, 
-        """+participantsTable.username.getColumnName()+""" TEXT, 
-        """+participantsTable.profilePic.getColumnName()+""" LONGTEXT, 
-        """+participantsTable.publicKey.getColumnName()+""" TEXT, 
-        """+participantsTable.publicKey2.getColumnName()+""" TEXT, 
-        """+participantsTable.recipient.getColumnName()+""" INTEGER DEFAULT 0, 
-        """+participantsTable.joined.getColumnName()+""" INTEGER, 
-        """+participantsTable.timestamp.getColumnName()+""" DATETIME DEFAULT CURRENT_TIMESTAMP, 
-        FOREIGN KEY("""+participantsTable.groupId.getColumnName()+""") 
-        REFERENCES """+groupsTable.tableName.getTableName()+"""("""+groupsTable.groupId.getColumnName()+""")
+        """+participantsTable.participantId.standAloneColumnName+""" INTEGER PRIMARY KEY, 
+        """+participantsTable.groupId.standAloneColumnName+""" INTEGER, 
+        """+participantsTable.username.standAloneColumnName+""" TEXT, 
+        """+participantsTable.profilePic.standAloneColumnName+""" LONGTEXT, 
+        """+participantsTable.publicKey.standAloneColumnName+""" TEXT, 
+        """+participantsTable.publicKey2.standAloneColumnName+""" TEXT, 
+        """+participantsTable.recipient.standAloneColumnName+""" INTEGER DEFAULT 0, 
+        """+participantsTable.joined.standAloneColumnName+""" INTEGER, 
+        """+participantsTable.timestamp.standAloneColumnName+""" DATETIME DEFAULT CURRENT_TIMESTAMP, 
+        FOREIGN KEY("""+participantsTable.groupId.standAloneColumnName+""") 
+        REFERENCES """+groupsTable.tableName.getTableName()+"""("""+groupsTable.groupId.standAloneColumnName+""")
       );""");
       await db.execute("""
       CREATE 
@@ -99,26 +99,26 @@ class DatabaseManager {
       IF 
       NOT 
       EXISTS """+messagesTable.tableName.getTableName()+"""(
-        """+messagesTable.messageId.getColumnName()+""" INTEGER PRIMARY KEY, 
-        """+messagesTable.groupId.getColumnName()+""" INTEGER, 
-        """+messagesTable.participantId.getColumnName()+""" INTEGER, 
-        """+messagesTable.messageIdFromServer.getColumnName()+""" INTEGER, 
-        """+messagesTable.message.getColumnName()+""" TEXT, 
-        """+messagesTable.receivedTime.getColumnName()+""" INTEGER, 
-        """+messagesTable.isSentMessage.getColumnName()+""" INTEGER DEFAULT 0, 
-        """+messagesTable.timestamp.getColumnName()+""" DATETIME DEFAULT CURRENT_TIMESTAMP, 
-        FOREIGN KEY("""+messagesTable.groupId.getColumnName()+""") 
-        REFERENCES """+groupsTable.tableName.getTableName()+"""("""+groupsTable.groupId.getColumnName()+"""), 
-        FOREIGN KEY("""+messagesTable.participantId.getColumnName()+""") 
-        REFERENCES """+participantsTable.tableName.getTableName()+"""("""+participantsTable.participantId.getColumnName()+"""));""");
+        """+messagesTable.messageId.standAloneColumnName+""" INTEGER PRIMARY KEY, 
+        """+messagesTable.groupId.standAloneColumnName+""" INTEGER, 
+        """+messagesTable.participantId.standAloneColumnName+""" INTEGER, 
+        """+messagesTable.messageIdFromServer.standAloneColumnName+""" INTEGER, 
+        """+messagesTable.message.standAloneColumnName+""" TEXT, 
+        """+messagesTable.receivedTime.standAloneColumnName+""" INTEGER, 
+        """+messagesTable.isSentMessage.standAloneColumnName+""" INTEGER DEFAULT 0, 
+        """+messagesTable.timestamp.standAloneColumnName+""" DATETIME DEFAULT CURRENT_TIMESTAMP, 
+        FOREIGN KEY("""+messagesTable.groupId.standAloneColumnName+""") 
+        REFERENCES """+groupsTable.tableName.getTableName()+"""("""+groupsTable.groupId.standAloneColumnName+"""), 
+        FOREIGN KEY("""+messagesTable.participantId.standAloneColumnName+""") 
+        REFERENCES """+participantsTable.tableName.getTableName()+"""("""+participantsTable.participantId.standAloneColumnName+"""));""");
       await db.rawInsert("""
       INSERT 
       INTO """+accountsTable.tableName.getTableName()+""" (
-        """+accountsTable.username.getColumnName()+"""
+        """+accountsTable.username.standAloneColumnName+"""
       ) 
       VALUES (
         'Anonymous'
-      )""");
+      );""");
       print("Database Created Successfully");
       return db;
     } catch (err) {
@@ -177,7 +177,7 @@ class DatabaseManager {
       FROM """+groupsTable.tableName.getTableName()+""" 
       WHERE """+groupsTable.groupId.getColumnName()+""" = '"""+groupId.toString()+"""';""");
       if(query.length > 0)
-        return query[0][groupsTable.joinKey.getColumnName()];
+        return query[0][groupsTable.joinKey.standAloneColumnName];
     }
     catch(err){
       print(err);
@@ -198,13 +198,13 @@ class DatabaseManager {
         await client.rawInsert("""
         INSERT 
         INTO """+groupsTable.tableName.getTableName()+""" (
-          """+groupsTable.serverIp.getColumnName()+""", 
-          """+groupsTable.serverPort.getColumnName()+""",
-          """+groupsTable.label.getColumnName()+""",
-          """+groupsTable.joinKey.getColumnName()+""",
-          """+groupsTable.privateKey.getColumnName()+""",
-          """+groupsTable.displayPicture.getColumnName()+""",
-          """+groupsTable.username.getColumnName()+"""
+          """+groupsTable.serverIp.standAloneColumnName+""", 
+          """+groupsTable.serverPort.standAloneColumnName+""",
+          """+groupsTable.label.standAloneColumnName+""",
+          """+groupsTable.joinKey.standAloneColumnName+""",
+          """+groupsTable.privateKey.standAloneColumnName+""",
+          """+groupsTable.displayPicture.standAloneColumnName+""",
+          """+groupsTable.username.standAloneColumnName+"""
         ) 
         VALUES (
           '"""+serverIp+"""', 
@@ -220,7 +220,7 @@ class DatabaseManager {
       SELECT """+groupsTable.groupId.getColumnName()+""" 
       FROM """+groupsTable.tableName.getTableName()+""" 
       WHERE """+groupsTable.joinKey.getColumnName()+""" = '"""+joinKey+"""';""");
-      return int.parse(query[0][groupsTable.groupId.getColumnName()].toString());
+      return int.parse(query[0][groupsTable.groupId.standAloneColumnName].toString());
     }
     catch(err){
       print(err);
@@ -258,12 +258,12 @@ class DatabaseManager {
         await client.rawInsert("""
         INSERT 
         INTO """+participantsTable.tableName.getTableName()+""" (
-          """+participantsTable.groupId.getColumnName()+""", 
-          """+participantsTable.username.getColumnName()+""", 
-          """+participantsTable.profilePic.getColumnName()+""", 
-          """+participantsTable.publicKey.getColumnName()+""", 
-          """+participantsTable.publicKey2.getColumnName()+""", 
-          """+participantsTable.joined.getColumnName()+"""
+          """+participantsTable.groupId.standAloneColumnName+""", 
+          """+participantsTable.username.standAloneColumnName+""", 
+          """+participantsTable.profilePic.standAloneColumnName+""", 
+          """+participantsTable.publicKey.standAloneColumnName+""", 
+          """+participantsTable.publicKey2.standAloneColumnName+""", 
+          """+participantsTable.joined.standAloneColumnName+"""
         ) 
         VALUES (
           '"""+groupId.toString()+"""', 
@@ -291,7 +291,7 @@ class DatabaseManager {
       FROM """+groupsTable.tableName.getTableName()+""" 
       WHERE """+groupsTable.joinKey.getColumnName()+""" = '"""+joinKey+"""';""");
       if(query.length > 0){
-        int gid = query[0][groupsTable.groupId.getColumnName()];
+        int gid = query[0][groupsTable.groupId.standAloneColumnName];
         await client.rawQuery("""
         UPDATE """+groupsTable.tableName.getTableName()+""" 
         SET """+groupsTable.label.getColumnName()+""" = '"""+newLabel+"""' 
@@ -332,7 +332,7 @@ class DatabaseManager {
       SELECT 
       """+accountsTable.username.getColumnName()+"""  
       FROM """+accountsTable.tableName.getTableName()+""";""");
-      String currentUsername = query[0][accountsTable.username.getColumnName()];
+      String currentUsername = query[0][accountsTable.username.standAloneColumnName];
       query = await client.rawQuery("""
       SELECT 
       """+participantsTable.publicKey.getColumnName()+""" 
@@ -342,7 +342,7 @@ class DatabaseManager {
       AND """+participantsTable.username.getColumnName()+""" != '"""+currentUsername+"""';""");
       BigInt compositeKey = BigInt.parse("1");
       for(var x = 0; x < query.length; x++){
-        compositeKey *= BigInt.parse(query[x][participantsTable.publicKey.getColumnName()]);
+        compositeKey *= BigInt.parse(query[x][participantsTable.publicKey.standAloneColumnName]);
       }
       return compositeKey;
     }
@@ -369,11 +369,11 @@ class DatabaseManager {
       OR """+participantsTable.username.getColumnName()+""" = '"""+currentUser+"""' 
       GROUP BY """+participantsTable.username.getColumnName()+""";""");
       for(var x = 0; x < query.length; x++){
-        result[query[x][participantsTable.username.getColumnName()]] = BigInt.parse("1");
+        result[query[x][participantsTable.username.standAloneColumnName]] = BigInt.parse("1");
         for(var y = 0; y < query.length; y++){
           try{
-          if(query[y][participantsTable.username.getColumnName()] != query[x][participantsTable.username.getColumnName()])
-            result[query[x][participantsTable.username.getColumnName()]] *= BigInt.parse(query[y][participantsTable.publicKey.getColumnName()]);            
+          if(query[y][participantsTable.username.standAloneColumnName] != query[x][participantsTable.username.standAloneColumnName])
+            result[query[x][participantsTable.username.standAloneColumnName]] *= BigInt.parse(query[y][participantsTable.publicKey.standAloneColumnName]);            
           }
           catch(err){
             continue;
@@ -416,7 +416,7 @@ class DatabaseManager {
       query = await client.rawQuery("""
       SELECT """+groupsTable.label.getColumnName()+""" label FROM """+groupsTable.tableName.getTableName()+""" 
       WHERE """+groupsTable.groupId.getColumnName()+""" = '"""+gid.toString()+"""';""");
-      return query[0]["label"];
+      return query[0][groupsTable.label.standAloneColumnName];
     }
     catch(err){
       print(err);
@@ -490,64 +490,76 @@ class DatabaseManager {
 
   ///Returns A list of the past conversation and the last message
   ///of each conversation
-  Future<Map> getAllGroups(int offset, String filter) async{
+  Future<Map> getPastConversations(int groupsOffset, String filter) async{
     var client = await getDatabase();
-    List query = [];
+    List query = [];  
     try{
-      query = await client.rawQuery("""
-      SELECT
-      *, 
-      STRFTIME('%s', """+messagesTable.tableName.getTableName()+"""."""+messagesTable.timestamp.getColumnName()+""")*1000 tme 
-      FROM """+groupsTable.tableName.getTableName()+""" 
-      JOIN """+messagesTable.tableName.getTableName()+"""
-      ON """+groupsTable.tableName.getTableName()+"""."""+groupsTable.groupId.getColumnName()+""" = """+messagesTable.tableName.getTableName()+"""."""+messagesTable.groupId.getColumnName()+"""
-      WHERE """+groupsTable.tableName.getTableName()+"""."""+groupsTable.label.getColumnName()+""" 
-      LIKE '%$filter%'
-      GROUP 
-      BY """+groupsTable.tableName.getTableName()+"""."""+groupsTable.groupId.getColumnName()+"""
-      ORDER 
-      BY """+messagesTable.tableName.getTableName()+"""."""+messagesTable.timestamp.getColumnName()+"""
-      DESC
-      LIMIT 100;
-      """);
-      
-      List maxGidFinder = query;
-      maxGidFinder.sort((a, b) => a.gid.compareTo(b.gid));
-      maxGidFinder = maxGidFinder.reversed.toList();
-      int maxMessageId  = 0;
-      List futureMessages = [];
-      try{
-        maxMessageId = maxGidFinder[0]["gid"];
-        futureMessages = await client.rawQuery("""
-        SELECT
-        *
-        FROM """+messagesTable.tableName.getTableName()+""" 
-        JOIN """+groupsTable.tableName.getTableName()+"""
-        ON """+messagesTable.tableName.getTableName()+"""."""+messagesTable.groupId.getColumnName()+""" = """+groupsTable.tableName.getTableName()+"""."""+groupsTable.groupId.getColumnName()+""" 
-        WHERE """+messagesTable.tableName.getTableName()+"""."""+messagesTable.messageId.getColumnName()+""" > '"""+maxMessageId.toString()+"""'
-        AND """+groupsTable.tableName.getTableName()+"""."""+groupsTable.label.getColumnName()+""" 
-        LIKE '%$filter%';
+      if(groupsOffset == null)
+        groupsOffset = 0;
+      Future<List> recentChatGroupsFetcher(int groupsOffset, String filter) async{
+        return await client.rawQuery("""
+        SELECT 
+        """+groupsTable.groupId.getColumnName()+""" gid,
+        """+groupsTable.label.getColumnName()+""" label,
+        """+messagesTable.message.getColumnName()+""" msg,
+        """+participantsTable.username.getColumnName()+""" username,
+        """+groupsTable.serverIp.getColumnName()+""" serverIp,
+        """+groupsTable.serverPort.getColumnName()+""" serverPort,
+        """+groupsTable.privateKey.getColumnName()+""" privateKey,
+        """+groupsTable.joinKey.getColumnName()+""" joinKey,         
+        """+participantsTable.profilePic.getColumnName()+""" profilePic,
+        STRFTIME('%s', """+messagesTable.timestamp.getColumnName()+""")*1000 tme
+        FROM """+messagesTable.tableName.getTableName()+"""
+        JOIN """+participantsTable.tableName.getTableName()+""" 
+        ON """+messagesTable.groupId.getColumnName()+""" = """+participantsTable.groupId.getColumnName()+""" 
+        JOIN """+groupsTable.tableName.getTableName()+""" 
+        ON """+groupsTable.groupId.getColumnName()+""" = """+messagesTable.groupId.getColumnName()+""" 
+        WHERE """+messagesTable.messageId.getColumnName()+""" = (
+          SELECT 
+          MAX("""+messagesTable.groupId.standAloneColumnName+""") 
+          FROM """+messagesTable.tableName.getTableName()+""" msges2 
+          WHERE msges2."""+messagesTable.groupId.standAloneColumnName+""" = """+messagesTable.groupId.getColumnName()+"""
+        ) 
+        AND """+groupsTable.label.getColumnName()+""" 
+        LIKE '%$filter%'
+        AND """+groupsTable.groupId.getColumnName()+""" > '$groupsOffset'
+        AND """+participantsTable.participantId.getColumnName()+""" = """+messagesTable.participantId.getColumnName()+"""
+        GROUP BY """+messagesTable.messageId.getColumnName()+"""
+        ORDER 
+        BY """+messagesTable.timestamp.getColumnName()+"""
+        DESC
+        LIMIT $limitPerGroupsFetchFromDatabase;      
         """);
       }
-      catch(err){
-        //indexing error
+      query = await recentChatGroupsFetcher(groupsOffset, filter);
+
+
+      List gidArray = [];
+      for(var x = 0; x < query.length; x++){
+        gidArray.add(query[x]["gid"]);
       }
-
+      
+      int maxGid = groupsOffset;
+      if(gidArray.length > 0){
+        maxGid = largest(gidArray);
+      }
+      
       bool hasMoreGroups = false;
-      if(futureMessages.length > 0)
-        hasMoreGroups = true; 
-
+      List moreGroupsChecker = await recentChatGroupsFetcher(maxGid, filter);
+      if(moreGroupsChecker.length > 0)
+        hasMoreGroups = true;
+      
       return {
         "results": query,
         "hasMoreGroups": hasMoreGroups
-      };
+      };      
     }
     catch(err){
       print("AN ERROR OCCURRED DURING LOADING");
-      print("AN ERROR OCCURRED DURING LOADING");
+      print("AN ERROR OCCURRED DURING LOADING");      
       print(err);
-      return null;
     }
+    return null;
   }
 
   Future<String> getUsername() async{
@@ -563,7 +575,7 @@ class DatabaseManager {
       print(err);
       return null;
     }    
-    return query[0][accountsTable.username.getColumnName()];
+    return query[0][accountsTable.username.standAloneColumnName];
   }
    
   Future<bool> updateUsername(String username) async{
@@ -590,7 +602,7 @@ class DatabaseManager {
       FROM """+groupsTable.tableName.getTableName()+""" 
       WHERE """+groupsTable.groupId.getColumnName()+""" = '"""+currentGroupId.toString()+"""';""");
       if(query.length > 0)
-        return BigInt.parse(query[0][groupsTable.privateKey.getColumnName()]);
+        return BigInt.parse(query[0][groupsTable.privateKey.standAloneColumnName]);
     }
     catch(err){
       print(err);
@@ -608,7 +620,7 @@ class DatabaseManager {
       FROM """+groupsTable.tableName.getTableName()+""" 
       WHERE """+groupsTable.joinKey.getColumnName()+""" = '"""+joinKey.toString()+"""';""");
       if(query.length > 0)
-        return BigInt.parse(query[0][groupsTable.privateKey.getColumnName()]);
+        return BigInt.parse(query[0][groupsTable.privateKey.standAloneColumnName]);
     }
     catch(err){
       print(err);
@@ -625,7 +637,7 @@ class DatabaseManager {
       FROM """+participantsTable.tableName.getTableName()+""" 
       WHERE """+participantsTable.publicKey2.getColumnName()+""" = '"""+publicKey2.toString()+"""' 
       AND """+participantsTable.groupId.getColumnName()+""" = '"""+currentGroupId.toString()+"""';"""); 
-      return query[0][participantsTable.username.getColumnName()];
+      return query[0][participantsTable.username.standAloneColumnName];
     }
     catch(err){
       return null;
@@ -644,20 +656,20 @@ class DatabaseManager {
       WHERE """+participantsTable.groupId.getColumnName()+""" = '"""+gid.toString()+"""' 
       ORDER BY """+participantsTable.username.getColumnName()+""";""");
       for(var x = 0; x < query.length; x++){
-        int joined = int.parse(query[x][participantsTable.joined.getColumnName()].toString());
-        if(query[x][participantsTable.username.getColumnName()] != currentUser){ 
-          result[query[x][participantsTable.username.getColumnName()]] = {
-            "pid": query[x][participantsTable.participantId.getColumnName()],
+        int joined = int.parse(query[x][participantsTable.joined.standAloneColumnName].toString());
+        if(query[x][participantsTable.username.standAloneColumnName] != currentUser){ 
+          result[query[x][participantsTable.username.standAloneColumnName]] = {
+            "pid": query[x][participantsTable.participantId.standAloneColumnName],
             "joined": joined,
-            "isRecipient": int.parse(query[x][participantsTable.recipient.getColumnName()].toString()) > 0,
+            "isRecipient": int.parse(query[x][participantsTable.recipient.standAloneColumnName].toString()) > 0,
             "currentUser": false
           };
         }
         else{
-          result[query[x][participantsTable.username.getColumnName()]] = {
-            "pid": query[x][participantsTable.participantId.getColumnName()],
+          result[query[x][participantsTable.username.standAloneColumnName]] = {
+            "pid": query[x][participantsTable.participantId.standAloneColumnName],
             "joined": joined,
-            "isRecipient": int.parse(query[x][participantsTable.recipient.getColumnName()].toString()) > 0,
+            "isRecipient": int.parse(query[x][participantsTable.recipient.standAloneColumnName].toString()) > 0,
             "currentUser": true
           };
         }
@@ -704,7 +716,7 @@ class DatabaseManager {
       FROM """+participantsTable.tableName.getTableName()+""" 
       WHERE """+participantsTable.username.getColumnName()+""" = '$sender' 
       AND """+participantsTable.groupId.getColumnName()+""" = '$currentGroupId';""");
-      int participantId = query[0]["pid"];      
+      int participantId = query[0][participantsTable.participantId.standAloneColumnName];      
       List previousMessages = await client.rawQuery("""
       SELECT 
       """+messagesTable.messageId.getColumnName()+""" 
@@ -725,12 +737,12 @@ class DatabaseManager {
                 await client.rawInsert("""
                 INSERT 
                 INTO """+messagesTable.tableName.getTableName()+""" (
-                  """+messagesTable.participantId.getColumnName()+""", 
-                  """+messagesTable.groupId.getColumnName()+""", 
-                  """+messagesTable.messageIdFromServer.getColumnName()+""", 
-                  """+messagesTable.message.getColumnName()+""", 
-                  """+messagesTable.receivedTime.getColumnName()+""", 
-                  """+messagesTable.isSentMessage.getColumnName()+""" 
+                  """+messagesTable.participantId.standAloneColumnName+""", 
+                  """+messagesTable.groupId.standAloneColumnName+""", 
+                  """+messagesTable.messageIdFromServer.standAloneColumnName+""", 
+                  """+messagesTable.message.standAloneColumnName+""", 
+                  """+messagesTable.receivedTime.standAloneColumnName+""", 
+                  """+messagesTable.isSentMessage.standAloneColumnName+""" 
                 ) 
                 VALUES (
                   '$participantId', 
@@ -745,12 +757,12 @@ class DatabaseManager {
                 await client.rawInsert("""
                 INSERT 
                 INTO """+messagesTable.tableName.getTableName()+""" (
-                  """+messagesTable.participantId.getColumnName()+""", 
-                  """+messagesTable.groupId.getColumnName()+""", 
-                  """+messagesTable.messageIdFromServer.getColumnName()+""", 
-                  """+messagesTable.message.getColumnName()+""", 
-                  """+messagesTable.receivedTime.getColumnName()+""", 
-                  """+messagesTable.isSentMessage.getColumnName()+""", 
+                  """+messagesTable.participantId.standAloneColumnName+""", 
+                  """+messagesTable.groupId.standAloneColumnName+""", 
+                  """+messagesTable.messageIdFromServer.standAloneColumnName+""", 
+                  """+messagesTable.message.standAloneColumnName+""", 
+                  """+messagesTable.receivedTime.standAloneColumnName+""", 
+                  """+messagesTable.isSentMessage.standAloneColumnName+"""
                 ) 
                 VALUES (
                   '$participantId', 
@@ -785,32 +797,33 @@ class DatabaseManager {
         query = await client.rawQuery("""
         SELECT 
         *, 
-        STRFTIME('%s', """+messagesTable.tableName.getTableName()+"""."""+messagesTable.timestamp.getColumnName()+""")*1000 tme 
+        STRFTIME('%s', """+messagesTable.timestamp.getColumnName()+""")*1000 tme 
         FROM """+messagesTable.tableName.getTableName()+""" 
         JOIN """+participantsTable.tableName.getTableName()+""" 
-        ON """+participantsTable.tableName.getTableName()+"""."""+participantsTable.groupId.getColumnName()+""" = """+messagesTable.tableName.getTableName()+"""."""+messagesTable.groupId.getColumnName()+""" 
-        WHERE """+messagesTable.tableName.getTableName()+"""."""+messagesTable.groupId.getColumnName()+""" = '$gid' 
-        AND """+messagesTable.tableName.getTableName()+"""."""+messagesTable.messageIdFromServer.getColumnName()+""" > '"""+offset.toString()+"""'  
-        GROUP BY """+messagesTable.tableName.getTableName()+"""."""+messagesTable.messageId.getColumnName()+""" 
-        ORDER BY """+messagesTable.tableName.getTableName()+"""."""+messagesTable.timestamp.getColumnName()+""" 
+        ON """+participantsTable.groupId.getColumnName()+""" = """+messagesTable.groupId.getColumnName()+""" 
+        WHERE """+messagesTable.groupId.getColumnName()+""" = '$gid' 
+        AND """+messagesTable.messageIdFromServer.getColumnName()+""" > '"""+offset.toString()+"""' 
+        AND  """+participantsTable.participantId.getColumnName()+""" = """+messagesTable.participantId.getColumnName()+"""
+        GROUP BY """+messagesTable.messageId.getColumnName()+""" 
+        ORDER BY """+messagesTable.timestamp.getColumnName()+""" 
         DESC LIMIT $limitPerMessagesFetchFromDatabase;""");
     }
     else{
       query = await client.rawQuery("""
       SELECT 
       *, 
-      STRFTIME('%s', """+messagesTable.tableName.getTableName()+"""."""+messagesTable.timestamp.getColumnName()+""")*1000 tme 
+      STRFTIME('%s', """+messagesTable.timestamp.getColumnName()+""")*1000 tme 
       FROM """+messagesTable.tableName.getTableName()+""" 
       JOIN """+participantsTable.tableName.getTableName()+""" 
-      ON """+messagesTable.tableName.getTableName()+"""."""+messagesTable.groupId.getColumnName()+""" = """+participantsTable.tableName.getTableName()+"""."""+participantsTable.groupId.getColumnName()+""" 
-      WHERE """+messagesTable.tableName.getTableName()+"""."""+messagesTable.groupId.getColumnName()+""" = '$gid' 
-      AND """+messagesTable.tableName.getTableName()+"""."""+messagesTable.messageId.getColumnName()+""" > '$offset' 
-      GROUP BY """+messagesTable.tableName.getTableName()+"""."""+messagesTable.messageId.getColumnName()+""" 
-      ORDER BY """+messagesTable.tableName.getTableName()+"""."""+messagesTable.timestamp.getColumnName()+""" 
+      ON """+messagesTable.groupId.getColumnName()+""" = """+participantsTable.groupId.getColumnName()+""" 
+      WHERE """+messagesTable.groupId.getColumnName()+""" = '$gid' 
+      AND """+messagesTable.messageId.getColumnName()+""" > '$offset' 
+      GROUP BY """+messagesTable.messageId.getColumnName()+""" 
+      ORDER BY """+messagesTable.timestamp.getColumnName()+""" 
       DESC LIMIT $limitPerMessagesFetchFromDatabase;""");
     }
 
-    List maxMidFinder = query;
+    List maxMidFinder = json.decode(json.encode(query));
     maxMidFinder.sort((a, b) => a.mid.compareTo(b.mid));
     maxMidFinder = maxMidFinder.reversed.toList();
     int maxMessageId  = 0;
@@ -822,8 +835,8 @@ class DatabaseManager {
       *
       FROM """+messagesTable.tableName.getTableName()+""" 
       JOIN """+groupsTable.tableName.getTableName()+"""
-      ON """+messagesTable.tableName.getTableName()+"""."""+messagesTable.groupId.getColumnName()+""" = """+groupsTable.tableName.getTableName()+"""."""+groupsTable.groupId.getColumnName()+""" 
-      WHERE """+messagesTable.tableName.getTableName()+"""."""+messagesTable.messageId.getColumnName()+""" > '"""+maxMessageId.toString()+"""';
+      ON """+messagesTable.groupId.getColumnName()+""" = """+groupsTable.groupId.getColumnName()+""" 
+      WHERE """+messagesTable.messageId.getColumnName()+""" > '"""+maxMessageId.toString()+"""';
       """);
     }
     catch(err){
@@ -836,13 +849,13 @@ class DatabaseManager {
 
     print(query.length);
     for(var x = 0; x < query.length; x++){
-      if(query[x][messagesTable.isSentMessage.getColumnName()] > 0){
-        result[query[x][messagesTable.messageIdFromServer.getColumnName()]] = {
-          "pid": query[x][messagesTable.participantId.getColumnName()],
-          "num": participants[query[x][participantsTable.username.getColumnName()]],
-          "sender": query[x][participantsTable.username.getColumnName()],
-          "profilePic": query[x][participantsTable.profilePic.getColumnName()],
-          "message": query[x][messagesTable.message.getColumnName()],
+      if(query[x][messagesTable.isSentMessage.standAloneColumnName] > 0){
+        result[query[x][messagesTable.messageIdFromServer.standAloneColumnName]] = {
+          "pid": query[x][messagesTable.participantId.standAloneColumnName],
+          "num": participants[query[x][participantsTable.username.standAloneColumnName]],
+          "sender": query[x][participantsTable.username.standAloneColumnName],
+          "profilePic": query[x][participantsTable.profilePic.standAloneColumnName],
+          "message": query[x][messagesTable.message.standAloneColumnName],
           "isSentMessage": true,
           "hasMoreMessages": hasMoreMessages,
           "ts": int.parse(query[x]["tme"].toString())
@@ -850,11 +863,11 @@ class DatabaseManager {
       }
       else{
         result[query[x]["midFromServer"]] = {
-          "pid": query[x][messagesTable.participantId.getColumnName()],
-          "num": participants[query[x][participantsTable.username.getColumnName()]],
-          "sender": query[x][participantsTable.username.getColumnName()],
-          "profilePic": query[x][participantsTable.profilePic.getColumnName()],
-          "message": query[x][messagesTable.message.getColumnName()],
+          "pid": query[x][messagesTable.participantId.standAloneColumnName],
+          "num": participants[query[x][participantsTable.username.standAloneColumnName]],
+          "sender": query[x][participantsTable.username.standAloneColumnName],
+          "profilePic": query[x][participantsTable.profilePic.standAloneColumnName],
+          "message": query[x][messagesTable.message.standAloneColumnName],
           "isSentMessage": false,
           "hasMoreMessages": hasMoreMessages,
           "ts": int.parse(query[x]["tme"].toString())
@@ -875,7 +888,7 @@ class DatabaseManager {
       WHERE """+participantsTable.groupId.getColumnName()+""" = '"""+gid.toString()+"""' 
       ORDER BY """+participantsTable.participantId.getColumnName()+""";""");
       for(var x = 0; x < query.length; x++){
-        participants[query[x][participantsTable.username.getColumnName()]] = x+1;
+        participants[query[x][participantsTable.username.standAloneColumnName]] = x+1;
       }
       return participants;
     }
@@ -915,7 +928,7 @@ class DatabaseManager {
       SELECT """+groupsTable.groupId.getColumnName()+""" FROM """+groupsTable.tableName.getTableName()+""" 
       WHERE """+groupsTable.joinKey.getColumnName()+""" = '"""+joinKey+"""';""");
       if(query.length > 0)
-        return int.parse(query[0][groupsTable.groupId.getColumnName()].toString());
+        return int.parse(query[0][groupsTable.groupId.standAloneColumnName].toString());
       return -1;
     }
     catch(err){
@@ -971,9 +984,13 @@ class TableName{
 }
 
 class TableColumn{
+  String standAloneColumnName;
   String columnName;
-  TableColumn(String columnName){
-    this.columnName = columnName;
+  String tableName;
+  TableColumn(String tableName, String columnName){
+    this.tableName = tableName;
+    this.standAloneColumnName = columnName;
+    this.columnName = tableName+"."+columnName;
   }
   getColumnName(){
     return columnName;
@@ -982,10 +999,10 @@ class TableColumn{
 
 class AccountTable{
   final TableName tableName = TableName("accountInfo");
-  final TableColumn accountId = TableColumn("aid");
-  final TableColumn username = TableColumn("username");
-  final TableColumn profilePic = TableColumn("profilePic");
-  final TableColumn timestamp = TableColumn("ts");
+  final TableColumn accountId = TableColumn("accountInfo", "aid");
+  final TableColumn username = TableColumn("accountInfo", "username");
+  final TableColumn profilePic = TableColumn("accountInfo", "profilePic");
+  final TableColumn timestamp = TableColumn("accountInfo", "ts");
   AccountTable(){
     
   }
@@ -993,15 +1010,15 @@ class AccountTable{
 
 class GroupTable{
   final TableName tableName = TableName("groups");
-  final TableColumn groupId = TableColumn("gid");
-  final TableColumn serverIp = TableColumn("serverIp");
-  final TableColumn serverPort = TableColumn("serverPort");
-  final TableColumn label = TableColumn("label");
-  final TableColumn joinKey = TableColumn("joinKey");
-  final TableColumn privateKey = TableColumn("privateKey");
-  final TableColumn displayPicture = TableColumn("displayPicture");
-  final TableColumn username = TableColumn("username");
-  final TableColumn timestamp = TableColumn("ts");  
+  final TableColumn groupId = TableColumn("groups", "gid");
+  final TableColumn serverIp = TableColumn("groups", "serverIp");
+  final TableColumn serverPort = TableColumn("groups", "serverPort");
+  final TableColumn label = TableColumn("groups", "label");
+  final TableColumn joinKey = TableColumn("groups", "joinKey");
+  final TableColumn privateKey = TableColumn("groups", "privateKey");
+  final TableColumn displayPicture = TableColumn("groups", "displayPicture");
+  final TableColumn username = TableColumn("groups", "username");
+  final TableColumn timestamp = TableColumn("groups", "ts");  
   GroupTable(){
     
   }
@@ -1009,15 +1026,15 @@ class GroupTable{
 
 class ParticipantsTable{
   final TableName tableName = TableName("participants");
-  final TableColumn participantId = TableColumn("pid");
-  final TableColumn groupId = TableColumn("gid");
-  final TableColumn username = TableColumn("username");
-  final TableColumn profilePic = TableColumn("profilePic");
-  final TableColumn publicKey = TableColumn("publicKey");
-  final TableColumn publicKey2 = TableColumn("publicKey2");
-  final TableColumn recipient = TableColumn("recipient");
-  final TableColumn joined = TableColumn("joined");
-  final TableColumn timestamp = TableColumn("ts");
+  final TableColumn participantId = TableColumn("participants", "pid");
+  final TableColumn groupId = TableColumn("participants", "gid");
+  final TableColumn username = TableColumn("participants", "username");
+  final TableColumn profilePic = TableColumn("participants", "profilePic");
+  final TableColumn publicKey = TableColumn("participants", "publicKey");
+  final TableColumn publicKey2 = TableColumn("participants", "publicKey2");
+  final TableColumn recipient = TableColumn("participants", "recipient");
+  final TableColumn joined = TableColumn("participants", "joined");
+  final TableColumn timestamp = TableColumn("participants", "ts");
   ParticipantsTable(){
     
   }
@@ -1025,14 +1042,14 @@ class ParticipantsTable{
 
 class MessagesTable{
   final TableName tableName = TableName("messages");
-  final TableColumn messageId = TableColumn("mid");
-  final TableColumn participantId = TableColumn("pid");
-  final TableColumn groupId = TableColumn("gid");
-  final TableColumn messageIdFromServer = TableColumn("midFromServer");
-  final TableColumn message = TableColumn("msg");
-  final TableColumn receivedTime = TableColumn("receivedTime");
-  final TableColumn isSentMessage = TableColumn("isSentMessage");
-  final TableColumn timestamp = TableColumn("ts");
+  final TableColumn messageId = TableColumn("messages", "mid");
+  final TableColumn participantId = TableColumn("messages", "pid");
+  final TableColumn groupId = TableColumn("messages", "gid");
+  final TableColumn messageIdFromServer = TableColumn("messages", "midFromServer");
+  final TableColumn message = TableColumn("messages", "msg");
+  final TableColumn receivedTime = TableColumn("messages", "receivedTime");
+  final TableColumn isSentMessage = TableColumn("messages", "isSentMessage");
+  final TableColumn timestamp = TableColumn("messages", "ts");
   MessagesTable(){
     
   }

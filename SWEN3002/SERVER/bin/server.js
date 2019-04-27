@@ -635,26 +635,29 @@ with the title 'Public Server Submission' and the comment of:
                                 compositeKeys[currentRecipientUsername] = addslashes(compositeKeys[currentRecipientUsername]);
                                 connection.query(`
                                 SELECT `+databaseTables.participantsTable.columns.particpantId+` pid 
-                                FROM `+databaseTables.participantsTable.tableName+` 
-                                WHERE `+databaseTables.participantsTable.columns.username+` = '`+currentRecipientUsername+`';`, function(error, results, fields){
-                                    const currentParticipantId = results[0]["pid"];
-                                    connection.query(`
-                                    INSERT 
-                                    INTO `+databaseTables.compositeKeysTable.tableName+` (
-                                        `+databaseTables.compositeKeysTable.columns.messageId+`, 
-                                        `+databaseTables.compositeKeysTable.columns.groupId+`, 
-                                        `+databaseTables.compositeKeysTable.columns.participantId+`, 
-                                        `+databaseTables.compositeKeysTable.columns.compositeKey+`
-                                    ) 
-                                    VALUES (
-                                        '`+messageInsertionId+`', 
-                                        '`+groupId+`', 
-                                        '`+currentParticipantId+`', 
-                                        '`+compositeKeys[currentRecipientUsername]+`'
-                                    );`, function(error, results, fields){
-                                        if(error)
-                                            console.log(error);
-                                    });                                
+                                FROM `+databaseTables.participantsTable.tableName+`
+                                WHERE `+databaseTables.participantsTable.columns.username+` = '`+currentRecipientUsername+`'
+                                AND `+databaseTables.participantsTable.columns.groupId+` = '`+groupId+`';`, function(error, results, fields){
+                                    if(results.length > 0){
+                                        const currentParticipantId = results[0]["pid"];
+                                        connection.query(`
+                                        INSERT 
+                                        INTO `+databaseTables.compositeKeysTable.tableName+` (
+                                            `+databaseTables.compositeKeysTable.columns.messageId+`, 
+                                            `+databaseTables.compositeKeysTable.columns.groupId+`, 
+                                            `+databaseTables.compositeKeysTable.columns.participantId+`, 
+                                            `+databaseTables.compositeKeysTable.columns.compositeKey+`
+                                        ) 
+                                        VALUES (
+                                            '`+messageInsertionId+`', 
+                                            '`+groupId+`', 
+                                            '`+currentParticipantId+`', 
+                                            '`+compositeKeys[currentRecipientUsername]+`'
+                                        );`, function(error, results, fields){
+                                            if(error)
+                                                console.log(error);
+                                        });
+                                    }                               
                                 });
                             }
                             catch(err){
@@ -732,54 +735,41 @@ with the title 'Public Server Submission' and the comment of:
                             if(error)
                                 reject("0");
                             else{
-                                
                                 for(var x = 0; x < messageResults.length; x++){
                                     const messageId = messageResults[x]["mid"];
-                                    //Get composite keys for message
+                                    //Get composite key for message
                                     connection.query(`
-                                    SELECT `+databaseTables.messagesTable.columns.messageId+` messageId, 
+                                    SELECT
                                     `+databaseTables.participantsTable.columns.username+` sender, 
-                                    `+databaseTables.messagesTable.columns.message+` encryptedMessage, 
-                                    `+databaseTables.compositeKeysTable.columns.participantId+` compositeKeyPid, 
+                                    `+databaseTables.messagesTable.columns.message+` encryptedMessage,
                                     `+databaseTables.compositeKeysTable.columns.compositeKey+` compositeKey, 
-                                    UNIX_TIMESTAMP(`+databaseTables.messagesTable.columns.timestamp+`)*1000 sentTime 
+                                    UNIX_TIMESTAMP(`+databaseTables.messagesTable.columns.timestamp+`)*1000 sentTime
                                     FROM `+databaseTables.messagesTable.tableName+`
                                     JOIN `+databaseTables.compositeKeysTable.tableName+`
-                                    ON `+databaseTables.compositeKeysTable.columns.messageId+` = `+databaseTables.messagesTable.columns.messageId+` 
-                                    JOIN `+databaseTables.participantsTable.tableName+` 
-                                    ON `+databaseTables.messagesTable.columns.particpantId+` = `+databaseTables.participantsTable.columns.particpantId+` 
-                                    WHERE `+databaseTables.compositeKeysTable.columns.messageId+` = '`+messageId+`' 
-                                    GROUP BY `+databaseTables.compositeKeysTable.columns.compositeKeyId+`;`, async function(error, results, fields){                  
-                                        console.log(results);
+                                    ON `+databaseTables.messagesTable.columns.messageId+` = `+databaseTables.compositeKeysTable.columns.messageId+`
+                                    JOIN `+databaseTables.participantsTable.tableName+`
+                                    ON `+databaseTables.messagesTable.columns.particpantId+` = `+databaseTables.participantsTable.columns.particpantId+`
+                                    WHERE `+databaseTables.messagesTable.columns.messageId+` = '`+messageId+`'
+                                    AND `+databaseTables.compositeKeysTable.columns.participantId+` = '`+participantId+`'
+                                    GROUP BY `+databaseTables.messagesTable.columns.messageId+`
+                                    ORDER BY `+databaseTables.messagesTable.columns.messageId+`;`, async function(error, results, fields){
+                                        if(error)
+                                            console.log(error);
                                         var messages = {};
-                                        for(var x = 0; x < results.length; x++){
-                                            const currentCompositeKey = results[x]["compositeKey"];
-                                            const currentSender = results[x]["sender"];
-                                            const currentCompositeKeyPid = results[x]["compositeKeyPid"];
-                                            const currentEncryptedMessage = results[x]["encryptedMessage"];
-                                            const currentSentTime = results[x]["sentTime"];
-                                            //Get username for composite key
-                                            await new Promise(function(resolve, reject){
-                                                connection.query(`
-                                                SELECT `+databaseTables.participantsTable.columns.username+` 
-                                                FROM `+databaseTables.participantsTable.tableName+` 
-                                                WHERE `+databaseTables.participantsTable.columns.particpantId+` = '`+currentCompositeKeyPid+`';`, function(error, usernameResult, fields){
-                                                    var compositeKeyUsername = usernameResult[0]["username"];
-                                                    var compositeKeyObj = {};                                                  
-                                                    compositeKeyObj[compositeKeyUsername] = currentCompositeKey;
-                                                    if(messages[messageId] != null)
-                                                        compositeKeyObj = {...compositeKeyObj, ...messages[messageId]["compositeKeys"]};
-                                                    messages[messageId] = {
-                                                        "sender": currentSender,
-                                                        "encryptedMessage": currentEncryptedMessage,
-                                                        "compositeKeys": compositeKeyObj,
-                                                        "ts": currentSentTime
-                                                    } 
-                                                    resolve();                     
-                                                });
-                                            });
+                                        console.log("THE RESULTS FROM QUERY IS: ");
+                                        console.log(results)
+                                        if(results.length > 0){
+                                            messages[messageId] = {
+                                                "sender": results[0]["sender"],
+                                                "encryptedMessage": results[0]["encryptedMessage"],
+                                                "compositeKey": results[0]["compositeKey"],
+                                                "ts": results[0]["sentTime"]
+                                            }                               
                                         }
-                                        resolve(messages); 
+                                        console.log(participantId);
+                                        console.log("THE FINAL RESULTS IS");
+                                        console.log(messages);
+                                        resolve(messages);
                                     });
                                 }                            
                             }            

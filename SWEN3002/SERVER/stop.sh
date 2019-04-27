@@ -7,4 +7,4 @@ printf "===============\n";
 printf "Press Ctrl+C to cancel..\n\n"
 sleep 2;
 ./npx forever stopall;
-./npx killall node;
+killall node;

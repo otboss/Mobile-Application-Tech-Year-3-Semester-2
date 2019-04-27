@@ -26,3 +26,22 @@ with the title 'Public Server Submission' and the comment of:
 | for global access this server.                        |
 =========================================================
 
+{ encryptedMessage:
+   'pKwWGiQWfthqKjDoURmtk7ejGKIBAMOwFFGcesCg3vNEIoQcm8jr4RxCQcncQiUsvCrsAYOUKsZKwmemSsMjKgjdxaFtuemlO8xt',
+  signature:
+   '{"r":"a06e0fa7b266494984e5956c227f5510d762b807fd553627276c97a59574dcaf","recoveryParam":1,"s":"2c04f97a6048df0624bde60fd8e5d9c0178a75f077ea8d2f34c4b0683c6554e"}',
+  joinKey:
+   '0b105814d287beac9f024d1bd8f7a8b00b5f5931fe06d6a1c171bb3f36e6f9dd',
+  username: 'uuy' }
+RECOVERED PUBLIC KEY IS: 
+57666682006238298845700781232885902835731126315670850498122014217387967005059
+THE group id is: 
+49
+RECOVERED PUBLIC KEY IS: 
+57666682006238298845700781232885902835731126315670850498122014217387967005059
+THE group id is: 
+49
+RECOVERED PUBLIC KEY IS: 
+57666682006238298845700781232885902835731126315670850498122014217387967005059
+THE group id is: 
+49

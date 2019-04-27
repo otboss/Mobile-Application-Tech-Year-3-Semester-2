@@ -40,7 +40,22 @@ execute("echo [$PORT, $DEBUGGING]", async function(error, stdout, stderr){
         output: process.stdout
     });
 
-
+    /** Fetches the servers Current IP address*/
+    const getServerIp = function(){
+        return new Promise(function(resolve, reject){
+            if(!config.autoIpDetection){
+                resolve(config.serverIp+":"+config.port);
+            }
+            else{
+                request("http://ipecho.net/plain", {timeout: 5000}, function(error, response, body){
+                    if(body == undefined)
+                        reject("Could not fetch your public IP Address. Are you connected?");
+                    resolve(body+":"+config.port);
+                });
+            }
+        });
+    }
+    
     const checkForCertificate = async function(){
         return new Promise(async function(resolve, reject){
             try{
@@ -218,21 +233,7 @@ with the title 'Public Server Submission' and the comment of:
         return text;
     }
 
-    /** Fetches the servers Current IP address*/
-    const getServerIp = function(){
-        return new Promise(function(resolve, reject){
-            if(!config.autoIpDetection){
-                resolve(config.serverIp+":"+config.port);
-            }
-            else{
-                request("http://ipecho.net/plain", {timeout: 5000}, function(error, response, body){
-                    if(body == undefined)
-                        reject("Could not fetch your public IP Address. Are you connected?");
-                    resolve(body+":"+config.port);
-                });
-            }
-        });
-    }
+
 
     const generateNewCertificate = function(){
         return new Promise(function(resolve, reject){
@@ -410,7 +411,8 @@ with the title 'Public Server Submission' and the comment of:
     });
 
     router.get('/ads', function(req, res){
-        res.send(config.admodId);
+        if(config.showAdvertisments)
+            res.send(config.admodId);
     });
 
     router.post('/newgroup', async function(req, res){
@@ -705,84 +707,88 @@ with the title 'Public Server Submission' and the comment of:
             if(signatureVerification["isValid"]){
                 //Get user join timestamp. Users will only receive messages
                 //with a timestamp greater than their join timestamp.
-                connection.query(`
-                SELECT `+databaseTables.participantsTable.columns.timestamp+` ts
-                FROM `+databaseTables.participantsTable.tableName+` 
-                WHERE `+databaseTables.participantsTable.columns.particpantId+` = '`+participantId+`' 
-                AND `+databaseTables.participantsTable.columns.groupId+` = '`+groupId+`';`, function(error, userInfo, fields){
-                    const userJoinTs = userInfo[0]["ts"];
-                    //Get all message ids related to this group
+                new Promise(function(resolve, reject){
                     connection.query(`
-                    SELECT `+databaseTables.messagesTable.columns.messageId+` mid
-                    FROM `+databaseTables.messagesTable.tableName+` 
-                    JOIN `+databaseTables.participantsTable.tableName+` 
-                    ON `+databaseTables.messagesTable.columns.groupId+` = `+databaseTables.participantsTable.columns.groupId+` 
-                    WHERE `+databaseTables.messagesTable.columns.groupId+` = '`+groupId+`' 
-                    AND `+databaseTables.messagesTable.columns.messageId+` > '`+offset+`' 
-                    AND `+databaseTables.messagesTable.columns.timestamp+` > '`+userJoinTs+`' 
-                    ORDER BY `+databaseTables.messagesTable.columns.timestamp+` 
-                    DESC 
-                    LIMIT 20;`, function(error, messageResults, fields){
-                        if(error)
-                            res.send("0");
-                        else{
-                            var messages = {};
-                            for(var x = 0; x < messageResults.length; x++){
-                                const messageId = messageResults[x]["mid"];
-                                //Get composite keys for message
-                                connection.query(`
-                                SELECT `+databaseTables.messagesTable.columns.messageId+` messageId, 
-                                `+databaseTables.participantsTable.columns.username+` sender, 
-                                `+databaseTables.messagesTable.columns.message+` encryptedMessage, 
-                                `+databaseTables.compositeKeysTable.columns.participantId+` compositeKeyPid, 
-                                `+databaseTables.compositeKeysTable.columns.compositeKey+` compositeKey, 
-                                UNIX_TIMESTAMP(`+databaseTables.messagesTable.columns.timestamp+`)*1000 sentTime 
-                                FROM `+databaseTables.compositeKeysTable.tableName+` 
-                                JOIN `+databaseTables.messagesTable.tableName+` 
-                                ON `+databaseTables.compositeKeysTable.columns.messageId+` = `+databaseTables.messagesTable.columns.messageId+` 
-                                JOIN `+databaseTables.participantsTable.tableName+` 
-                                ON `+databaseTables.messagesTable.columns.particpantId+` = `+databaseTables.participantsTable.columns.particpantId+` 
-                                WHERE `+databaseTables.compositeKeysTable.columns.messageId+` = '`+messageId+`' 
-                                GROUP BY `+databaseTables.compositeKeysTable.columns.compositeKeyId+`;`, function(error, results, fields){                  
-                                    for(var x = 0; x < results.length; x++){
-                                        //Get username for composite key
-                                        connection.query(`
-                                        SELECT `+databaseTables.participantsTable.columns.username+` 
-                                        FROM `+databaseTables.participantsTable.tableName+` 
-                                        WHERE `+databaseTables.participantsTable.columns.particpantId+` = '`+results[x]["compositeKeyPid"]+`';`, function(error, usernameResult, fields){
-                                            var compositeKeyUsername = usernameResult[0]["username"];
-                                            var compositeKeyObj = {};                                                  
-                                            compositeKeyObj[compositeKeyUsername] = results[x]["compositeKey"];
-                                            if(messages[messageId] != null)
-                                                compositeKeyObj = {...compositeKeyObj, ...messages[messageId]["compositeKeys"]};
-                                            messages[messageId] = {
-                                                "sender": results[x]["sender"],
-                                                "encryptedMessage": results[x]["encryptedMessage"],
-                                                "compositeKeys": compositeKeyObj,
-                                                "ts": results[x]["sentTime"]
-                                            }
-                                        });
-                                    }
-                                });
-                                /*
-                                connection.query("SELECT "+databaseTables.participantsTable+".username, "+databaseTables.compositeKeysTable+".compositeKey FROM "+databaseTables.compositeKeysTable+" JOIN "+databaseTables.participantsTable+" ON "+databaseTables.compositeKeysTable+".pid = "+databaseTables.participantsTable+".pid WHERE "+databaseTables.compositeKeysTable+".mid = '"+messageId+"';", function(error, results, fields){
-                                    var compositeKeys = {};
-                                    for(var x = 0; x < results.length; x++){
-                                        compositeKeys[results[x]["username"]] = results[y]["compositeKey"];
-                                    }
-                                    connection.query("SELECT pid, username, UNIX_TIMESTAMP(ts)*1000 time FROM "+databaseTables.messagesTable+" JOIN "+databaseTables.participantsTable+" ON "+databaseTables.messagesTable+".pid = "+databaseTables.participantsTable+".pid WHERE "+databaseTables.messagesTable+".mid = '"+messageId+"';", function(error, senderInfo, fields){
-                                        messages[messageId] = {
-                                            "sender": senderInfo[0]["encryptedMessage"],
-                                            "encryptedMessage": messageResults[x]["message"],
-                                            "compositeKeys": compositeKeys,
-                                            "ts": results[x]["time"]
+                    SELECT `+databaseTables.participantsTable.columns.timestamp+` ts
+                    FROM `+databaseTables.participantsTable.tableName+` 
+                    WHERE `+databaseTables.participantsTable.columns.particpantId+` = '`+participantId+`' 
+                    AND `+databaseTables.participantsTable.columns.groupId+` = '`+groupId+`';`, function(error, userInfo, fields){
+                        const userJoinTs = userInfo[0]["ts"];
+                        //Get all message ids related to this group
+                        connection.query(`
+                        SELECT `+databaseTables.messagesTable.columns.messageId+` mid
+                        FROM `+databaseTables.messagesTable.tableName+` 
+                        JOIN `+databaseTables.participantsTable.tableName+` 
+                        ON `+databaseTables.messagesTable.columns.groupId+` = `+databaseTables.participantsTable.columns.groupId+` 
+                        WHERE `+databaseTables.messagesTable.columns.groupId+` = '`+groupId+`' 
+                        AND `+databaseTables.messagesTable.columns.messageId+` > '`+offset+`' 
+                        AND `+databaseTables.messagesTable.columns.timestamp+` > '`+userJoinTs+`' 
+                        GROUP BY `+databaseTables.messagesTable.columns.messageId+`
+                        ORDER BY `+databaseTables.messagesTable.columns.timestamp+` 
+                        DESC 
+                        LIMIT 20;`, function(error, messageResults, fields){
+                            console.log("THE MESSAGE RESULTS ARE: ");
+                            console.log(messageResults);
+                            if(error)
+                                reject("0");
+                            else{
+                                
+                                for(var x = 0; x < messageResults.length; x++){
+                                    const messageId = messageResults[x]["mid"];
+                                    //Get composite keys for message
+                                    connection.query(`
+                                    SELECT `+databaseTables.messagesTable.columns.messageId+` messageId, 
+                                    `+databaseTables.participantsTable.columns.username+` sender, 
+                                    `+databaseTables.messagesTable.columns.message+` encryptedMessage, 
+                                    `+databaseTables.compositeKeysTable.columns.participantId+` compositeKeyPid, 
+                                    `+databaseTables.compositeKeysTable.columns.compositeKey+` compositeKey, 
+                                    UNIX_TIMESTAMP(`+databaseTables.messagesTable.columns.timestamp+`)*1000 sentTime 
+                                    FROM `+databaseTables.messagesTable.tableName+`
+                                    JOIN `+databaseTables.compositeKeysTable.tableName+`
+                                    ON `+databaseTables.compositeKeysTable.columns.messageId+` = `+databaseTables.messagesTable.columns.messageId+` 
+                                    JOIN `+databaseTables.participantsTable.tableName+` 
+                                    ON `+databaseTables.messagesTable.columns.particpantId+` = `+databaseTables.participantsTable.columns.particpantId+` 
+                                    WHERE `+databaseTables.compositeKeysTable.columns.messageId+` = '`+messageId+`' 
+                                    GROUP BY `+databaseTables.compositeKeysTable.columns.compositeKeyId+`;`, async function(error, results, fields){                  
+                                        console.log(results);
+                                        var messages = {};
+                                        for(var x = 0; x < results.length; x++){
+                                            const currentCompositeKey = results[x]["compositeKey"];
+                                            const currentSender = results[x]["sender"];
+                                            const currentCompositeKeyPid = results[x]["compositeKeyPid"];
+                                            const currentEncryptedMessage = results[x]["encryptedMessage"];
+                                            const currentSentTime = results[x]["sentTime"];
+                                            //Get username for composite key
+                                            await new Promise(function(resolve, reject){
+                                                connection.query(`
+                                                SELECT `+databaseTables.participantsTable.columns.username+` 
+                                                FROM `+databaseTables.participantsTable.tableName+` 
+                                                WHERE `+databaseTables.participantsTable.columns.particpantId+` = '`+currentCompositeKeyPid+`';`, function(error, usernameResult, fields){
+                                                    var compositeKeyUsername = usernameResult[0]["username"];
+                                                    var compositeKeyObj = {};                                                  
+                                                    compositeKeyObj[compositeKeyUsername] = currentCompositeKey;
+                                                    if(messages[messageId] != null)
+                                                        compositeKeyObj = {...compositeKeyObj, ...messages[messageId]["compositeKeys"]};
+                                                    messages[messageId] = {
+                                                        "sender": currentSender,
+                                                        "encryptedMessage": currentEncryptedMessage,
+                                                        "compositeKeys": compositeKeyObj,
+                                                        "ts": currentSentTime
+                                                    } 
+                                                    resolve();                     
+                                                });
+                                            });
                                         }
+                                        resolve(messages); 
                                     });
-                                });*/
-                            }
-                            res.send(messages);
-                        }            
-                    }); 
+                                }                            
+                            }            
+                        }); 
+                    });
+                }).then(function(messages){                
+                    res.send(messages); 
+                }).catch(function(err){
+                    res.send(err);
                 });
             }
             else

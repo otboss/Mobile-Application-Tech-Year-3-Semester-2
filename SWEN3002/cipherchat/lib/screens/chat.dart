@@ -267,6 +267,7 @@ class ChatState extends State<Chat> {
 
   Future<bool> fetchAndSaveNewMessages() async{
     try{ 
+      print("FETCHING MESSAGES FROM SERVER");
       List newMessages = await getNewMessages();
       String username = await databaseManager.getUsername();
       for(var x = 0; x < newMessages.length; x++){
@@ -275,8 +276,10 @@ class ChatState extends State<Chat> {
           BigInt compositeKey = BigInt.parse(currentMessage.compositeKeys[username]);
           BigInt symmetricKey = await secp256k1EllipticCurve.generateSymmetricKey(currentPrivateKey, [compositeKey]);
           String decryptedMessage = await secp256k1EllipticCurve.decryptMessage(currentMessage.encryptedMessage, symmetricKey);
-            if(decryptedMessage != "")
-              await databaseManager.saveMessage(currentGroupId, currentMessage.messageId, decryptedMessage, currentMessage.sender, currentMessage.timestamp, 0);
+          print("THE DECRYPTED MESSAGE IS: ");
+          print(decryptedMessage);
+          if(decryptedMessage != "")
+            await databaseManager.saveMessage(currentGroupId, currentMessage.messageId, decryptedMessage, currentMessage.sender, currentMessage.timestamp, 0);
         }
         catch(err){
           print(err);

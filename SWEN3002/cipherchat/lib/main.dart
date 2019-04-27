@@ -422,6 +422,7 @@ Future<int> joinOldChat(String joinKey, bool initialJoin, {int groupId}) async{
         await databaseManager.updateUsername(pastUsername);
       }
       else{
+        currentGroupId = -1;
         if(await isUsernameTakenForServer(globalGroupJoinKey.ip, globalGroupJoinKey.port, globalGroupJoinKey.username, globalGroupJoinKey.joinKey, globalGroupJoinKey.encryptedMessage, globalGroupJoinKey.signature)){
           return -2;
         }

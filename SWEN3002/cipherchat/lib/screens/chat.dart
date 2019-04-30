@@ -14,7 +14,7 @@ class Chat extends StatefulWidget {
 class ChatState extends State<Chat> {
   TextEditingController messageTextController = TextEditingController();
   TextEditingController groupChatTextController = TextEditingController();
-  Map participants = {};
+  Map participants = {}; 
   Map messages = {};
   List<Widget> messagesContainer = [];
   String passphrase = "";
@@ -144,13 +144,17 @@ class ChatState extends State<Chat> {
   Future<int> sendMessage(String message) async {
     try {
       Map compositeKeys = await databaseManager.generateCompositeKeysForRecipients(currentGroupId);
+      print("THE MESSAGE FOR SENDING IS: ");
+      print(message); 
       print("THE COMPOSITE KEYS ARE: ");
       print(compositeKeys);
       if(compositeKeys.keys.length == 0)
         return 0;      
+      if(message.length == 0)
+        return -2;
       BigInt symmetricKey = await databaseManager.getSymmetricKey(currentGroupId);
       String username = await databaseManager.getUsername();
-      String encryptedMessage = await secp256k1EllipticCurve.encryptMessage(message, symmetricKey);
+      String encryptedMessage = await secp256k1EllipticCurve.encryptMessage(databaseManager.addslashes2(message), symmetricKey);
       String encryptedMessageHash = sha256.convert(utf8.encode(encryptedMessage)).toString();
       Map signature = await secp256k1EllipticCurve.signMessage(encryptedMessageHash, currentPrivateKey);
       String joinKey = await databaseManager.getGroupJoinKey(currentGroupId);
@@ -170,15 +174,12 @@ class ChatState extends State<Chat> {
         String currentUsername = await databaseManager.getUsername();
         SentMessageResponse result = SentMessageResponse(int.parse(responseData["mid"].toString()), int.parse(responseData["timestamp"].toString()));
         await databaseManager.saveMessage(currentGroupId, result.messageId, message, currentUsername, result.timestamp, 1);
-      } 
-      print("THE MESSAGES ARE: ");  
-      print(await databaseManager.getMessages(currentGroupId));
-            
+        return 1;
+      }     
     } catch (err) {
       print(err);
       return -2;
     }
-    return 1;
   }
 
   Future<List> getNewMessages() async {
@@ -201,6 +202,7 @@ class ChatState extends State<Chat> {
       return null;
     }
     List result = [];
+    print(response.data);
     Map data = json.decode(json.encode(response.data));
     print("THE RESPONSE FROM THE SERVER IS: ");
     print(data);
@@ -301,10 +303,11 @@ class ChatState extends State<Chat> {
     print("Message listener started..");
     while(context.toString().split("(")[0] == "Chat"){
       try{
-        print("Getting new messages");
-        await updateParticipants();   
-        await fetchAndSaveNewMessages();
-      }
+        print("Getting new messages"); 
+        fetchAndSaveNewMessages().then((val){
+          updateParticipants();
+        });
+      } 
       catch(err){
         
       }
@@ -341,7 +344,7 @@ class ChatState extends State<Chat> {
               await databaseManager.saveGroup(currentServer, currentPort, currentServer, currentPrivateKey.toString(), joinKey, username);
               currentGroupId = await databaseManager.getLastGroupId();
               connected = true;
-              newMessageListener();
+              //newMessageListener();
               return true;
             }
           }
@@ -368,7 +371,7 @@ class ChatState extends State<Chat> {
           assert(await joinGroup(currentServer, currentPort, globalGroupJoinKey.signature, globalGroupJoinKey.encryptedMessage, globalGroupJoinKey.joinKey, globalGroupJoinKey.publicKey.toString(), globalGroupJoinKey.publicKey2.toString(), globalGroupJoinKey.username), "Error while joining group");
           currentGroupId = await databaseManager.saveGroup(globalGroupJoinKey.ip, globalGroupJoinKey.port, globalGroupJoinKey.ip, currentPrivateKey.toString(), globalGroupJoinKey.joinKey, globalGroupJoinKey.username);
           connected = true;
-          newMessageListener();          
+          //newMessageListener();          
           return true;
         } catch (err) { 
           print(err);
@@ -862,6 +865,7 @@ class ChatState extends State<Chat> {
   void initState() {
     offsetForMessages = -1;
     chatLabel = currentServer;
+    newMessageListener();
     super.initState();
   }
 
@@ -873,7 +877,7 @@ class ChatState extends State<Chat> {
         return true;
       };
     };
-
+  
     var loadConnectionStatus;
     if(newGroupConnection){
       loadConnectionStatus = FutureBuilder<bool>(
@@ -1022,83 +1026,139 @@ class ChatState extends State<Chat> {
 
     }
     else{
-      loadInitialMessages = Container(
-        child: ListView(
-            reverse: true,
-            padding: EdgeInsets.fromLTRB(10, 10, 10, 70),
-            children: messagesContainer.reversed.toList(),
-          ),
-      );
-    }
-      loadInitialMessages = FutureBuilder<Map>(
-        future: databaseManager.getMessages(currentGroupId, offset: offsetForMessages),
-        builder: (BuildContext context, AsyncSnapshot<Map> snapshot) {
-          Widget finalResult = Container(
-            child: ListView(
+      loadInitialMessages = GestureDetector(
+        child: Container(
+          child: ListView(
               reverse: true,
               padding: EdgeInsets.fromLTRB(10, 10, 10, 70),
               children: messagesContainer.reversed.toList(),
             ),
-          );
-          switch (snapshot.connectionState) {
-            case ConnectionState.none:
-              if(messagesContainer.length > 0)
-                return finalResult;
-              else
-                return loadingIndicator(color: Colors.blue);
-              break;
-            case ConnectionState.active:
-              if(messagesContainer.length > 0)
-                return finalResult;
-              else
-                return loadingIndicator(color: Colors.blue);
-              break;
-            case ConnectionState.waiting:
-              if(messagesContainer.length > 0)
-                return finalResult;
-              else
-                return loadingIndicator(color: Colors.blue);
-              break;
-            case ConnectionState.done:
-              if (snapshot.hasError) 
-                return Text('Error: ${snapshot.error}');
-              if(messagesContainer.length + snapshot.data.keys.toList().length == 0){
-                return Center(
-                  child: GestureDetector(
-                    child: Container(
-                      margin: EdgeInsets.fromLTRB(0, 0, 0, 35),
-                      child: ListView(
-                        shrinkWrap: true, 
-                        padding: EdgeInsets.all(20.0),
-                        children: [
-                          Container(
-                            child: Icon(Icons.bubble_chart, color: Colors.grey[400], size: 25,),
-                            padding: EdgeInsets.fromLTRB(0, 10, 0, 0),
-                          ),
-                          Container(
-                            alignment: Alignment.center,
-                            child: Text(
-                              'This Chat is Empty', 
-                              style: TextStyle(
-                                color: Colors.grey[400],
-                              ),
+        ),
+        onTap: (){
+          fetchAndSaveNewMessages();
+        },        
+      );
+    }
+
+    loadInitialMessages = FutureBuilder<Map>(
+      future: databaseManager.getMessages(currentGroupId, offset: offsetForMessages),
+      builder: (BuildContext context, AsyncSnapshot<Map> snapshot) {
+        Widget finalResult = Container(
+          child: ListView(
+            reverse: true,
+            padding: EdgeInsets.fromLTRB(10, 10, 10, 70),
+            children: messagesContainer.reversed.toList(),
+          ),
+        );
+        switch (snapshot.connectionState) {
+          case ConnectionState.none:
+            if(messagesContainer.length > 0)
+              return finalResult;
+            else
+              return loadingIndicator(color: Colors.blue);
+            break;
+          case ConnectionState.active:
+            if(messagesContainer.length > 0)
+              return finalResult;
+            else
+              return loadingIndicator(color: Colors.blue);
+            break;
+          case ConnectionState.waiting:
+            if(messagesContainer.length > 0)
+              return finalResult;
+            else
+              return loadingIndicator(color: Colors.blue);
+            break;
+          case ConnectionState.done:
+            if (snapshot.hasError) 
+              return Text('Error: ${snapshot.error}');
+            if(messagesContainer.length + snapshot.data.keys.toList().length == 0){
+              return Center(
+                child: GestureDetector(
+                  child: Container(
+                    margin: EdgeInsets.fromLTRB(0, 0, 0, 35),
+                    child: ListView(
+                      shrinkWrap: true, 
+                      padding: EdgeInsets.all(20.0),
+                      children: [
+                        Container(
+                          child: Icon(Icons.bubble_chart, color: Colors.grey[400], size: 25,),
+                          padding: EdgeInsets.fromLTRB(0, 10, 0, 0),
+                        ),
+                        Container(
+                          alignment: Alignment.center,
+                          child: Text(
+                            'This Chat is Empty', 
+                            style: TextStyle(
+                              color: Colors.grey[400],
                             ),
                           ),
-                          Container(
-                            padding: EdgeInsets.fromLTRB(0, 2, 0, 0),
-                            alignment: Alignment.center,
-                            child: Text(
-                              '(Tap to Refresh)', 
-                              style: TextStyle(
-                                color: Colors.grey[400],
-                                fontSize: 12
-                              ),
+                        ),
+                        Container(
+                          padding: EdgeInsets.fromLTRB(0, 2, 0, 0),
+                          alignment: Alignment.center,
+                          child: Text(
+                            '(Tap to Refresh)', 
+                            style: TextStyle(
+                              color: Colors.grey[400],
+                              fontSize: 12
                             ),
                           ),
-                        ]
-                      ),
+                        ),
+                      ]
                     ),
-                    onTap: () async{
+                  ),
+                  onTap: () async{
+                    try{
+                      fetchAndSaveNewMessages();
+                      Map olderMessages = await getOlderMessages();
+                      if(olderMessages.keys.length > 0){
+                        List messageIds = olderMessages.keys.toList();
+                        messageIds.sort();
+                        offsetForMessages = int.parse(messageIds[messageIds.length - 1]);
+                        for(var x = 0; x < messageIds.length; x++){
+                          if(olderMessages[messageIds[x]]["isSentMessage"]){
+                            messagesContainer.insert(0, generateSentMessageWidget(olderMessages[messageIds[x]]["sender"], olderMessages[messageIds[x]]["message"], int.parse(olderMessages[messageIds[x]]["ts"].toString()), olderMessages[messageIds[x]]["profilePic"]));
+                          }
+                          else{
+                            messagesContainer.insert(0, generateReceivedMessageWidget(olderMessages[messageIds[x]]["sender"], olderMessages[messageIds[x]]["message"], int.parse(olderMessages[messageIds[x]]["ts"].toString()), olderMessages[messageIds[x]]["profilePic"], olderMessages[messageIds[x]]["num"]));
+                          }
+                        }                        
+                      }
+                    }
+                    catch(err){
+                      print(err);
+                    }
+                  },
+                ),
+              );
+            }
+            Map initialMessages = snapshot.data;
+            List messageIds = initialMessages.keys.toList();
+            messageIds.sort();
+            try{
+              offsetForMessages = int.parse(messageIds[messageIds.length - 1].toString());
+            }
+            catch(err){
+              //RANGE ERROR
+            }
+            Widget loadMoreButton = Row(
+              children: <Widget>[
+                Flexible(
+                  flex: 1,
+                  child: Container(),
+                ),
+                Container(
+                  margin: EdgeInsets.fromLTRB(0, 0, 0, 10),
+                  decoration: BoxDecoration(
+                    color: sentMessageWidgetColor,
+                    borderRadius: BorderRadius.circular(100)
+                  ),
+                  child: IconButton( 
+                    padding: EdgeInsets.all(0),
+                    highlightColor: sentMessageWidgetColor,
+                    icon: Icon(Icons.restore, color: Colors.white,),
+                    onPressed: () async{
                       try{
                         fetchAndSaveNewMessages();
                         Map olderMessages = await getOlderMessages();
@@ -1115,93 +1175,41 @@ class ChatState extends State<Chat> {
                             }
                           }                        
                         }
+                        setState(() {});
                       }
                       catch(err){
                         print(err);
                       }
                     },
-                  ),
-                );
-              }
-              Map initialMessages = snapshot.data;
-              List messageIds = initialMessages.keys.toList();
-              messageIds.sort();
-              try{
-                offsetForMessages = int.parse(messageIds[messageIds.length - 1].toString());
-              }
-              catch(err){
-                //RANGE ERROR
-              }
-              Widget loadMoreButton = Row(
-                children: <Widget>[
-                  Flexible(
-                    flex: 1,
-                    child: Container(),
-                  ),
-                  Container(
-                    margin: EdgeInsets.fromLTRB(0, 0, 0, 10),
-                    decoration: BoxDecoration(
-                      color: sentMessageWidgetColor,
-                      borderRadius: BorderRadius.circular(100)
-                    ),
-                    child: IconButton( 
-                      padding: EdgeInsets.all(0),
-                      highlightColor: sentMessageWidgetColor,
-                      icon: Icon(Icons.restore, color: Colors.white,),
-                      onPressed: () async{
-                        try{
-                          fetchAndSaveNewMessages();
-                          Map olderMessages = await getOlderMessages();
-                          if(olderMessages.keys.length > 0){
-                            List messageIds = olderMessages.keys.toList();
-                            messageIds.sort();
-                            offsetForMessages = int.parse(messageIds[messageIds.length - 1]);
-                            for(var x = 0; x < messageIds.length; x++){
-                              if(olderMessages[messageIds[x]]["isSentMessage"]){
-                                messagesContainer.insert(0, generateSentMessageWidget(olderMessages[messageIds[x]]["sender"], olderMessages[messageIds[x]]["message"], int.parse(olderMessages[messageIds[x]]["ts"].toString()), olderMessages[messageIds[x]]["profilePic"]));
-                              }
-                              else{
-                                messagesContainer.insert(0, generateReceivedMessageWidget(olderMessages[messageIds[x]]["sender"], olderMessages[messageIds[x]]["message"], int.parse(olderMessages[messageIds[x]]["ts"].toString()), olderMessages[messageIds[x]]["profilePic"], olderMessages[messageIds[x]]["num"]));
-                              }
-                            }                        
-                          }
-                          setState(() {});
-                        }
-                        catch(err){
-                          print(err);
-                        }
-                      },
-                    )
-                  ),
-                  Flexible(
-                    flex: 1,
-                    child: Container(),
                   )
-                ],
-              );
+                ),
+                Flexible(
+                  flex: 1,
+                  child: Container(),
+                )
+              ],
+            );
 
-              print("NEW MESSAGES ARE: ");
-              print(initialMessages.keys);               
-              for(var x = 0; x < messageIds.length; x++){
-                if(x == 0)
-                  if(initialMessages[messageIds[x]]["hasMoreMessages"])
-                    messagesContainer.insert(0, loadMoreButton);
-                print(initialMessages[messageIds[x]]);
-                print([initialMessages[messageIds[x]]["sender"], initialMessages[messageIds[x]]["message"], int.parse(initialMessages[messageIds[x]]["ts"].toString())]);
-                if(initialMessages[messageIds[x]]["isSentMessage"]){
-                  messagesContainer.add(generateSentMessageWidget(initialMessages[messageIds[x]]["sender"], initialMessages[messageIds[x]]["message"], int.parse(initialMessages[messageIds[x]]["ts"].toString()), initialMessages[messageIds[x]]["profilePic"]));
-                }
-                else{
-                  messagesContainer.add(generateReceivedMessageWidget(initialMessages[messageIds[x]]["sender"], initialMessages[messageIds[x]]["message"], int.parse(initialMessages[messageIds[x]]["ts"].toString()), initialMessages[messageIds[x]]["profilePic"], initialMessages[messageIds[x]]["num"]));
-                }
+            print("NEW MESSAGES ARE: ");
+            print(initialMessages.keys);               
+            for(var x = 0; x < messageIds.length; x++){
+              if(x == 0)
+                if(initialMessages[messageIds[x]]["hasMoreMessages"])
+                  messagesContainer.insert(0, loadMoreButton);
+              print(initialMessages[messageIds[x]]);
+              print([initialMessages[messageIds[x]]["sender"], initialMessages[messageIds[x]]["message"], int.parse(initialMessages[messageIds[x]]["ts"].toString())]);
+              if(initialMessages[messageIds[x]]["isSentMessage"]){
+                messagesContainer.add(generateSentMessageWidget(initialMessages[messageIds[x]]["sender"], initialMessages[messageIds[x]]["message"], int.parse(initialMessages[messageIds[x]]["ts"].toString()), initialMessages[messageIds[x]]["profilePic"]));
               }
-
-
-              return finalResult;
-          }
-        },
-      );
-    
+              else{
+                messagesContainer.add(generateReceivedMessageWidget(initialMessages[messageIds[x]]["sender"], initialMessages[messageIds[x]]["message"], int.parse(initialMessages[messageIds[x]]["ts"].toString()), initialMessages[messageIds[x]]["profilePic"], initialMessages[messageIds[x]]["num"]));
+              }
+            }
+            return finalResult;
+        }
+      },
+    );
+  
     var loadServerDetails;
     if(json.encode(currentServerInfo) == "{}"){
       loadServerDetails = FutureBuilder<Map>(
@@ -1218,7 +1226,7 @@ class ChatState extends State<Chat> {
               if (snapshot.hasError)
                 return Text('Error: ${snapshot.error}');
               currentServerInfo = snapshot.data;
-              if(currentServerInfo == null)
+              if(currentServerInfo == null || json.encode(currentServerInfo) == "{}")
                 return serverInfoTable("", currentPort.toString(), "", "", "", "", "", "");
               return serverInfoTable(currentServerInfo["query"], currentPort.toString(), currentServerInfo["lat"], currentServerInfo["lon"], currentServerInfo["country"], currentServerInfo["city"], currentServerInfo["region"], currentServerInfo["isp"]);
           }
@@ -1649,10 +1657,13 @@ class ChatState extends State<Chat> {
                                         break;
                                       default:
                                         //Sent action
+                                        toastMessageBottomShort("Sent!", context);
                                         print("message sent successfully!");
                                         setState(() {
                                           messageTextController.text = "";
+                                          setState(() {});
                                         });
+
                                         break;
                                     }
                                   }

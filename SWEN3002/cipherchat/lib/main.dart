@@ -442,7 +442,9 @@ Future<int> joinOldChat(String joinKey, bool initialJoin, {int groupId}) async{
     }
     currentServer = globalGroupJoinKey.ip;
     currentPort = globalGroupJoinKey.port;
-    currentPublicKey = await secp256k1EllipticCurve.generatePublicKey(currentPrivateKey.toString());                               
+    if(groupId != null)
+      currentGroupId = groupId;
+    currentPublicKey = await secp256k1EllipticCurve.generatePublicKey(currentPrivateKey.toString());                           
     newGroupConnection = false;
     return 1;
   }

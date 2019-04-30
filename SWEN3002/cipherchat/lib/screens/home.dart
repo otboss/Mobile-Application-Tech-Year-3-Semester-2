@@ -35,7 +35,6 @@ class HomeState extends State<Home> {
       ],
     ),
   );
-
   Widget generateRecentConvoCard(String label, String profilePic, int timestamp, String lastMessage, String lastSender, String serverIp, int port, bool isGroup, BigInt privateKey, String joinKey, int groupId) {
     try {
       base64ToImageConverter(profilePic);
@@ -53,6 +52,7 @@ class HomeState extends State<Home> {
     else{
       date = DateTime.fromMillisecondsSinceEpoch(timestamp).day.toString()+"/"+DateTime.fromMillisecondsSinceEpoch(timestamp).month.toString()+"/"+DateTime.fromMillisecondsSinceEpoch(timestamp).year.toString();
     }
+    isGroup = true;
     if(isGroup){
       return Card(
         color: cardColor,
@@ -63,10 +63,10 @@ class HomeState extends State<Home> {
             child: InkWell(
               onTap: () async{
                 //Navigate to chat screen and show previous messages
-                await showCustomProcessDialog("Please Wait", context, dissmissable: true);
+                await showCustomProcessDialog("Please Wait", context, dissmissable: true);          
                 int joinStatus = await joinOldChat(await generateJoinKey(groupId), false, groupId: groupId);
                 await Future.delayed(Duration(seconds: 2));  
-                Navigator.pop(context);                              
+                Navigator.pop(context);
                 switch(joinStatus){
                   case 1:
                     Navigator.pushNamed(context, "/chat");
@@ -138,7 +138,7 @@ class HomeState extends State<Home> {
                                 overflow: TextOverflow.ellipsis,
                                 maxLines: 1,
                               ),
-                            )
+                            ),
                           ],
                         ),
                       ),
@@ -275,8 +275,11 @@ class HomeState extends State<Home> {
                     borderSide: BorderSide(color: materialGreen, width: 2.0),
                   ),
                   labelText: "Username",
-                  border: new UnderlineInputBorder(
-                      borderSide: new BorderSide(color: Colors.red)),
+                  border: UnderlineInputBorder(
+                      borderSide: BorderSide(
+                        color: Colors.red
+                      ),
+                  ),
                   labelStyle: Theme.of(context).textTheme.caption.copyWith(
                         color: materialGreen,
                         fontSize: 16,

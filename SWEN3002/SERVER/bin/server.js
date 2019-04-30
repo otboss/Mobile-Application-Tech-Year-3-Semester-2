@@ -608,6 +608,11 @@ with the title 'Public Server Submission' and the comment of:
         console.log("PARTICIPANT ID: "+participantId.toString());
         console.log("NEW MESSAGE REQUEST!");
         console.log(req.body);
+        const bodyParams = Object.keys(req.body);
+        for(var x= 0; x < bodyParams.length; x++){
+            if(req.body[bodyParams[x]] == null)
+                return null;
+        }
         try{
             const signatureVerification = await verifySignature(groupId, participantId, encryptedMessage, signature["r"], signature["s"], signature["recoveryParam"]);
             if(signatureVerification["isValid"]){
@@ -729,53 +734,51 @@ with the title 'Public Server Submission' and the comment of:
                         GROUP BY `+databaseTables.messagesTable.columns.messageId+`
                         ORDER BY `+databaseTables.messagesTable.columns.timestamp+` 
                         DESC 
-                        LIMIT 20;`, function(error, messageResults, fields){
+                        LIMIT 20;`, async function(error, messageResults, fields){
                             console.log("THE MESSAGE RESULTS ARE: ");
                             console.log(messageResults);
                             if(error)
                                 reject("0");
                             else{
+                                var messages = {};
                                 for(var x = 0; x < messageResults.length; x++){
                                     const messageId = messageResults[x]["mid"];
                                     //Get composite key for message
-                                    connection.query(`
-                                    SELECT
-                                    `+databaseTables.participantsTable.columns.username+` sender, 
-                                    `+databaseTables.messagesTable.columns.message+` encryptedMessage,
-                                    `+databaseTables.compositeKeysTable.columns.compositeKey+` compositeKey, 
-                                    UNIX_TIMESTAMP(`+databaseTables.messagesTable.columns.timestamp+`)*1000 sentTime
-                                    FROM `+databaseTables.messagesTable.tableName+`
-                                    JOIN `+databaseTables.compositeKeysTable.tableName+`
-                                    ON `+databaseTables.messagesTable.columns.messageId+` = `+databaseTables.compositeKeysTable.columns.messageId+`
-                                    JOIN `+databaseTables.participantsTable.tableName+`
-                                    ON `+databaseTables.messagesTable.columns.particpantId+` = `+databaseTables.participantsTable.columns.particpantId+`
-                                    WHERE `+databaseTables.messagesTable.columns.messageId+` = '`+messageId+`'
-                                    AND `+databaseTables.compositeKeysTable.columns.participantId+` = '`+participantId+`'
-                                    GROUP BY `+databaseTables.messagesTable.columns.messageId+`
-                                    ORDER BY `+databaseTables.messagesTable.columns.messageId+`;`, async function(error, results, fields){
-                                        if(error)
-                                            console.log(error);
-                                        var messages = {};
-                                        console.log("THE RESULTS FROM QUERY IS: ");
-                                        console.log(results)
-                                        if(results.length > 0){
-                                            messages[messageId] = {
-                                                "sender": results[0]["sender"],
-                                                "encryptedMessage": results[0]["encryptedMessage"],
-                                                "compositeKey": results[0]["compositeKey"],
-                                                "ts": results[0]["sentTime"]
-                                            }                               
-                                        }
-                                        console.log(participantId);
-                                        console.log("THE FINAL RESULTS IS");
-                                        console.log(messages);
-                                        resolve(messages);
+                                    await new Promise(function(resolve, reject){
+                                        connection.query(`
+                                        SELECT
+                                        `+databaseTables.participantsTable.columns.username+` sender, 
+                                        `+databaseTables.messagesTable.columns.message+` encryptedMessage,
+                                        `+databaseTables.compositeKeysTable.columns.compositeKey+` compositeKey, 
+                                        UNIX_TIMESTAMP(`+databaseTables.messagesTable.columns.timestamp+`)*1000 sentTime
+                                        FROM `+databaseTables.messagesTable.tableName+`
+                                        JOIN `+databaseTables.compositeKeysTable.tableName+`
+                                        ON `+databaseTables.messagesTable.columns.messageId+` = `+databaseTables.compositeKeysTable.columns.messageId+`
+                                        JOIN `+databaseTables.participantsTable.tableName+`
+                                        ON `+databaseTables.messagesTable.columns.particpantId+` = `+databaseTables.participantsTable.columns.particpantId+`
+                                        WHERE `+databaseTables.messagesTable.columns.messageId+` = '`+messageId+`'
+                                        AND `+databaseTables.compositeKeysTable.columns.participantId+` = '`+participantId+`'
+                                        GROUP BY `+databaseTables.messagesTable.columns.messageId+`
+                                        ORDER BY `+databaseTables.messagesTable.columns.messageId+`;`, function(error, results, fields){
+                                            if(error)
+                                                console.log(error);
+                                            if(results.length > 0){
+                                                messages[messageId] = {
+                                                    "sender": results[0]["sender"],
+                                                    "encryptedMessage": results[0]["encryptedMessage"],
+                                                    "compositeKey": results[0]["compositeKey"],
+                                                    "ts": results[0]["sentTime"]
+                                                }                               
+                                            }
+                                            resolve();
+                                        });
                                     });
-                                }                            
+                                }                                
+                                resolve(messages);                        
                             }            
                         }); 
                     });
-                }).then(function(messages){                
+                }).then(function(messages){
                     res.send(messages); 
                 }).catch(function(err){
                     res.send(err);

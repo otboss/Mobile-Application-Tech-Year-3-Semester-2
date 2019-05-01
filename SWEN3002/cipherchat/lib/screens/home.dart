@@ -378,7 +378,7 @@ class HomeState extends State<Home> {
         Flexible(
           flex: 1,
           child: Container(),
-        )                                                    
+        )
       ],
     );    
     if(results.length > 0 && moreConversations){

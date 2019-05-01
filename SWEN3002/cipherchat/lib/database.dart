@@ -872,7 +872,7 @@ class DatabaseManager {
         query = await client.rawQuery("""
         SELECT 
         *, 
-        STRFTIME('%s', """+messagesTable.timestamp.getColumnName()+""")*1000 tme 
+        """+messagesTable.receivedTime.getColumnName()+""" tme 
         FROM """+messagesTable.tableName.getTableName()+""" 
         JOIN """+participantsTable.tableName.getTableName()+""" 
         ON """+participantsTable.groupId.getColumnName()+""" = """+messagesTable.groupId.getColumnName()+""" 
@@ -887,7 +887,7 @@ class DatabaseManager {
       query = await client.rawQuery("""
       SELECT 
       *, 
-      STRFTIME('%s', """+messagesTable.timestamp.getColumnName()+""")*1000 tme 
+      """+messagesTable.receivedTime.getColumnName()+""" tme 
       FROM """+messagesTable.tableName.getTableName()+""" 
       JOIN """+participantsTable.tableName.getTableName()+""" 
       ON """+messagesTable.groupId.getColumnName()+""" = """+participantsTable.groupId.getColumnName()+""" 

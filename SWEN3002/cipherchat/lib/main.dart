@@ -132,6 +132,7 @@ Future<bool> showCustomProcessDialog(String text, BuildContext context, {bool di
   return true;
 }
 
+///Displays a simple popup
 Future<void> showAlert(String title, String body, BuildContext context) {
   Widget alert = AlertDialog(
     title: Text(title),
@@ -157,7 +158,7 @@ Future<void> showAlert(String title, String body, BuildContext context) {
   showDialog(context: context, child: alert, barrierDismissible: true);
 }
 
-
+///Checks all the required entry points of the server before connecting
 Future<bool> checkServerRoutes(String ip, int port) async{
   try{
     List entrypoints = serverEntrypoints.keys.toList();
@@ -184,6 +185,7 @@ Future<bool> checkServerRoutes(String ip, int port) async{
   return true;
 }
 
+///Prompts the user for input
 Future<void> showPrompt(String title, BuildContext context,
     TextEditingController controller, Future<dynamic> callback()) {
   Widget alert = AlertDialog(
@@ -264,7 +266,7 @@ Widget loadingIndicator ({color: Colors}){
               ),
             ),
           )                    
-        ]
+        ],
     ),
   );
 }
@@ -295,8 +297,16 @@ Future<Map> selectRandomServerFromGithub() async{
                 success: function(response){
                   try{
                     response = JSON.parse($($("p", $.parseHTML(response))[0]).html());
-                    if(response["ip"] != null && response["port"] != null)
+                    if(response["ip"] != null && response["port"] != null){
+                      var splittedIp = response["ip"].split(".");
+                      for(var x = 0; x < 4; x++){
+                        if(parseInt(splittedIp[x]).toString() == "NaN")
+                          throw new Error();
+                      }
+                      if(parseInt(response["port"]).toString() == "NaN")
+                        throw new Error();
                       resolve(response);
+                    }
                     else
                       resolve(null);
                   }

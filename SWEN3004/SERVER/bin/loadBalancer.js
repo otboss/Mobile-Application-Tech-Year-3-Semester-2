@@ -22,9 +22,8 @@ const startLocalServers = async function(){
                 if(error){
                     await new Promise(function(resolve, reject){
                         var logIdentifier = 0;
-                        while(fs.existsSync("logs/outputs"+startingPort+"["+logIdentifier+"].log") || fs.existsSync("logs/errors"+startingPort+"["+logIdentifier+"].log")){
+                        while(fs.existsSync("logs/outputs"+startingPort+"["+logIdentifier+"].log") || fs.existsSync("logs/errors"+startingPort+"["+logIdentifier+"].log"))
                             logIdentifier++;
-                        }
                         execute("export PORT="+startingPort+"; export DEBUGGING=false; ./node_modules/forever/bin/forever start -o logs/outputs"+startingPort+"["+logIdentifier+"].log -e logs/errors"+startingPort+"["+logIdentifier+"].log -c ./node server.js", function(error, stdout, stderr){
                             console.log(stdout);
                             servers.push("http://127.0.0.1:"+startingPort);

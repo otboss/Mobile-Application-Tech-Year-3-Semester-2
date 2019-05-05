@@ -95,7 +95,6 @@ BOOTED A CipherChat SERVER
 ==========================
 Selected Port: `+config.port+`
 HTTPS: `+config.enableHTTPS+`
-Admob ID: `+config.admodId+`
 Debug Mode: true
 
 Starting Server..
@@ -408,11 +407,6 @@ with the title 'Public Server Submission' and the comment of:
     router.get('/', function (req, res) {
         //FOR TESTING PURPOSES
         res.send('HELLO WORLD');
-    });
-
-    router.get('/ads', function(req, res){
-        if(config.showAdvertisments)
-            res.send(config.admodId);
     });
 
     router.post('/newgroup', async function(req, res){

@@ -40,7 +40,6 @@ List<Color> receivedMessageUserIndicatorColor = [
 ];
 Map serverEntrypoints = {
   "/": "get",
-  "/ads": "get",
   "/newgroup": "post",
   "/joingroup": "post",
   "/message": "post",

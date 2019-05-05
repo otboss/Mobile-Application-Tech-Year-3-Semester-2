@@ -41,7 +41,7 @@ const getServerIp = function(){
 }
 
 if(fs.existsSync("./config.json") == false){
-    fs.writeFileSync("./config.json", "ewogICAgInNlcnZlcklwIjogIjxTZXJ2ZXIgSXAgQWRkcmVzcyBIZXJlPiIsCiAgICAiYXV0b0lwRGV0ZWN0aW9uIjogdHJ1ZSwKICAgICJzaG93QWR2ZXJ0aXNtZW50cyI6IHRydWUsCiAgICAiYWRtb2RJZCI6ImNhLWFwcC1wdWItMzk0MDI1NjA5OTk0MjU0NC82MzAwOTc4MTExIiwKICAgICJlbmFibGVIVFRQUyI6IHRydWUsCiAgICAia2V5UGF0aCI6Ii4va2V5LnBlbSIsCiAgICAiY2VydFBhdGgiOiIuL2NlcnQucGVtIiwKICAgICJzaGEyNTZQYXNzd29yZCI6ICJlM2IwYzQ0Mjk4ZmMxYzE0OWFmYmY0Yzg5OTZmYjkyNDI3YWU0MWU0NjQ5YjkzNGNhNDk1OTkxYjc4NTJiODU1IiwKICAgICJtYXhQYXJ0aWNpcGFudHNQZXJHcm91cCI6IDEwMCwKICAgICJwb3J0IjogNjMzMywKICAgICJudW1iZXJPZkxvY2FsaG9zdFNlcnZlcnMiOiAzLAogICAgInJlbW90ZVNlcnZlclVybHMiOiBbCgogICAgXSwKICAgICJkYXRhYmFzZUNvbmZpZyI6ewogICAgICAgICJob3N0IjoibG9jYWxob3N0IiwKICAgICAgICAidXNlciI6InJvb3QiLAogICAgICAgICJwYXNzd29yZCI6IiIsCiAgICAgICAgImRhdGFiYXNlIjoiY2lwaGVyY2hhdCIsCiAgICAgICAgInBvcnQiOiAzMzA2CiAgICB9Cn0=", 'base64');
+    fs.writeFileSync("./config.json", "ewogICAgInNlcnZlcklwIjogIjxTZXJ2ZXIgSXAgQWRkcmVzcyBIZXJlPiIsCiAgICAiYXV0b0lwRGV0ZWN0aW9uIjogdHJ1ZSwKICAgICJrZXlQYXRoIjoiLi9rZXkucGVtIiwKICAgICJjZXJ0UGF0aCI6Ii4vY2VydC5wZW0iLAogICAgInNoYTI1NlBhc3N3b3JkIjogImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLAogICAgIm1heFBhcnRpY2lwYW50c1Blckdyb3VwIjogMTAwLAogICAgInBvcnQiOiA2MzMzLAogICAgImluc3RhbmNlU2VydmVyU3RhcnRpbmdQb3J0IjogMzAwMCwKICAgICJudW1iZXJPZkxvY2FsaG9zdFNlcnZlcnMiOiAzLAogICAgInJlbW90ZVNlcnZlclVybHMiOiBbCgogICAgXSwKICAgICJkYXRhYmFzZUNvbmZpZyI6ewogICAgICAgICJob3N0IjoibG9jYWxob3N0IiwKICAgICAgICAidXNlciI6InJvb3QiLAogICAgICAgICJwYXNzd29yZCI6IiIsCiAgICAgICAgImRhdGFiYXNlIjoiY2lwaGVyY2hhdCIsCiAgICAgICAgInBvcnQiOiAzMzA2CiAgICB9Cn0=", 'base64');
 }
 
 const config = JSON.parse(fs.readFileSync("./config.json",{encoding: "utf8"}));
@@ -52,7 +52,6 @@ BOOTED A CipherChat SERVER
 ==========================
 Selected Port: `+config.port+`
 HTTPS: `+config.enableHTTPS+`
-Admob ID: `+config.admodId+`
 Debug Mode: false
 
 Starting Server..

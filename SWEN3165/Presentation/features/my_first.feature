@@ -22,8 +22,10 @@ Feature: Login feature
   #   When I see "Password"
   #   Then I enter text "password" into field with id "lpassword"
   #   * I press "Login"
-    
-    
+
+  #######################
+  #NOW TESTING PURCHASING
+  #######################
 
   Scenario: Purchasing pasta chicken
     When I see "Live Love Home"
@@ -31,10 +33,11 @@ Feature: Login feature
     * I should see "Live Love Home"
     * I wait for 2 seconds
     When I see "Pasta with Chicken"
-    Then I press "Pasta with Chicken"
-    * I press "MAKE ORDER" button
-    When I see "Are you sure you want to place order"
-    Then I press "YES"
+    Then I touch the "Pasta with Chicken" text
+    When I see "MAKE ORDER"
+    * I touch the "MAKE ORDER" text
+    When I see "Are you sure you want to place this order"
+    Then I touch the "YES" text
 
    
    

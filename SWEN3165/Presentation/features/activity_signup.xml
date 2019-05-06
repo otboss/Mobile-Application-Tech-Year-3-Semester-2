@@ -1,0 +1,122 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".Signup">
+
+    <ImageView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_alignParentStart="true"
+        android:layout_alignParentTop="true"
+        android:layout_marginStart="0dp"
+        android:layout_marginTop="0dp"
+        app:srcCompat="@color/bgpurple" />
+
+    <include layout="@layout/my_video_background" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:padding="40dp"
+        android:paddingBottom="40dp"
+        android:paddingEnd="40dp"
+        android:paddingLeft="20dp"
+        android:paddingRight="20dp"
+        android:paddingStart="40dp"
+        android:paddingTop="0dp">
+
+        <ImageView
+            android:id="@+id/logo"
+            android:layout_width="match_parent"
+            android:layout_height="150dp"
+            android:layout_alignParentEnd="true"
+            android:layout_alignParentRight="true"
+            android:layout_alignParentStart="true"
+            android:layout_alignParentTop="true"
+            app:srcCompat="@drawable/logo" />
+
+        <TextView
+            android:id="@+id/usernametxt"
+            android:layout_width="match_parent"
+            android:layout_height="30dp"
+            android:layout_alignParentBottom="true"
+            android:layout_alignParentLeft="true"
+            android:layout_alignParentStart="true"
+            android:layout_marginBottom="0dp"
+            android:text="Username:"
+            android:textColor="@color/white" />
+
+        <EditText
+            android:id="@+id/username"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_alignParentBottom="true"
+            android:layout_alignStart="@+id/usernametxt"
+            android:ems="10"
+            android:hint="Enter Your Username..."
+            android:inputType="textPersonName"
+            android:textColorHint="@color/grey" />
+
+        <TextView
+            android:id="@+id/passwordtxt"
+            android:layout_width="match_parent"
+            android:layout_height="30dp"
+            android:layout_alignParentBottom="true"
+            android:layout_alignStart="@+id/usernametxt"
+            android:text="Password:"
+            android:textColor="@color/white" />
+
+        <EditText
+            android:id="@+id/password"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_alignStart="@+id/usernametxt"
+            android:layout_below="@+id/passwordtxt"
+            android:ems="10"
+            android:hint="Enter Password..."
+            android:inputType="textPassword"
+            android:textColorHint="@color/grey" />
+
+        <TextView
+            android:id="@+id/confirmpasswordtxt"
+            android:layout_width="match_parent"
+            android:layout_height="30dp"
+            android:layout_alignStart="@+id/usernametxt"
+            android:layout_below="@+id/password"
+            android:text="Confirm Password:"
+            android:textColor="@color/white" />
+
+        <EditText
+            android:id="@+id/confirmpassword"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_alignStart="@+id/usernametxt"
+            android:layout_below="@+id/confirmpasswordtxt"
+            android:ems="10"
+            android:hint="Re-Enter Password..."
+            android:inputType="textPassword"
+            android:textColorHint="@color/grey" />
+
+        <Button
+            android:id="@+id/submit"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_below="@+id/confirmpassword"
+            android:layout_centerHorizontal="true"
+            android:text="Submit" />
+
+        <TextView
+            android:id="@+id/loginInstead"
+            android:layout_width="match_parent"
+            android:layout_height="30dp"
+            android:layout_below="@+id/submit"
+            android:text="Have an account? Sign in here"
+            android:textColor="@color/white" />
+
+    </LinearLayout>
+
+</RelativeLayout>

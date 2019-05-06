@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".HomeActivity">
+
+    <ImageView
+        android:id="@+id/menuhome"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_alignParentStart="true"
+        android:layout_alignParentLeft="true"
+        android:layout_alignParentTop="true"
+        android:layout_alignParentEnd="true"
+        android:layout_alignParentRight="true"
+        android:layout_alignParentBottom="true"
+        android:layout_marginStart="0dp"
+        android:layout_marginLeft="0dp"
+        android:layout_marginTop="0dp"
+        android:layout_marginEnd="0dp"
+        android:layout_marginRight="0dp"
+        android:layout_marginBottom="0dp"
+        app:srcCompat="@color/bgpurple" />
+
+    <ImageView
+        android:id="@+id/logo"
+        android:layout_width="281dp"
+        android:layout_height="160dp"
+        android:layout_alignParentStart="true"
+        android:layout_alignParentTop="true"
+        android:layout_alignParentEnd="true"
+        android:layout_alignParentRight="true"
+        android:layout_marginStart="61dp"
+        android:layout_marginTop="64dp"
+        android:layout_marginEnd="42dp"
+        android:layout_marginRight="42dp"
+        app:srcCompat="@drawable/logo"
+        android:layout_marginLeft="61dp"
+        android:layout_alignParentLeft="true" />
+
+    <Button
+        android:id="@+id/loginb"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignStart="@+id/logo"
+        android:layout_alignParentBottom="true"
+        android:layout_marginStart="89dp"
+        android:layout_marginBottom="176dp"
+        android:text="@string/login"
+        android:layout_alignLeft="@+id/logo"
+        android:layout_marginLeft="89dp" />
+
+    <Button
+        android:id="@+id/signupb"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignStart="@+id/menuhome"
+        android:layout_alignLeft="@+id/menuhome"
+        android:layout_alignTop="@+id/menuhome"
+        android:layout_alignEnd="@+id/logo"
+        android:layout_alignBottom="@+id/menuhome"
+        android:layout_marginStart="152dp"
+        android:layout_marginLeft="152dp"
+        android:layout_marginTop="374dp"
+        android:layout_marginEnd="100dp"
+        android:layout_marginBottom="89dp"
+        android:text="@string/sign_up"
+        android:layout_alignRight="@+id/logo"
+        android:layout_marginRight="100dp" />
+
+</RelativeLayout>

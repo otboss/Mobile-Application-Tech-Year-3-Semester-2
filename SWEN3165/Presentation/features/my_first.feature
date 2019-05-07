@@ -7,7 +7,7 @@ Feature: All Tests for Menu Tingz app
      Then I enter text "admin" into field with id "lusername"
      * I go back
      Then I enter text "123456" into field with id "lpassword"
-     #INCORRECT PASSWORD RESULTS IN AN ERROR TOAST
+     # INCORRECT PASSWORD RESULTS IN AN ERROR TOAST
      * I go back
      * I press "Login Now" 
      * I wait for 5 seconds
@@ -83,7 +83,7 @@ Feature: All Tests for Menu Tingz app
     Then I touch the "ADD MORE" text
     When I see "Live Love Home"
     Then I touch the "Live Love Home" text  
-    Then I should see "Live Love Home"  
+    Then I should see "Live Love Home"
     When I see "Pasta with Chicken"
     Then I touch the "Pasta with Chicken" text 
     When I see "My Orders"

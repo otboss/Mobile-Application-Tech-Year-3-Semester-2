@@ -1,0 +1,274 @@
+<!DOCTYPE html><html lang="en"><head><meta charSet="utf-8"/><meta http-equiv="X-UA-Compatible" content="IE=edge"/><title>Getting Started · WebdriverIO</title><meta name="viewport" content="width=device-width"/><meta name="generator" content="Docusaurus"/><meta name="description" content="&lt;p&gt;Welcome to the WebdriverIO documentation. It will help you to get started fast. If you run into problems you can find help and answers on our &lt;a href=&quot;https://gitter.im/webdriverio/webdriverio&quot;&gt;Gitter Channel&lt;/a&gt; or you can hit me on &lt;a href=&quot;https://twitter.com/webdriverio&quot;&gt;Twitter&lt;/a&gt;.&lt;/p&gt;
+"/><meta name="docsearch:language" content="en"/><meta property="og:title" content="Getting Started · WebdriverIO"/><meta property="og:type" content="website"/><meta property="og:url" content="https://webdriver.io/index.html"/><meta property="og:description" content="&lt;p&gt;Welcome to the WebdriverIO documentation. It will help you to get started fast. If you run into problems you can find help and answers on our &lt;a href=&quot;https://gitter.im/webdriverio/webdriverio&quot;&gt;Gitter Channel&lt;/a&gt; or you can hit me on &lt;a href=&quot;https://twitter.com/webdriverio&quot;&gt;Twitter&lt;/a&gt;.&lt;/p&gt;
+"/><meta property="og:image" content="https://webdriver.io/img/webdriverio.png"/><meta name="twitter:card" content="summary"/><meta name="twitter:image" content="https://webdriver.io/img/webdriverio.png"/><link rel="shortcut icon" href="/img/favicon.png"/><link rel="stylesheet" href="https://cdn.jsdelivr.net/docsearch.js/1/docsearch.min.css"/><link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/github.min.css"/><link rel="alternate" type="application/atom+xml" href="https://webdriver.io/blog/atom.xml" title="WebdriverIO Blog ATOM Feed"/><link rel="alternate" type="application/rss+xml" href="https://webdriver.io/blog/feed.xml" title="WebdriverIO Blog RSS Feed"/><script>
+              (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+              (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+              m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+              })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+
+              ga('create', 'UA-47063382-1', 'auto');
+              ga('send', 'pageview');
+            </script><script type="text/javascript" src="https://buttons.github.io/buttons.js"></script><script type="text/javascript" src="https://platform.twitter.com/widgets.js"></script><script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script><script src="https://unpkg.com/vanilla-back-to-top@7.1.14/dist/vanilla-back-to-top.min.js"></script><script>
+        document.addEventListener('DOMContentLoaded', function() {
+          addBackToTop(
+            {"zIndex":100}
+          )
+        });
+        </script><link rel="stylesheet" href="/css/main.css"/><script src="/js/codetabs.js"></script></head><body class="sideNavVisible separateOnPageNav"><div class="fixedHeaderContainer"><div class="headerWrapper wrapper"><header><a href="/"><h2 class="headerTitle">WebdriverIO</h2></a><div class="navigationWrapper navigationSlider"><nav class="slidingNav"><ul class="nav-site nav-site-internal"><li class="siteNavGroupActive siteNavItemActive"><a href="/docs/gettingstarted.html" target="_self">Guide</a></li><li class=""><a href="/docs/api.html" target="_self">API</a></li><li class=""><a href="/help.html" target="_self">Help</a></li><li class=""><a href="/blog/" target="_self">Blog</a></li><li class="navSearchWrapper reactNavSearchWrapper"><input type="text" id="search_input_react" placeholder="Search" title="Search"/></li><li class=""><a href="https://github.com/webdriverio/webdriverio" target="_self">GitHub</a></li></ul></nav></div></header></div></div><div class="navPusher"><div class="docMainWrapper wrapper"><div class="container docsNavContainer" id="docsNav"><nav class="toc"><div class="toggleNav"><section class="navWrapper wrapper"><div class="navBreadcrumb wrapper"><div class="navToggle" id="navToggler"><div class="hamburger-menu"><div class="line1"></div><div class="line2"></div><div class="line3"></div></div></div><h2><i>›</i><span>Introduction</span></h2><div class="tocToggler" id="tocToggler"><i class="icon-toc"></i></div></div><div class="navGroups"><div class="navGroup"><h3 class="navGroupCategoryTitle">Introduction</h3><ul class=""><li class="navListItem navListItemActive"><a class="navItem" href="/docs/gettingstarted.html">Getting Started</a></li><li class="navListItem"><a class="navItem" href="/docs/boilerplate.html">Boilerplate Projects</a></li><li class="navListItem"><a class="navItem" href="/docs/setuptypes.html">How to setup WebdriverIO</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">Configuration</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/options.html">Options</a></li><li class="navListItem"><a class="navItem" href="/docs/babel.html">Babel Setup</a></li><li class="navListItem"><a class="navItem" href="/docs/typescript.html">TypeScript Setup</a></li><li class="navListItem"><a class="navItem" href="/docs/proxy.html">Proxy Setup</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">Usage</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/selectors.html">Selectors</a></li><li class="navListItem"><a class="navItem" href="/docs/customcommands.html">Custom Commands</a></li><li class="navListItem"><a class="navItem" href="/docs/multiremote.html">Multiremote</a></li><li class="navListItem"><a class="navItem" href="/docs/cloudservices.html">Using Cloud Services</a></li><li class="navListItem"><a class="navItem" href="/docs/autocompletion.html">Autocompletion</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">Testrunner</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/clioptions.html">WDIO CLI Options</a></li><li class="navListItem"><a class="navItem" href="/docs/configurationfile.html">Testrunner Configuration</a></li><li class="navListItem"><a class="navItem" href="/docs/browserobject.html">The Browser Object</a></li><li class="navListItem"><a class="navItem" href="/docs/frameworks.html">Frameworks</a></li><li class="navListItem"><a class="navItem" href="/docs/organizingsuites.html">Organizing Test Suite</a></li><li class="navListItem"><a class="navItem" href="/docs/timeouts.html">Timeouts</a></li><li class="navListItem"><a class="navItem" href="/docs/pageobjects.html">Page Object Pattern</a></li><li class="navListItem"><a class="navItem" href="/docs/debugging.html">Debugging</a></li><li class="navListItem"><a class="navItem" href="/docs/retry.html">Retry Flaky Tests</a></li><li class="navListItem"><a class="navItem" href="/docs/repl.html">REPL interface</a></li><li class="navListItem"><a class="navItem" href="/docs/watcher.html">Watch Test Files</a></li><li class="navListItem"><a class="navItem" href="/docs/jenkins.html">Jenkins Integration</a></li><li class="navListItem"><a class="navItem" href="/docs/customreporter.html">Custom Reporter</a></li><li class="navListItem"><a class="navItem" href="/docs/customservices.html">Custom Services</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">Reporter</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/allure-reporter.html">Allure Reporter</a></li><li class="navListItem"><a class="navItem" href="/docs/concise-reporter.html">Concise Reporter</a></li><li class="navListItem"><a class="navItem" href="/docs/dot-reporter.html">Dot Reporter</a></li><li class="navListItem"><a class="navItem" href="/docs/junit-reporter.html">Junit Reporter</a></li><li class="navListItem"><a class="navItem" href="/docs/spec-reporter.html">Spec Reporter</a></li><li class="navListItem"><a class="navItem" href="/docs/sumologic-reporter.html">Sumologic Reporter</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">Services</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/appium-service.html">Appium Service</a></li><li class="navListItem"><a class="navItem" href="/docs/applitools-service.html">Applitools Service</a></li><li class="navListItem"><a class="navItem" href="/docs/browserstack-service.html">Browserstack Service</a></li><li class="navListItem"><a class="navItem" href="/docs/devtools-service.html">Devtools Service</a></li><li class="navListItem"><a class="navItem" href="/docs/firefox-profile-service.html">Firefox Profile Service</a></li><li class="navListItem"><a class="navItem" href="/docs/sauce-service.html">Sauce Service</a></li><li class="navListItem"><a class="navItem" href="/docs/selenium-standalone-service.html">Selenium Standalone Service</a></li><li class="navListItem"><a class="navItem" href="/docs/testingbot-service.html">Testingbot Service</a></li></ul></div></div></section></div><script>
+            var coll = document.getElementsByClassName('collapsible');
+            var checkActiveCategory = true;
+            for (var i = 0; i < coll.length; i++) {
+              var links = coll[i].nextElementSibling.getElementsByTagName('*');
+              if (checkActiveCategory){
+                for (var j = 0; j < links.length; j++) {
+                  if (links[j].classList.contains('navListItemActive')){
+                    coll[i].nextElementSibling.classList.toggle('hide');
+                    coll[i].childNodes[1].classList.toggle('rotate');
+                    checkActiveCategory = false;
+                    break;
+                  }
+                }
+              }
+
+              coll[i].addEventListener('click', function() {
+                var arrow = this.childNodes[1];
+                arrow.classList.toggle('rotate');
+                var content = this.nextElementSibling;
+                content.classList.toggle('hide');
+              });
+            }
+
+            document.addEventListener('DOMContentLoaded', function() {
+              createToggler('#navToggler', '#docsNav', 'docsSliderActive');
+              createToggler('#tocToggler', 'body', 'tocActive');
+
+              const headings = document.querySelector('.toc-headings');
+              headings && headings.addEventListener('click', function(event) {
+                if (event.target.tagName === 'A') {
+                  document.body.classList.remove('tocActive');
+                }
+              }, false);
+
+              function createToggler(togglerSelector, targetSelector, className) {
+                var toggler = document.querySelector(togglerSelector);
+                var target = document.querySelector(targetSelector);
+
+                if (!toggler) {
+                  return;
+                }
+
+                toggler.onclick = function(event) {
+                  event.preventDefault();
+
+                  target.classList.toggle(className);
+                };
+              }
+            });
+        </script></nav></div><div class="container mainContainer"><div class="wrapper"><div class="post"><header class="postHeader"><a class="edit-page-link button" href="https://github.com/webdriverio/webdriverio/edit/master/docs/GettingStarted.md" target="_blank" rel="noreferrer noopener">Edit</a><h1 class="postHeaderTitle">Getting Started</h1></header><article><div><span><p>Welcome to the WebdriverIO documentation. It will help you to get started fast. If you run into problems you can find help and answers on our <a href="https://gitter.im/webdriverio/webdriverio">Gitter Channel</a> or you can hit me on <a href="https://twitter.com/webdriverio">Twitter</a>.</p>
+<p>Also, if you encounter problems in starting up the server or running the tests after following this tutorial, ensure that the server and the geckodriver are listed in your project directory. If not, re-download them per steps 2 and 3 below.</p>
+<blockquote>
+<p><strong>Note:</strong> These are the docs for the latest version (&gt;= v5.0.0) of WebdriverIO. If you are still using v4 or older please use the legacy docs website <a href="http://v4.webdriver.io">v4.webdriver.io</a>!</p>
+</blockquote>
+<p>The following will give you a short step by step introduction to get your first WebdriverIO script up and running.</p>
+<h2><a class="anchor" aria-hidden="true" id="taking-the-first-step"></a><a href="#taking-the-first-step" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Taking the first step</h2>
+<p>Let's suppose you have <a href="http://nodejs.org/">Node.js</a> already installed. If you don't have Node installed, we recommend installing <a href="https://github.com/creationix/nvm">NVM</a> to assist managing multiple active Node.js versions.</p>
+<p>First thing we need to do is to download a browser driver that helps us automate the browser. To do so we create an example folder first:</p>
+<h3><a class="anchor" aria-hidden="true" id="create-a-simple-test-folder"></a><a href="#create-a-simple-test-folder" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Create a simple test folder</h3>
+<pre><code class="hljs css language-sh">$ mkdir webdriverio-test &amp;&amp; <span class="hljs-built_in">cd</span> webdriverio-test
+</code></pre>
+<p><em>While still in this test folder:</em></p>
+<h3><a class="anchor" aria-hidden="true" id="download-geckodriver"></a><a href="#download-geckodriver" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Download Geckodriver</h3>
+<p><strong>Note: You must have <a href="https://www.mozilla.org/en-US/firefox/new/">Firefox</a> installed to use Geckodriver.</strong></p>
+<p>Download the latest version of geckodriver for your environment and unpack it in your project directory:</p>
+<p>Linux 64 bit</p>
+<pre><code class="hljs css language-sh">$ curl -L https://github.com/mozilla/geckodriver/releases/download/v0.21.0/geckodriver-v0.21.0-linux64.tar.gz | tar xz
+</code></pre>
+<p>OSX</p>
+<pre><code class="hljs css language-sh">$ curl -L https://github.com/mozilla/geckodriver/releases/download/v0.21.0/geckodriver-v0.21.0-macos.tar.gz | tar xz
+</code></pre>
+<p>Windows 64 bit</p>
+<p>Simple setup: (<a href="https://chocolatey.org/">Chocolatey</a>)</p>
+<pre><code class="hljs css language-sh">choco install selenium-gecko-driver
+</code></pre>
+<p>For advanced users (Powershell):</p>
+<pre><code class="hljs css language-sh"><span class="hljs-comment"># Run as privileged session. Right-click and set 'Run as Administrator'</span>
+<span class="hljs-comment"># Use geckodriver-v0.21.0-win32.zip for 32 bit Windows</span>
+<span class="hljs-variable">$url</span> = <span class="hljs-string">"https://github.com/mozilla/geckodriver/releases/download/v0.21.0/geckodriver-v0.21.0-win64.zip"</span>
+<span class="hljs-variable">$output</span> = <span class="hljs-string">"geckodriver.zip"</span> <span class="hljs-comment"># will drop into current directory unless defined otherwise</span>
+<span class="hljs-variable">$unzipped_file</span> = <span class="hljs-string">"geckodriver"</span> <span class="hljs-comment"># will unzip to this folder name</span>
+
+<span class="hljs-comment"># By default, Powershell uses TLS 1.0 the site security requires TLS 1.2</span>
+[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+
+<span class="hljs-comment"># Downloads Geckodriver</span>
+Invoke-WebRequest -Uri <span class="hljs-variable">$url</span> -OutFile <span class="hljs-variable">$output</span>
+
+<span class="hljs-comment"># Unzip Geckodriver</span>
+Expand-Archive <span class="hljs-variable">$output</span> -DestinationPath <span class="hljs-variable">$unzipped_file</span>
+<span class="hljs-built_in">cd</span> <span class="hljs-variable">$unzipped_file</span>
+
+<span class="hljs-comment"># Globally Set Geckodriver to PATH</span>
+[System.Environment]::SetEnvironmentVariable(<span class="hljs-string">"PATH"</span>, <span class="hljs-string">"<span class="hljs-variable">$Env</span>:Path;<span class="hljs-variable">$pwd</span>\geckodriver.exe"</span>, [System.EnvironmentVariableTarget]::Machine)
+</code></pre>
+<p>Note: Other geckodriver releases are available <a href="https://github.com/mozilla/geckodriver/releases">here</a>. In order to automate other browser you need to run different drivers. You can find a list with all drivers in the <a href="https://github.com/christian-bromann/awesome-selenium#driver">awesome-selenium</a> readme.</p>
+<h3><a class="anchor" aria-hidden="true" id="start-browser-driver"></a><a href="#start-browser-driver" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Start Browser Driver</h3>
+<p>Start Geckodriver by running:</p>
+<pre><code class="hljs css language-sh">$ /path/to/binary/geckodriver --port 4444
+</code></pre>
+<p>For example, if you ran the curl command from above, you should have a <code>geckodriver</code> binary available in the current folder. You can run the following to start it:</p>
+<pre><code class="hljs css language-sh">$ ./geckodriver --port 4444
+</code></pre>
+<p>This will start Geckodriver on <code>localhost:4444</code> with the WebDriver endpoint set to <code>/</code>.</p>
+<p>Keep this running in the background and open a new terminal window. Next step is to download WebdriverIO via NPM:</p>
+<h3><a class="anchor" aria-hidden="true" id="download-webdriverio"></a><a href="#download-webdriverio" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Download WebdriverIO</h3>
+<p>By calling:</p>
+<pre><code class="hljs css language-sh">$ npm install webdriverio
+</code></pre>
+<h3><a class="anchor" aria-hidden="true" id="create-test-file"></a><a href="#create-test-file" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Create Test File</h3>
+<p>Create a test file (e.g. <code>test.js</code>) with the following content:</p>
+<pre><code class="hljs css language-js"><span class="hljs-keyword">const</span> { remote } = <span class="hljs-built_in">require</span>(<span class="hljs-string">'webdriverio'</span>);
+
+<span class="hljs-function">(<span class="hljs-params"><span class="hljs-keyword">async</span> (</span>) =&gt;</span> {
+    <span class="hljs-keyword">const</span> browser = <span class="hljs-keyword">await</span> remote({
+        <span class="hljs-attr">logLevel</span>: <span class="hljs-string">'error'</span>,
+        <span class="hljs-attr">path</span>: <span class="hljs-string">'/'</span>,
+        <span class="hljs-attr">capabilities</span>: {
+            <span class="hljs-attr">browserName</span>: <span class="hljs-string">'firefox'</span>
+        }
+    });
+
+    <span class="hljs-keyword">await</span> browser.url(<span class="hljs-string">'https://webdriver.io'</span>);
+
+    <span class="hljs-keyword">const</span> title = <span class="hljs-keyword">await</span> browser.getTitle();
+    <span class="hljs-built_in">console</span>.log(<span class="hljs-string">'Title was: '</span> + title);
+
+    <span class="hljs-keyword">await</span> browser.deleteSession();
+})().catch(<span class="hljs-function">(<span class="hljs-params">e</span>) =&gt;</span> <span class="hljs-built_in">console</span>.error(e));
+</code></pre>
+<h3><a class="anchor" aria-hidden="true" id="run-your-test-file"></a><a href="#run-your-test-file" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Run your test file</h3>
+<p>Make sure you have at least Node.js v8.11.2 or higher installed. To update your current running Node.js version install <a href="https://github.com/creationix/nvm">nvm</a> and follow their instructions. Once that is done run the test script by calling:</p>
+<pre><code class="hljs css language-sh">$ node test.js
+</code></pre>
+<p>this should output the following:</p>
+<pre><code class="hljs css language-sh">Title was: WebdriverIO · Next-gen WebDriver <span class="hljs-built_in">test</span> framework <span class="hljs-keyword">for</span> Node.js
+</code></pre>
+<p>Yay, Congratulations! You've just run your first automation script with WebdriverIO. Let's step it up a notch and create a real test.</p>
+<h2><a class="anchor" aria-hidden="true" id="let-s-get-serious"></a><a href="#let-s-get-serious" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Let's get serious</h2>
+<p><em>(If you haven't already, navigate back to the project root directory)</em></p>
+<p>This was just a warm up. Let's move forward and run WebdriverIO with the test runner. If you want to use WebdriverIO in your project for integration testing we recommend using the test runner because it comes with a lot of useful features that makes your life easier. With WebdriverIO v5 and up, the testrunner has moved into the <a href="https://www.npmjs.com/package/@wdio/cli"><code>@wdio/cli</code></a> NPM package.</p>
+<p>Before installing the test runner, we need to initialize an empty NPM project (this will allow us to the cli to install needed dependencies).</p>
+<p>To do this, run:</p>
+<pre><code class="hljs css language-sh">$ npm init -y
+</code></pre>
+<p>The <code>-y</code> will answer 'yes' to all the prompts, giving us a standard NPM project. Feel free to omit the <code>-y</code> if you'd like to specify your own project details.</p>
+<p>Now we need to install the cli. Do that by running:</p>
+<pre><code class="hljs css language-sh">$ npm i --save-dev @wdio/cli
+</code></pre>
+<h3><a class="anchor" aria-hidden="true" id="generate-configuration-file"></a><a href="#generate-configuration-file" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Generate Configuration File</h3>
+<p>We'll next want to generate a configuration file that stores all of our WebdriverIO settings. To do that just run the configuration utility:</p>
+<pre><code class="hljs css language-sh">$ ./node_modules/.bin/wdio config
+</code></pre>
+<p>A question interface pops up. It will help to create the config easy and fast. If you are not sure what to answer follow this answers:</p>
+<p><strong>Q: Where should your tests be launched?</strong><br>
+A: <em>local</em><br>
+<br>
+<strong>Q: Shall I install the runner plugin for you?</strong><br>
+A: <em>Yes</em><br>
+<br>
+<strong>Q: Where is your automation backend located?</strong><br>
+A: <em>On my local machine</em><br>
+<br>
+<strong>Q: Which framework do you want to use?</strong><br>
+A: <em>mocha</em><br>
+<br>
+<strong>Q: Shall I install the framework adapter for you?</strong><br>
+A: <em>Yes</em> (just press enter)<br>
+<br>
+<strong>Q: Do you want to run WebdriverIO commands synchronous or asynchronous?</strong><br>
+A: <em>sync</em> (just press enter, you can also run commands async and handle promises by yourself but for the sake of simplicity let's run them synchronously)<br>
+<br>
+<strong>Q: Where are your test specs located?</strong><br>
+A: <em>./test/specs/*<em>/</em>.js</em> (just press enter)<br>
+<br>
+<strong>Q: Which reporter do you want to use?</strong><br>
+A: <em>dot</em> (just press space and enter)<br>
+<br>
+<strong>Q: Shall I install the reporter library for you?</strong><br>
+A: <em>Yes</em> (just press enter)<br>
+<br>
+<strong>Q: Do you want to add a service to your test setup?</strong><br>
+A: none (just press enter, let's skip this for simplicity)<br>
+<br>
+<strong>Q: Level of logging verbosity:</strong><br>
+A: <em>trace</em><br>
+<br>
+<strong>Q: What is the base url?</strong><br>
+A: <em><a href="http://localhost">http://localhost</a></em> (just press enter)<br></p>
+<p>That's it! The configurator now installs all required packages for you and creates a config file with the name <code>wdio.conf.js</code>. As we're using Geckodriver, we need to override the default path (which uses the Selenium's default of <code>/wd/hub</code>). Then, we'll be ready to create your first spec file (test file).</p>
+<h3><a class="anchor" aria-hidden="true" id="configure-the-path"></a><a href="#configure-the-path" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Configure the path</h3>
+<p>Because we're using geckodriver, the 'path' to it is different from the expected default (which is <code>/wd/hub</code>). To change that, we need to edit the <code>wdio.conf.js</code> file.</p>
+<p>At the top of the file, right after the <code>exports.config = {</code> line, add a section to specify the path:</p>
+<pre><code class="hljs">    // Override the <span class="hljs-keyword">default</span> <span class="hljs-type">path</span> <span class="hljs-keyword">of</span> /wd/hub
+    <span class="hljs-type">path</span>: <span class="hljs-string">'/'</span>,
+</code></pre>
+<p>So the top of your file should look like:</p>
+<pre><code class="hljs">exports.config = {
+    <span class="hljs-comment">// Override the default path of /wd/hub</span>
+    path: <span class="hljs-string">'/'</span>,
+    <span class="hljs-comment">//</span>
+    <span class="hljs-comment">// ====================</span>
+    <span class="hljs-comment">// Runner Configuration</span>
+    <span class="hljs-comment">// ====================</span>
+    <span class="hljs-comment">//</span>
+    <span class="hljs-comment">// WebdriverIO allows it to run your tests in arbitrary locations (e.g. locally or</span>
+    <span class="hljs-comment">// on a remote machine).</span>
+    runner: <span class="hljs-string">'local'</span>,
+    <span class="hljs-params">...</span> the rest of the settings <span class="hljs-params">...</span>
+}
+</code></pre>
+<p>Be sure to save the file after your changes.</p>
+<h3><a class="anchor" aria-hidden="true" id="create-spec-files"></a><a href="#create-spec-files" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Create Spec Files</h3>
+<p>Now it's time to create our test file. We're going to store all of our files in a new folder. Create the test folder like this:</p>
+<pre><code class="hljs css language-sh">$ mkdir -p ./<span class="hljs-built_in">test</span>/specs
+</code></pre>
+<p>Create a new file in that folder (we'll call it <code>basic.js</code>):</p>
+<pre><code class="hljs css language-sh">$ touch ./<span class="hljs-built_in">test</span>/specs/basic.js
+</code></pre>
+<p>Open that file up and add the following code to it:</p>
+<pre><code class="hljs css language-js"><span class="hljs-keyword">const</span> assert = <span class="hljs-built_in">require</span>(<span class="hljs-string">'assert'</span>);
+
+describe(<span class="hljs-string">'webdriver.io page'</span>, () =&gt; {
+    it(<span class="hljs-string">'should have the right title'</span>, () =&gt; {
+        browser.url(<span class="hljs-string">'https://webdriver.io'</span>);
+        <span class="hljs-keyword">const</span> title = browser.getTitle();
+        assert.equal(title, <span class="hljs-string">'WebdriverIO · Next-gen WebDriver test framework for Node.js'</span>);
+    });
+});
+</code></pre>
+<p>Once added, save, then return to your terminal.</p>
+<h3><a class="anchor" aria-hidden="true" id="kick-off-testrunner"></a><a href="#kick-off-testrunner" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Kick Off Testrunner</h3>
+<p>The last step is to execute the test runner. To do so just run:</p>
+<pre><code class="hljs css language-sh">$ ./node_modules/.bin/wdio wdio.conf.js
+</code></pre>
+<p>Hurray! The test should pass and you can start writing integration tests with WebdriverIO.</p>
+<p>If you ran into any issue, reach out in our <a href="https://gitter.im/webdriverio/webdriverio">Gitter Channel</a> and post the error you're seeing, plus the step you're currently on.</p>
+<p>If you are interested in more in depth video on-boarding tutorials, feel free to check out our very own course called <a href="https://learn.webdriver.io/?coupon=wdio">learn.webdriver.io</a>. Also our community has collected a lot of <a href="/docs/boilerplate.html">boilerplate projects</a> that can help you to get started.</p>
+</span></div></article></div><div class="docs-prevnext"><a class="docs-next button" href="/docs/boilerplate.html"><span>Boilerplate Projects</span><span class="arrow-next"> →</span></a></div></div></div><nav class="onPageNav"><ul class="toc-headings"><li><a href="#taking-the-first-step">Taking the first step</a><ul class="toc-headings"><li><a href="#create-a-simple-test-folder">Create a simple test folder</a></li><li><a href="#download-geckodriver">Download Geckodriver</a></li><li><a href="#start-browser-driver">Start Browser Driver</a></li><li><a href="#download-webdriverio">Download WebdriverIO</a></li><li><a href="#create-test-file">Create Test File</a></li><li><a href="#run-your-test-file">Run your test file</a></li></ul></li><li><a href="#let-s-get-serious">Let's get serious</a><ul class="toc-headings"><li><a href="#generate-configuration-file">Generate Configuration File</a></li><li><a href="#configure-the-path">Configure the path</a></li><li><a href="#create-spec-files">Create Spec Files</a></li><li><a href="#kick-off-testrunner">Kick Off Testrunner</a></li></ul></li></ul></nav></div><footer class="nav-footer" id="footer"><section class="sitemap"><a href="/" class="nav-home"><img src="/img/twitter-profile.png" alt="WebdriverIO" width="66" height="58"/></a><div><h5>Docs</h5><a href="/docs/gettingstarted.html">Getting Started</a><a href="/docs/api.html">API Reference</a><a href="/help.html">Help</a></div><div><h5>Community</h5><a href="https://stackoverflow.com/questions/tagged/webdriver-io" target="_blank" rel="noreferrer noopener">Stack Overflow</a><a href="https://gitter.im/webdriverio/webdriverio">Support Chat</a><a href="https://twitter.com/webdriverio" target="_blank" rel="noreferrer noopener">Twitter</a></div><div><h5>More</h5><a href="/blog">Blog</a><a href="https://github.com/webdriverio/webdriverio">GitHub</a><a class="github-button" href="https://github.com/webdriverio/webdriverio" data-icon="octicon-star" data-count-href="/webdriverio/webdriverio/stargazers" data-show-count="true" data-count-aria-label="# stargazers on GitHub" aria-label="Star this project on GitHub">Star</a></div></section><a href="https://js.foundation/community/projects" target="_blank" rel="noreferrer noopener" class="fbOpenSource"><img src="/img/jsf-logo.png" alt="JS.Foundation" width="170" height="45"/></a><section class="copyright">Copyright © 2019 JS.Foundation</section></footer></div><script type="text/javascript" src="https://cdn.jsdelivr.net/docsearch.js/1/docsearch.min.js"></script><script>window.twttr=(function(d,s, id){var js,fjs=d.getElementsByTagName(s)[0],t=window.twttr||{};if(d.getElementById(id))return t;js=d.createElement(s);js.id=id;js.src='https://platform.twitter.com/widgets.js';fjs.parentNode.insertBefore(js, fjs);t._e = [];t.ready = function(f) {t._e.push(f);};return t;}(document, 'script', 'twitter-wjs'));</script><script>
+                document.addEventListener('keyup', function(e) {
+                  if (e.target !== document.body) {
+                    return;
+                  }
+                  // keyCode for '/' (slash)
+                  if (e.keyCode === 191) {
+                    const search = document.getElementById('search_input_react');
+                    search && search.focus();
+                  }
+                });
+              </script><script>
+              var search = docsearch({
+                appId: 'BH4D9OD16A',
+                apiKey: '1b22fa823f22b7916528edc0e36d9d4a',
+                indexName: 'webdriver',
+                inputSelector: '#search_input_react'
+              });
+            </script></body></html>

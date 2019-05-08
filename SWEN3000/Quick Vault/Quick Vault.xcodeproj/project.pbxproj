@@ -12,6 +12,7 @@
 		C23F455E22825FA000CBCB69 /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = C23F455C22825FA000CBCB69 /* Main.storyboard */; };
 		C23F456022825FBE00CBCB69 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = C23F455F22825FBE00CBCB69 /* Assets.xcassets */; };
 		C23F456322825FBE00CBCB69 /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = C23F456122825FBE00CBCB69 /* LaunchScreen.storyboard */; };
+		C23F456B228271BA00CBCB69 /* Account.swift in Sources */ = {isa = PBXBuildFile; fileRef = C23F456A228271BA00CBCB69 /* Account.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -22,6 +23,7 @@
 		C23F455F22825FBE00CBCB69 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		C23F456222825FBE00CBCB69 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/LaunchScreen.storyboard; sourceTree = "<group>"; };
 		C23F456422825FBE00CBCB69 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		C23F456A228271BA00CBCB69 /* Account.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Account.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -57,6 +59,7 @@
 				C23F455822825FA000CBCB69 /* AppDelegate.swift */,
 				C23F455A22825FA000CBCB69 /* ViewController.swift */,
 				C23F455C22825FA000CBCB69 /* Main.storyboard */,
+				C23F456A228271BA00CBCB69 /* Account.swift */,
 				C23F455F22825FBE00CBCB69 /* Assets.xcassets */,
 				C23F456122825FBE00CBCB69 /* LaunchScreen.storyboard */,
 				C23F456422825FBE00CBCB69 /* Info.plist */,
@@ -137,6 +140,7 @@
 			files = (
 				C23F455B22825FA000CBCB69 /* ViewController.swift in Sources */,
 				C23F455922825FA000CBCB69 /* AppDelegate.swift in Sources */,
+				C23F456B228271BA00CBCB69 /* Account.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

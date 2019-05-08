@@ -1,0 +1,265 @@
+otto@ottor-HP-Notebook:~/Apps/Mobile-Application-Tech-Year-3-Semester-2/SWEN3165/Presentation$ ./testApp.sh 
+/home/otto/.rvm/gems/ruby-2.3.1/gems/calabash-android-0.9.8/lib/calabash-android/dependencies.rb:482: warning: Insecure world writable dir /home/otto in PATH, mode 040777
+Feature: All Tests for Menu Tingz app
+
+  Scenario: As a valid user I can log into my app             # features/my_first.feature:3
+    When I see "Login"                                        # calabash-android-0.9.8/lib/calabash-android/steps/assert_steps.rb:5
+    Then I press "Login"                                      # calabash-android-0.9.8/lib/calabash-android/steps/press_button_steps.rb:17
+    When I see "Username"                                     # calabash-android-0.9.8/lib/calabash-android/steps/assert_steps.rb:5
+    Then I enter text "admin" into field with id "lusername"  # calabash-android-0.9.8/lib/calabash-android/steps/enter_text_steps.rb:13
+    * I go back                                               # calabash-android-0.9.8/lib/calabash-android/steps/navigation_steps.rb:1
+    Then I enter text "123456" into field with id "lpassword" # calabash-android-0.9.8/lib/calabash-android/steps/enter_text_steps.rb:13
+      # INCORRECT PASSWORD RESULTS IN AN ERROR TOAST
+    * I go back                                               # calabash-android-0.9.8/lib/calabash-android/steps/navigation_steps.rb:1
+    * I press "Login Now"                                     # calabash-android-0.9.8/lib/calabash-android/steps/press_button_steps.rb:17
+    * I wait for 5 seconds                                    # calabash-android-0.9.8/lib/calabash-android/steps/progress_steps.rb:10
+    * I should see "Restaurants List"                         # calabash-android-0.9.8/lib/calabash-android/steps/assert_steps.rb:9
+
+  #IT IS OBSERVED THAT THERE IS NOT OPTION FOR SIGNING OUT
+  #THEREFORE DO NOT TEST BOTH LOGIN AND SIGN UP SCENARIOS
+  #Scenario: As a new user I should be able to create a new account
+  #  When I see "Sign Up"
+  #  Then I press "Sign Up"
+  #  When I see "Username"
+  #  Then I enter text "otboss" into field with id "username"
+  #  Then I enter text "password" into field with id "password"
+  #  * I go back
+  #  Then I enter text "password" into field with id "confirmpassword"
+  #  * I go back
+  #  * I wait for 2 seconds
+  #  * I press "submit"
+  # NOW TESTING ADD ITEMS TO ORDERS
+  Scenario: The app should allow the user to add items to their order # features/my_first.feature:33
+    When I see "Live Love Home"                                       # calabash-android-0.9.8/lib/calabash-android/steps/assert_steps.rb:5
+    Then I touch the "Live Love Home" text                            # calabash-android-0.9.8/lib/calabash-android/steps/press_button_steps.rb:25
+    Then I should see "Live Love Home"                                # calabash-android-0.9.8/lib/calabash-android/steps/assert_steps.rb:9
+    When I see "Pasta with Chicken"                                   # calabash-android-0.9.8/lib/calabash-android/steps/assert_steps.rb:5
+    Then I touch the "Pasta with Chicken" text                        # calabash-android-0.9.8/lib/calabash-android/steps/press_button_steps.rb:25
+    When I see "My Orders"                                            # calabash-android-0.9.8/lib/calabash-android/steps/assert_steps.rb:5
+    Then I touch the "ADD MORE" text                                  # calabash-android-0.9.8/lib/calabash-android/steps/press_button_steps.rb:25
+    When I see "Fresh Mush"                                           # calabash-android-0.9.8/lib/calabash-android/steps/assert_steps.rb:5
+    Then I touch the "Fresh Mush" text                                # calabash-android-0.9.8/lib/calabash-android/steps/press_button_steps.rb:25
+    When I see "Rice With Pork"                                       # calabash-android-0.9.8/lib/calabash-android/steps/assert_steps.rb:5
+    Then I touch the "Rice With Pork" text                            # calabash-android-0.9.8/lib/calabash-android/steps/press_button_steps.rb:25
+
+  #THE CART SHOULD NOW HAVE MULTIPLE ITEMS
+  #
+  # NOW TESTING REMOVE ITEM FROM ORDERS
+  Scenario: The app should allow the user to remove items from their order # features/my_first.feature:48
+    When I see "Live Love Home"                                            # calabash-android-0.9.8/lib/calabash-android/steps/assert_steps.rb:5
+    Then I touch the "Live Love Home" text                                 # calabash-android-0.9.8/lib/calabash-android/steps/press_button_steps.rb:25
+    Then I should see "Live Love Home"                                     # calabash-android-0.9.8/lib/calabash-android/steps/assert_steps.rb:9
+    When I see "Pasta with Chicken"                                        # calabash-android-0.9.8/lib/calabash-android/steps/assert_steps.rb:5
+    Then I touch the "Pasta with Chicken" text                             # calabash-android-0.9.8/lib/calabash-android/steps/press_button_steps.rb:25
+    When I see "My Orders"                                                 # calabash-android-0.9.8/lib/calabash-android/steps/assert_steps.rb:5
+    Then I touch the "REMOVE" text                                         # calabash-android-0.9.8/lib/calabash-android/steps/press_button_steps.rb:25
+
+  # NOW TESTING ORDER PLACEMENT
+  Scenario: Users should be allowed to place orders within the app # features/my_first.feature:58
+    When I see "Live Love Home"                                    # calabash-android-0.9.8/lib/calabash-android/steps/assert_steps.rb:5
+    Then I touch the "Live Love Home" text                         # calabash-android-0.9.8/lib/calabash-android/steps/press_button_steps.rb:25
+    Then I should see "Live Love Home"                             # calabash-android-0.9.8/lib/calabash-android/steps/assert_steps.rb:9
+    When I see "Pasta with Chicken"                                # calabash-android-0.9.8/lib/calabash-android/steps/assert_steps.rb:5
+    Then I touch the "Pasta with Chicken" text                     # calabash-android-0.9.8/lib/calabash-android/steps/press_button_steps.rb:25
+    When I see "MAKE ORDER"                                        # calabash-android-0.9.8/lib/calabash-android/steps/assert_steps.rb:5
+    Then I touch the "MAKE ORDER" text                             # calabash-android-0.9.8/lib/calabash-android/steps/press_button_steps.rb:25
+    When I see "Are you sure you want to place this order"         # calabash-android-0.9.8/lib/calabash-android/steps/assert_steps.rb:5
+    Then I touch the "YES" text                                    # calabash-android-0.9.8/lib/calabash-android/steps/press_button_steps.rb:25
+
+  #NOW RUNNING FULL TEST
+  Scenario: A complete test                                # features/my_first.feature:70
+    When I see "Live Love Home"                            # calabash-android-0.9.8/lib/calabash-android/steps/assert_steps.rb:5
+    Then I touch the "Live Love Home" text                 # calabash-android-0.9.8/lib/calabash-android/steps/press_button_steps.rb:25
+    Then I should see "Live Love Home"                     # calabash-android-0.9.8/lib/calabash-android/steps/assert_steps.rb:9
+    When I see "Pasta with Chicken"                        # calabash-android-0.9.8/lib/calabash-android/steps/assert_steps.rb:5
+    Then I touch the "Pasta with Chicken" text             # calabash-android-0.9.8/lib/calabash-android/steps/press_button_steps.rb:25
+    When I see "My Orders"                                 # calabash-android-0.9.8/lib/calabash-android/steps/assert_steps.rb:5
+    Then I touch the "ADD MORE" text                       # calabash-android-0.9.8/lib/calabash-android/steps/press_button_steps.rb:25
+    When I see "Fresh Mush"                                # calabash-android-0.9.8/lib/calabash-android/steps/assert_steps.rb:5
+    Then I touch the "Fresh Mush" text                     # calabash-android-0.9.8/lib/calabash-android/steps/press_button_steps.rb:25
+    When I see "Rice With Pork"                            # calabash-android-0.9.8/lib/calabash-android/steps/assert_steps.rb:5
+    Then I touch the "Rice With Pork" text                 # calabash-android-0.9.8/lib/calabash-android/steps/press_button_steps.rb:25
+      # NOW TESTING REMOVE ITEM FROM ORDERS
+    Then I touch the "ADD MORE" text                       # calabash-android-0.9.8/lib/calabash-android/steps/press_button_steps.rb:25
+    When I see "Live Love Home"                            # calabash-android-0.9.8/lib/calabash-android/steps/assert_steps.rb:5
+    Then I touch the "Live Love Home" text                 # calabash-android-0.9.8/lib/calabash-android/steps/press_button_steps.rb:25
+    Then I should see "Live Love Home"                     # calabash-android-0.9.8/lib/calabash-android/steps/assert_steps.rb:9
+    When I see "Pasta with Chicken"                        # calabash-android-0.9.8/lib/calabash-android/steps/assert_steps.rb:5
+    Then I touch the "Pasta with Chicken" text             # calabash-android-0.9.8/lib/calabash-android/steps/press_button_steps.rb:25
+    When I see "My Orders"                                 # calabash-android-0.9.8/lib/calabash-android/steps/assert_steps.rb:5
+    Then I touch the "REMOVE" text                         # calabash-android-0.9.8/lib/calabash-android/steps/press_button_steps.rb:25
+      # NOW TESTING ORDER PLACEMENT
+    When I see "MAKE ORDER"                                # calabash-android-0.9.8/lib/calabash-android/steps/assert_steps.rb:5
+    Then I touch the "MAKE ORDER" text                     # calabash-android-0.9.8/lib/calabash-android/steps/press_button_steps.rb:25
+    When I see "Are you sure you want to place this order" # calabash-android-0.9.8/lib/calabash-android/steps/assert_steps.rb:5
+    Then I touch the "YES" text                            # calabash-android-0.9.8/lib/calabash-android/steps/press_button_steps.rb:25
+
+  Scenario: checking out with an empty cart                # features/my_first.feature:97
+      # It is obsevered that no error is thrown when checking out with an empty cart
+    When I see "Live Love Home"                            # calabash-android-0.9.8/lib/calabash-android/steps/assert_steps.rb:5
+    Then I touch the "Live Love Home" text                 # calabash-android-0.9.8/lib/calabash-android/steps/press_button_steps.rb:25
+    Then I should see "Live Love Home"                     # calabash-android-0.9.8/lib/calabash-android/steps/assert_steps.rb:9
+    When I see "Pasta with Chicken"                        # calabash-android-0.9.8/lib/calabash-android/steps/assert_steps.rb:5
+    Then I touch the "Pasta with Chicken" text             # calabash-android-0.9.8/lib/calabash-android/steps/press_button_steps.rb:25
+    When I see "My Orders"                                 # calabash-android-0.9.8/lib/calabash-android/steps/assert_steps.rb:5
+    Then I touch the "REMOVE" text                         # calabash-android-0.9.8/lib/calabash-android/steps/press_button_steps.rb:25
+    Then I touch the "MAKE ORDER" text                     # calabash-android-0.9.8/lib/calabash-android/steps/press_button_steps.rb:25
+    When I see "Are you sure you want to place this order" # calabash-android-0.9.8/lib/calabash-android/steps/assert_steps.rb:5
+    Then I touch the "YES" text                            # calabash-android-0.9.8/lib/calabash-android/steps/press_button_steps.rb:25
+
+6 scenarios (6 passed)
+70 steps (70 passed)
+1m26.434s
+
+
+NOW TESTING CHARACTER SET:  !"#$%&'()*+,-./
+
+Number of Combinations: 58650
+
+Testing:  
+Length: 1
+
+Feature: Form Vulnurability Test
+
+
+  Scenario: As a new user I should be able to create a new account # ./features/form_field_test.feature:4
+
+    When I see "Sign Up"                                           # calabash-android-0.9.8/lib/calabash-android/steps/assert_steps.rb:5
+    Then I press "Sign Up"                                         # calabash-android-0.9.8/lib/calabash-android/steps/press_button_steps.rb:17
+    When I see "Username"                                          # calabash-android-0.9.8/lib/calabash-android/steps/assert_steps.rb:5
+
+    Then I enter text " " into field with id "username"            # calabash-android-0.9.8/lib/calabash-android/steps/enter_text_steps.rb:13
+
+    Then I enter text " " into field with id "password"            # calabash-android-0.9.8/lib/calabash-android/steps/enter_text_steps.rb:13
+    * I go back                                                    # calabash-android-0.9.8/lib/calabash-android/steps/navigation_steps.rb:1
+
+    Then I enter text " " into field with id "confirmpassword"     # calabash-android-0.9.8/lib/calabash-android/steps/enter_text_steps.rb:13
+    * I go back                                                    # calabash-android-0.9.8/lib/calabash-android/steps/navigation_steps.rb:1
+    * I wait for 2 seconds                                         # calabash-android-0.9.8/lib/calabash-android/steps/progress_steps.rb:10
+    * I press "submit"                                             # calabash-android-0.9.8/lib/calabash-android/steps/press_button_steps.rb:17
+    * I wait for 5 seconds                                         # calabash-android-0.9.8/lib/calabash-android/steps/progress_steps.rb:10
+    * I should see "Restaurants List"                              # calabash-android-0.9.8/lib/calabash-android/steps/assert_steps.rb:9
+    * I go back                                                    # calabash-android-0.9.8/lib/calabash-android/steps/navigation_steps.rb:1
+    When I see "Username"                                          # calabash-android-0.9.8/lib/calabash-android/steps/assert_steps.rb:5
+    Then I go back                                                 # calabash-android-0.9.8/lib/calabash-android/steps/navigation_steps.rb:1
+    When I see "Login"                                             # calabash-android-0.9.8/lib/calabash-android/steps/assert_steps.rb:5
+    Then I press "Login"                                           # calabash-android-0.9.8/lib/calabash-android/steps/press_button_steps.rb:17
+    When I see "Username"                                          # calabash-android-0.9.8/lib/calabash-android/steps/assert_steps.rb:5
+
+    Then I enter text " " into field with id "lusername"           # calabash-android-0.9.8/lib/calabash-android/steps/enter_text_steps.rb:13
+    * I go back                                                    # calabash-android-0.9.8/lib/calabash-android/steps/navigation_steps.rb:1
+
+    Then I enter text " " into field with id "lpassword"           # calabash-android-0.9.8/lib/calabash-android/steps/enter_text_steps.rb:13
+    * I go back                                                    # calabash-android-0.9.8/lib/calabash-android/steps/navigation_steps.rb:1
+    * I press "Login Now"                                          # calabash-android-0.9.8/lib/calabash-android/steps/press_button_steps.rb:17
+    * I wait for 5 seconds                                         # calabash-android-0.9.8/lib/calabash-android/steps/progress_steps.rb:10
+    * I should see "Restaurants List"                              # calabash-android-0.9.8/lib/calabash-android/steps/assert_steps.rb:9
+
+
+1 scenario (1 passed)
+25 steps (25 passed)
+1m18.870s
+
+
+
+done!
+
+
+Testing: !
+Length: 1
+
+Feature: Form Vulnurability Test
+
+
+  Scenario: As a new user I should be able to create a new account # ./features/form_field_test.feature:4
+
+    When I see "Sign Up"                                           # calabash-android-0.9.8/lib/calabash-android/steps/assert_steps.rb:5
+    Then I press "Sign Up"                                         # calabash-android-0.9.8/lib/calabash-android/steps/press_button_steps.rb:17
+    When I see "Username"                                          # calabash-android-0.9.8/lib/calabash-android/steps/assert_steps.rb:5
+
+    Then I enter text "!" into field with id "username"            # calabash-android-0.9.8/lib/calabash-android/steps/enter_text_steps.rb:13
+
+    Then I enter text "!" into field with id "password"            # calabash-android-0.9.8/lib/calabash-android/steps/enter_text_steps.rb:13
+    * I go back                                                    # calabash-android-0.9.8/lib/calabash-android/steps/navigation_steps.rb:1
+
+    Then I enter text "!" into field with id "confirmpassword"     # calabash-android-0.9.8/lib/calabash-android/steps/enter_text_steps.rb:13
+    * I go back                                                    # calabash-android-0.9.8/lib/calabash-android/steps/navigation_steps.rb:1
+    * I wait for 2 seconds                                         # calabash-android-0.9.8/lib/calabash-android/steps/progress_steps.rb:10
+    * I press "submit"                                             # calabash-android-0.9.8/lib/calabash-android/steps/press_button_steps.rb:17
+    * I wait for 5 seconds                                         # calabash-android-0.9.8/lib/calabash-android/steps/progress_steps.rb:10
+    * I should see "Restaurants List"                              # calabash-android-0.9.8/lib/calabash-android/steps/assert_steps.rb:9
+    * I go back                                                    # calabash-android-0.9.8/lib/calabash-android/steps/navigation_steps.rb:1
+    When I see "Username"                                          # calabash-android-0.9.8/lib/calabash-android/steps/assert_steps.rb:5
+    Then I go back                                                 # calabash-android-0.9.8/lib/calabash-android/steps/navigation_steps.rb:1
+    When I see "Login"                                             # calabash-android-0.9.8/lib/calabash-android/steps/assert_steps.rb:5
+    Then I press "Login"                                           # calabash-android-0.9.8/lib/calabash-android/steps/press_button_steps.rb:17
+    When I see "Username"                                          # calabash-android-0.9.8/lib/calabash-android/steps/assert_steps.rb:5
+
+    Then I enter text "!" into field with id "lusername"           # calabash-android-0.9.8/lib/calabash-android/steps/enter_text_steps.rb:13
+    * I go back                                                    # calabash-android-0.9.8/lib/calabash-android/steps/navigation_steps.rb:1
+
+    Then I enter text "!" into field with id "lpassword"           # calabash-android-0.9.8/lib/calabash-android/steps/enter_text_steps.rb:13
+    * I go back                                                    # calabash-android-0.9.8/lib/calabash-android/steps/navigation_steps.rb:1
+    * I press "Login Now"                                          # calabash-android-0.9.8/lib/calabash-android/steps/press_button_steps.rb:17
+    * I wait for 5 seconds                                         # calabash-android-0.9.8/lib/calabash-android/steps/progress_steps.rb:10
+    * I should see "Restaurants List"                              # calabash-android-0.9.8/lib/calabash-android/steps/assert_steps.rb:9
+
+
+1 scenario (1 passed)
+25 steps (25 passed)
+1m17.266s
+
+
+
+done!
+
+
+Testing:  !
+Length: 2
+
+Feature: Form Vulnurability Test
+
+
+  Scenario: As a new user I should be able to create a new account # ./features/form_field_test.feature:4
+
+    When I see "Sign Up"                                           # calabash-android-0.9.8/lib/calabash-android/steps/assert_steps.rb:5
+    Then I press "Sign Up"                                         # calabash-android-0.9.8/lib/calabash-android/steps/press_button_steps.rb:17
+    When I see "Username"                                          # calabash-android-0.9.8/lib/calabash-android/steps/assert_steps.rb:5
+
+    Then I enter text " !" into field with id "username"           # calabash-android-0.9.8/lib/calabash-android/steps/enter_text_steps.rb:13
+
+    Then I enter text " !" into field with id "password"           # calabash-android-0.9.8/lib/calabash-android/steps/enter_text_steps.rb:13
+    * I go back                                                    # calabash-android-0.9.8/lib/calabash-android/steps/navigation_steps.rb:1
+
+    Then I enter text " !" into field with id "confirmpassword"    # calabash-android-0.9.8/lib/calabash-android/steps/enter_text_steps.rb:13
+    * I go back                                                    # calabash-android-0.9.8/lib/calabash-android/steps/navigation_steps.rb:1
+    * I wait for 2 seconds                                         # calabash-android-0.9.8/lib/calabash-android/steps/progress_steps.rb:10
+    * I press "submit"                                             # calabash-android-0.9.8/lib/calabash-android/steps/press_button_steps.rb:17
+    * I wait for 5 seconds                                         # calabash-android-0.9.8/lib/calabash-android/steps/progress_steps.rb:10
+    * I should see "Restaurants List"                              # calabash-android-0.9.8/lib/calabash-android/steps/assert_steps.rb:9
+    * I go back                                                    # calabash-android-0.9.8/lib/calabash-android/steps/navigation_steps.rb:1
+    When I see "Username"                                          # calabash-android-0.9.8/lib/calabash-android/steps/assert_steps.rb:5
+    Then I go back                                                 # calabash-android-0.9.8/lib/calabash-android/steps/navigation_steps.rb:1
+    When I see "Login"                                             # calabash-android-0.9.8/lib/calabash-android/steps/assert_steps.rb:5
+    Then I press "Login"                                           # calabash-android-0.9.8/lib/calabash-android/steps/press_button_steps.rb:17
+    When I see "Username"                                          # calabash-android-0.9.8/lib/calabash-android/steps/assert_steps.rb:5
+
+    Then I enter text " !" into field with id "lusername"          # calabash-android-0.9.8/lib/calabash-android/steps/enter_text_steps.rb:13
+    * I go back                                                    # calabash-android-0.9.8/lib/calabash-android/steps/navigation_steps.rb:1
+
+    Then I enter text " !" into field with id "lpassword"          # calabash-android-0.9.8/lib/calabash-android/steps/enter_text_steps.rb:13
+    * I go back                                                    # calabash-android-0.9.8/lib/calabash-android/steps/navigation_steps.rb:1
+    * I press "Login Now"                                          # calabash-android-0.9.8/lib/calabash-android/steps/press_button_steps.rb:17
+    * I wait for 5 seconds                                         # calabash-android-0.9.8/lib/calabash-android/steps/progress_steps.rb:10
+    * I should see "Restaurants List"                              # calabash-android-0.9.8/lib/calabash-android/steps/assert_steps.rb:9
+
+
+1 scenario (1 passed)
+25 steps (25 passed)
+1m16.948s
+
+
+
+done!
+
+...

@@ -6,7 +6,6 @@ describe('webdriver.io page', () => {
         const title = await browser.getTitle();
 	console.log("THE TITLE IS EQUAL TO: "+title);
         assert.equal(title, 'WebdriverIO · Next-gen WebDriver test framework for Node.js');
-        await browser.url('https://google.com');
+        await browser.url('http://example.com');
     });
-    
 });

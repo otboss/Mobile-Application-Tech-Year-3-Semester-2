@@ -31,44 +31,50 @@ class SignInViewController: UIViewController {
         let password = _password.text
 
         if ( password == ""){
-
-            let alert = UIAlertController(title: "Alert", message: "Please enter a password", preferredStyle: .alert)
-
-            let acceptAlert = UIAlertAction(title: "Okay", style: .cancel)
-
-            alert.addAction(acceptAlert)
-
-            present(alert, animated: true, completion: nil)
+            
+            errorPopUp(title: "Alert", message: "Please enter a password")
             
             _password.text = ""
-
-
+        
             return
 
         } else {
-
-            if (user.getpassword() == password){
+            
+            if user.getpassword() == "" {
                 
-                let vc = self.storyboard?.instantiateViewController(withIdentifier: "ProfileStoryboard")
-                self.show(vc!, sender: self)
+                errorPopUp(title: "Account", message: "No account found on device")
+            }
+
+            else if (user.getpassword() == password){
+                
+                
+                let tvc = self.storyboard?.instantiateViewController(withIdentifier: "main")
+                self.show(tvc!, sender: self)
 
             } else {
                 
-                let alert = UIAlertController(title: "Error", message: "Incorrect password entered", preferredStyle: .alert)
                 
-                let acceptAlert = UIAlertAction(title: "Okay", style: .cancel)
-                
-                alert.addAction(acceptAlert)
-                
-                present(alert, animated: true, completion: nil)
+                errorPopUp(title: "Error", message: "Incorrect password entered")
                 
                 _password.text = ""
+                
 
             }
         }
         
         
 
+    }
+    
+    func errorPopUp (title:String, message:String) {
+        
+        let alert = UIAlertController(title: title, message: message, preferredStyle: .alert)
+        
+        let acceptAlert = UIAlertAction(title: "Okay", style: .cancel)
+        
+        alert.addAction(acceptAlert)
+        
+        present(alert, animated: true, completion: nil)
     }
     
     
@@ -121,8 +127,10 @@ class SignUpViewConstroller: UIViewController{
         } else {
             
             user.setpassword(value: password1!)
-            let vc = self.storyboard?.instantiateViewController(withIdentifier: "ProfileStoryboard")
-            self.show(vc!, sender: self)
+            
+            let tvc = self.storyboard?.instantiateViewController(withIdentifier: "main")
+            self.show(tvc!, sender: self)
+
         }
     }
     
@@ -147,5 +155,12 @@ class Profile: UIViewController{
         super.viewDidLoad()
     }
     
+}
+
+
+class Main: UITabBarController{
+    override func viewDidLoad() {
+        super.viewDidLoad()
+    }
 }
 

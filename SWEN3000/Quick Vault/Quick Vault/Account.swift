@@ -10,23 +10,34 @@ import Foundation
 import UIKit
 
 class Account {
-    static var username = ""
-    static var password = ""
+    
+    var userDefaults = UserDefaults.standard
+    
+    func setusername (value: String){
+        userDefaults.set(value, forKey: "Username")
+    }
+    func getusername () -> String {
+        return userDefaults.string(forKey: "Username") ?? ""
+    }
     
     func setpassword (value: String){
-        Account.password = value
+        userDefaults.set(value, forKey: "Password")
     }
     func getpassword () -> String {
-        return Account.password
+        return userDefaults.string(forKey:"Password") ?? ""
     }
     func changePassword(oldpassword:String, newpassword:String) -> Bool {
-        if oldpassword != Account.password {
+        if oldpassword != userDefaults.string(forKey: "Password") {
             return false
             
         } else {
-            Account.password = newpassword
+            setpassword(value: newpassword)
             return true
         }
+    }
+    func deleteUser() {
+        userDefaults.removeObject(forKey: "Username")
+        userDefaults.removeObject(forKey: "Password")
     }
     
     

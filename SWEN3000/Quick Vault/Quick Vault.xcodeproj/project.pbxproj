@@ -13,6 +13,7 @@
 		C23F456022825FBE00CBCB69 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = C23F455F22825FBE00CBCB69 /* Assets.xcassets */; };
 		C23F456322825FBE00CBCB69 /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = C23F456122825FBE00CBCB69 /* LaunchScreen.storyboard */; };
 		C23F456B228271BA00CBCB69 /* Account.swift in Sources */ = {isa = PBXBuildFile; fileRef = C23F456A228271BA00CBCB69 /* Account.swift */; };
+		C23F456D2283BFC500CBCB69 /* local.strings in Resources */ = {isa = PBXBuildFile; fileRef = C23F456C2283BFC500CBCB69 /* local.strings */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -24,6 +25,7 @@
 		C23F456222825FBE00CBCB69 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/LaunchScreen.storyboard; sourceTree = "<group>"; };
 		C23F456422825FBE00CBCB69 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		C23F456A228271BA00CBCB69 /* Account.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Account.swift; sourceTree = "<group>"; };
+		C23F456C2283BFC500CBCB69 /* local.strings */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; path = local.strings; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -58,6 +60,7 @@
 			children = (
 				C23F455822825FA000CBCB69 /* AppDelegate.swift */,
 				C23F455A22825FA000CBCB69 /* ViewController.swift */,
+				C23F456C2283BFC500CBCB69 /* local.strings */,
 				C23F455C22825FA000CBCB69 /* Main.storyboard */,
 				C23F456A228271BA00CBCB69 /* Account.swift */,
 				C23F455F22825FBE00CBCB69 /* Assets.xcassets */,
@@ -125,6 +128,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				C23F456D2283BFC500CBCB69 /* local.strings in Resources */,
 				C23F456322825FBE00CBCB69 /* LaunchScreen.storyboard in Resources */,
 				C23F456022825FBE00CBCB69 /* Assets.xcassets in Resources */,
 				C23F455E22825FA000CBCB69 /* Main.storyboard in Resources */,

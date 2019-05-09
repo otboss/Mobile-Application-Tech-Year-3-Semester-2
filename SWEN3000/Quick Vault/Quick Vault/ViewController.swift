@@ -18,7 +18,7 @@ class SignInViewController: UIViewController {
     
     @IBOutlet var _signinbutton: UIButton!
     
-    @IBOutlet var _createaccountlink: UILabel!
+    
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -39,6 +39,8 @@ class SignInViewController: UIViewController {
             alert.addAction(acceptAlert)
 
             present(alert, animated: true, completion: nil)
+            
+            _password.text = ""
 
 
             return
@@ -59,12 +61,15 @@ class SignInViewController: UIViewController {
                 alert.addAction(acceptAlert)
                 
                 present(alert, animated: true, completion: nil)
+                
+                _password.text = ""
 
             }
         }
+        
+        
 
     }
-    
     
     
   
@@ -74,21 +79,64 @@ class SignInViewController: UIViewController {
 
 class SignUpViewConstroller: UIViewController{
     
-//    @IBOutlet var _username: UITextField!
-//
-//    @IBOutlet var _password: UITextField!
-//
-//    @IBOutlet var _cpassword: UITextField!
-//
-//    @IBOutlet var submit: UIButton!
+    @IBOutlet var _username: UITextField!
+    
+    @IBOutlet var _password1: UITextField!
+    @IBOutlet var _password2: UITextField!
     
     override func viewDidLoad() {
+        
         super.viewDidLoad()
     }
     
-//    @IBAction func signUp(_ sender: Any) {
-//    }
-//    
+    
+    @IBAction func createAccount(_ sender: Any) {
+        
+        let password1 = _password1.text
+        let password2 = _password2.text
+        let username = _username.text
+        
+        if username == "" {
+            
+            errorPopUp(title: "Username", message: "Please enter a username")
+            
+            _password1.text = ""
+            _password2.text = ""
+            
+            return
+        } else if password1 == "" || password2 == "" {
+            errorPopUp(title: "Password", message: "Password field is empty")
+            
+            _password1.text = ""
+            _password2.text = ""
+            
+            return
+        } else if password1 != password2 {
+            errorPopUp(title: "Password", message: "Password mismatch")
+            
+            _password1.text = ""
+            _password2.text = ""
+            
+            return
+        } else {
+            
+            user.setpassword(value: password1!)
+            let vc = self.storyboard?.instantiateViewController(withIdentifier: "ProfileStoryboard")
+            self.show(vc!, sender: self)
+        }
+    }
+    
+    func errorPopUp (title:String, message:String) {
+        
+        let alert = UIAlertController(title: title, message: message, preferredStyle: .alert)
+        
+        let acceptAlert = UIAlertAction(title: "Okay", style: .cancel)
+        
+        alert.addAction(acceptAlert)
+        
+        present(alert, animated: true, completion: nil)
+    }
+    
     
 }
 

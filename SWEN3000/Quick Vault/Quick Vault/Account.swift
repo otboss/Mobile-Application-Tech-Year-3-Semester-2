@@ -7,10 +7,11 @@
 //
 
 import Foundation
+import UIKit
 
 class Account {
     static var username = ""
-    static var password = "123"
+    static var password = ""
     
     func setpassword (value: String){
         Account.password = value
@@ -18,5 +19,15 @@ class Account {
     func getpassword () -> String {
         return Account.password
     }
+    func changePassword(oldpassword:String, newpassword:String) -> Bool {
+        if oldpassword != Account.password {
+            return false
+            
+        } else {
+            Account.password = newpassword
+            return true
+        }
+    }
+    
     
 }

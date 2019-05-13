@@ -9,23 +9,39 @@
 /* Begin PBXBuildFile section */
 		C23F455922825FA000CBCB69 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = C23F455822825FA000CBCB69 /* AppDelegate.swift */; };
 		C23F455B22825FA000CBCB69 /* ViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = C23F455A22825FA000CBCB69 /* ViewController.swift */; };
-		C23F455E22825FA000CBCB69 /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = C23F455C22825FA000CBCB69 /* Main.storyboard */; };
+		C23F455E22825FA000CBCB69 /* signInNsignUp.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = C23F455C22825FA000CBCB69 /* signInNsignUp.storyboard */; };
 		C23F456022825FBE00CBCB69 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = C23F455F22825FBE00CBCB69 /* Assets.xcassets */; };
 		C23F456322825FBE00CBCB69 /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = C23F456122825FBE00CBCB69 /* LaunchScreen.storyboard */; };
 		C23F456B228271BA00CBCB69 /* Account.swift in Sources */ = {isa = PBXBuildFile; fileRef = C23F456A228271BA00CBCB69 /* Account.swift */; };
 		C23F456D2283BFC500CBCB69 /* local.strings in Resources */ = {isa = PBXBuildFile; fileRef = C23F456C2283BFC500CBCB69 /* local.strings */; };
+		C2DB9A322286CC92004293A7 /* main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = C2DB9A312286CC92004293A7 /* main.storyboard */; };
+		C2DB9A34228700FE004293A7 /* vault.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = C2DB9A33228700FE004293A7 /* vault.storyboard */; };
+		C2DB9A3822892674004293A7 /* profile.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = C2DB9A3722892674004293A7 /* profile.storyboard */; };
+		C2DB9A3A2289296A004293A7 /* AlertServices.swift in Sources */ = {isa = PBXBuildFile; fileRef = C2DB9A392289296A004293A7 /* AlertServices.swift */; };
+		C2DB9A3C228929C9004293A7 /* RealmServices.swift in Sources */ = {isa = PBXBuildFile; fileRef = C2DB9A3B228929C9004293A7 /* RealmServices.swift */; };
+		C2DB9A3E2289A6B2004293A7 /* Credentials.swift in Sources */ = {isa = PBXBuildFile; fileRef = C2DB9A3D2289A6B2004293A7 /* Credentials.swift */; };
+		F4467DDBC91CCFC075C47D5A /* Pods_Quick_Vault.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 865F4A30793F35597B082EC5 /* Pods_Quick_Vault.framework */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		6BE46BAF304A4826D862177E /* Pods-Quick Vault.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Quick Vault.debug.xcconfig"; path = "Target Support Files/Pods-Quick Vault/Pods-Quick Vault.debug.xcconfig"; sourceTree = "<group>"; };
+		6CFA25E436EBBD2E43C054EA /* Pods-Quick Vault.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Quick Vault.release.xcconfig"; path = "Target Support Files/Pods-Quick Vault/Pods-Quick Vault.release.xcconfig"; sourceTree = "<group>"; };
+		865F4A30793F35597B082EC5 /* Pods_Quick_Vault.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_Quick_Vault.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		C23F455522825FA000CBCB69 /* Quick Vault.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Quick Vault.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		C23F455822825FA000CBCB69 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		C23F455A22825FA000CBCB69 /* ViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ViewController.swift; sourceTree = "<group>"; };
-		C23F455D22825FA000CBCB69 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/Main.storyboard; sourceTree = "<group>"; };
+		C23F455D22825FA000CBCB69 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/signInNsignUp.storyboard; sourceTree = "<group>"; };
 		C23F455F22825FBE00CBCB69 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		C23F456222825FBE00CBCB69 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/LaunchScreen.storyboard; sourceTree = "<group>"; };
 		C23F456422825FBE00CBCB69 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		C23F456A228271BA00CBCB69 /* Account.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Account.swift; sourceTree = "<group>"; };
 		C23F456C2283BFC500CBCB69 /* local.strings */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; path = local.strings; sourceTree = "<group>"; };
+		C2DB9A312286CC92004293A7 /* main.storyboard */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; path = main.storyboard; sourceTree = "<group>"; };
+		C2DB9A33228700FE004293A7 /* vault.storyboard */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; path = vault.storyboard; sourceTree = "<group>"; };
+		C2DB9A3722892674004293A7 /* profile.storyboard */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; path = profile.storyboard; sourceTree = "<group>"; };
+		C2DB9A392289296A004293A7 /* AlertServices.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AlertServices.swift; sourceTree = "<group>"; };
+		C2DB9A3B228929C9004293A7 /* RealmServices.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RealmServices.swift; sourceTree = "<group>"; };
+		C2DB9A3D2289A6B2004293A7 /* Credentials.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Credentials.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -33,17 +49,37 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				F4467DDBC91CCFC075C47D5A /* Pods_Quick_Vault.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		6AE638FD344084676C8ABADC /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				865F4A30793F35597B082EC5 /* Pods_Quick_Vault.framework */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
+		8ACC821C1EDE5E9B5E5C2F70 /* Pods */ = {
+			isa = PBXGroup;
+			children = (
+				6BE46BAF304A4826D862177E /* Pods-Quick Vault.debug.xcconfig */,
+				6CFA25E436EBBD2E43C054EA /* Pods-Quick Vault.release.xcconfig */,
+			);
+			path = Pods;
+			sourceTree = "<group>";
+		};
 		C23F454C22825FA000CBCB69 = {
 			isa = PBXGroup;
 			children = (
 				C23F455722825FA000CBCB69 /* Quick Vault */,
 				C23F455622825FA000CBCB69 /* Products */,
+				8ACC821C1EDE5E9B5E5C2F70 /* Pods */,
+				6AE638FD344084676C8ABADC /* Frameworks */,
 			);
 			sourceTree = "<group>";
 		};
@@ -58,16 +94,30 @@
 		C23F455722825FA000CBCB69 /* Quick Vault */ = {
 			isa = PBXGroup;
 			children = (
+				C2DB9A302286CC27004293A7 /* StoryBoards */,
 				C23F455822825FA000CBCB69 /* AppDelegate.swift */,
 				C23F455A22825FA000CBCB69 /* ViewController.swift */,
 				C23F456C2283BFC500CBCB69 /* local.strings */,
-				C23F455C22825FA000CBCB69 /* Main.storyboard */,
 				C23F456A228271BA00CBCB69 /* Account.swift */,
 				C23F455F22825FBE00CBCB69 /* Assets.xcassets */,
 				C23F456122825FBE00CBCB69 /* LaunchScreen.storyboard */,
 				C23F456422825FBE00CBCB69 /* Info.plist */,
+				C2DB9A392289296A004293A7 /* AlertServices.swift */,
+				C2DB9A3B228929C9004293A7 /* RealmServices.swift */,
+				C2DB9A3D2289A6B2004293A7 /* Credentials.swift */,
 			);
 			path = "Quick Vault";
+			sourceTree = "<group>";
+		};
+		C2DB9A302286CC27004293A7 /* StoryBoards */ = {
+			isa = PBXGroup;
+			children = (
+				C23F455C22825FA000CBCB69 /* signInNsignUp.storyboard */,
+				C2DB9A312286CC92004293A7 /* main.storyboard */,
+				C2DB9A33228700FE004293A7 /* vault.storyboard */,
+				C2DB9A3722892674004293A7 /* profile.storyboard */,
+			);
+			path = StoryBoards;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -77,9 +127,11 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = C23F456722825FBE00CBCB69 /* Build configuration list for PBXNativeTarget "Quick Vault" */;
 			buildPhases = (
+				A9CEE3DB7E0BB79F6B2F3E9E /* [CP] Check Pods Manifest.lock */,
 				C23F455122825FA000CBCB69 /* Sources */,
 				C23F455222825FA000CBCB69 /* Frameworks */,
 				C23F455322825FA000CBCB69 /* Resources */,
+				857054FD9D8FA9EE0536085D /* [CP] Embed Pods Frameworks */,
 			);
 			buildRules = (
 			);
@@ -128,20 +180,75 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				C2DB9A3822892674004293A7 /* profile.storyboard in Resources */,
+				C2DB9A322286CC92004293A7 /* main.storyboard in Resources */,
 				C23F456D2283BFC500CBCB69 /* local.strings in Resources */,
 				C23F456322825FBE00CBCB69 /* LaunchScreen.storyboard in Resources */,
+				C2DB9A34228700FE004293A7 /* vault.storyboard in Resources */,
 				C23F456022825FBE00CBCB69 /* Assets.xcassets in Resources */,
-				C23F455E22825FA000CBCB69 /* Main.storyboard in Resources */,
+				C23F455E22825FA000CBCB69 /* signInNsignUp.storyboard in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXResourcesBuildPhase section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		857054FD9D8FA9EE0536085D /* [CP] Embed Pods Frameworks */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+				"${PODS_ROOT}/Target Support Files/Pods-Quick Vault/Pods-Quick Vault-frameworks.sh",
+				"${BUILT_PRODUCTS_DIR}/Realm/Realm.framework",
+				"${BUILT_PRODUCTS_DIR}/RealmSwift/RealmSwift.framework",
+			);
+			name = "[CP] Embed Pods Frameworks";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/Realm.framework",
+				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/RealmSwift.framework",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-Quick Vault/Pods-Quick Vault-frameworks.sh\"\n";
+			showEnvVarsInLog = 0;
+		};
+		A9CEE3DB7E0BB79F6B2F3E9E /* [CP] Check Pods Manifest.lock */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+				"${PODS_PODFILE_DIR_PATH}/Podfile.lock",
+				"${PODS_ROOT}/Manifest.lock",
+			);
+			name = "[CP] Check Pods Manifest.lock";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+				"$(DERIVED_FILE_DIR)/Pods-Quick Vault-checkManifestLockResult.txt",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
+			showEnvVarsInLog = 0;
+		};
+/* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		C23F455122825FA000CBCB69 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				C2DB9A3E2289A6B2004293A7 /* Credentials.swift in Sources */,
+				C2DB9A3A2289296A004293A7 /* AlertServices.swift in Sources */,
+				C2DB9A3C228929C9004293A7 /* RealmServices.swift in Sources */,
 				C23F455B22825FA000CBCB69 /* ViewController.swift in Sources */,
 				C23F455922825FA000CBCB69 /* AppDelegate.swift in Sources */,
 				C23F456B228271BA00CBCB69 /* Account.swift in Sources */,
@@ -151,12 +258,12 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXVariantGroup section */
-		C23F455C22825FA000CBCB69 /* Main.storyboard */ = {
+		C23F455C22825FA000CBCB69 /* signInNsignUp.storyboard */ = {
 			isa = PBXVariantGroup;
 			children = (
 				C23F455D22825FA000CBCB69 /* Base */,
 			);
-			name = Main.storyboard;
+			name = signInNsignUp.storyboard;
 			sourceTree = "<group>";
 		};
 		C23F456122825FBE00CBCB69 /* LaunchScreen.storyboard */ = {
@@ -288,6 +395,7 @@
 		};
 		C23F456822825FBE00CBCB69 /* Debug */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = 6BE46BAF304A4826D862177E /* Pods-Quick Vault.debug.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_STYLE = Automatic;
@@ -306,6 +414,7 @@
 		};
 		C23F456922825FBE00CBCB69 /* Release */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = 6CFA25E436EBBD2E43C054EA /* Pods-Quick Vault.release.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_STYLE = Automatic;

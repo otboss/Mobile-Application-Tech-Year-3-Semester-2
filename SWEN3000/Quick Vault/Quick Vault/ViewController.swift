@@ -7,6 +7,7 @@
 //
 
 import UIKit
+import RealmSwift
 
 var user = Account()
 
@@ -32,7 +33,9 @@ class SignInViewController: UIViewController {
 
         if ( password == ""){
             
-            errorPopUp(title: "Alert", message: "Please enter a password")
+            AlertServices.errorPopUp(vc: self,title: "Alert", message: "Please enter a password")
+
+
             
             _password.text = ""
         
@@ -42,7 +45,7 @@ class SignInViewController: UIViewController {
             
             if user.getpassword() == "" {
                 
-                errorPopUp(title: "Account", message: "No account found on device")
+                AlertServices.errorPopUp(vc: self, title: "Account", message: "No account found on device")
             }
 
             else if (user.getpassword() == password){
@@ -54,7 +57,7 @@ class SignInViewController: UIViewController {
             } else {
                 
                 
-                errorPopUp(title: "Error", message: "Incorrect password entered")
+                AlertServices.errorPopUp(vc: self, title: "Error", message: "Incorrect password entered")
                 
                 _password.text = ""
                 
@@ -64,19 +67,7 @@ class SignInViewController: UIViewController {
         
         
 
-    }
-    
-    func errorPopUp (title:String, message:String) {
-        
-        let alert = UIAlertController(title: title, message: message, preferredStyle: .alert)
-        
-        let acceptAlert = UIAlertAction(title: "Okay", style: .cancel)
-        
-        alert.addAction(acceptAlert)
-        
-        present(alert, animated: true, completion: nil)
-    }
-    
+    }   
     
   
     
@@ -104,21 +95,21 @@ class SignUpViewConstroller: UIViewController{
         
         if username == "" {
             
-            errorPopUp(title: "Username", message: "Please enter a username")
+            AlertServices.errorPopUp(vc: self, title: "Username", message: "Please enter a username")
             
             _password1.text = ""
             _password2.text = ""
             
             return
         } else if password1 == "" || password2 == "" {
-            errorPopUp(title: "Password", message: "Password field is empty")
+            AlertServices.errorPopUp(vc: self, title: "Password", message: "Password field is empty")
             
             _password1.text = ""
             _password2.text = ""
             
             return
         } else if password1 != password2 {
-            errorPopUp(title: "Password", message: "Password mismatch")
+            AlertServices.errorPopUp(vc: self, title: "Password", message: "Password mismatch")
             
             _password1.text = ""
             _password2.text = ""
@@ -134,33 +125,153 @@ class SignUpViewConstroller: UIViewController{
         }
     }
     
-    func errorPopUp (title:String, message:String) {
+    
+}
+
+
+class passwords : UITableViewController, UISearchBarDelegate {
+    
+    var num = 5
+    var names = ["Asnj","Hasj","yuuuu", "pop", "paaaa"]
+    var searchItems = [String]()
+    var searching = false
+    @IBOutlet var Search: UISearchBar!
+    var credentialList: Results<Credentials>!
+    
+    override func viewDidLoad() {
+        super.viewDidLoad()
         
-        let alert = UIAlertController(title: title, message: message, preferredStyle: .alert)
-        
-        let acceptAlert = UIAlertAction(title: "Okay", style: .cancel)
-        
-        alert.addAction(acceptAlert)
-        
-        present(alert, animated: true, completion: nil)
+        let realm = RealmService.shared.realm
+        credentialList = realm.objects(Credentials.self)
     }
+    
+    override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
+        if searching {
+            return searchItems.count
+        } else {
+            return num
+//            return credentialList.count
+        }
+        
+    }
+    
+    override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
+        
+        let cell = tableView.dequeueReusableCell(withIdentifier: "cell1")
+        
+        cell?.backgroundColor = UIColor(red: 0.6902, green: 0.4549, blue: 0.9294, alpha: 1.0)
+        
+//        cell?.contentView.backgroundColor = UIColor.green
+        tableView.backgroundColor = UIColor(red:0.58, green:0.51, blue:0.91, alpha:1.0)
+
+        
+        if searching {
+            cell?.textLabel?.text = searchItems[indexPath.row]
+            
+        } else {
+            cell?.textLabel?.text = names[indexPath.row]
+//            cell?.textLabel?.text = credentialList
+            
+//            print(credentialList)
+        }
+        
+        
+        
+        return cell!
+    }
+    
+    override func tableView(_ tableView: UITableView, commit editingStyle: UITableViewCell.EditingStyle, forRowAt indexPath: IndexPath) {
+        guard editingStyle == .delete else {return}
+        
+        num -= 1
+        names.remove(at: indexPath.row)
+        tableView.deleteRows(at: [indexPath], with: .automatic)
+    
+    }
+    
+
+    
+    @IBAction func add(_ sender: Any) {
+        
+        AlertServices.adding(vc: self) { (title,username,password) in
+            print(title ?? "",username ?? "",password ?? "")
+            
+        }
+    }
+    
+    func searchBar(_ searchBar: UISearchBar, textDidChange searchText: String) {
+        searchItems = names.filter({$0.lowercased().prefix(searchText.count) == searchText.lowercased() })
+        print(searchItems)
+        searching = true
+        tableView.reloadData()
+        
+    }
+    
+    func searchBarCancelButtonClicked(_ searchBar: UISearchBar) {
+        searching = false
+        searchBar.text = ""
+        tableView.reloadData()
+    }
+    
+    
+
     
     
 }
 
 
-class Profile: UIViewController{
+class listInfo : UITableViewController {
+
     
     override func viewDidLoad() {
         super.viewDidLoad()
     }
     
-}
+//    override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
+//        return 3
+//    }
+    
+//    override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
+//        <#code#>
+//    }
+//
+   
+    
 
-
-class Main: UITabBarController{
-    override func viewDidLoad() {
-        super.viewDidLoad()
+    
+    
+    @IBAction func Editing(_ sender: Any) {
+        
+        AlertServices.updating(vc: self) { (title,username,password) in
+        print(title ?? "",username ?? "",password ?? "")
+        }
+    
     }
+    
+   
 }
+
+
+//class credentials : UITableViewController {
+//    override func viewDidLoad() {
+//        super.viewDidLoad()
+//    }
+//    
+//    override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
+//        
+//        let cell = tableView.dequeueReusableCell(withIdentifier: "cell1")
+//        
+//        if indexPath.row == 0 {
+//            //
+//        } else if indexPath.row == 1 {
+//            //
+//        } else {
+//            //
+//        }
+//        
+//        return cell!
+//    }
+//}
+
+
 

@@ -8,6 +8,7 @@
 
 import Foundation
 import UIKit
+import RealmSwift
 
 class AlertServices {
     
@@ -38,9 +39,9 @@ class AlertServices {
         }
         
         let actionAdd = UIAlertAction(title: "Add", style: .default) { (_) in
-            guard let titleval = alert.textFields?.first?.text,
+            guard let titleval = alert.textFields?[0].text,
                     let usernameval = alert.textFields?[1].text,
-                    let passwordval = alert.textFields?.last?.text
+                    let passwordval = alert.textFields?[2].text
                 else {return}
             
             let title = titleval == "" ? nil : titleval
@@ -58,18 +59,18 @@ class AlertServices {
         vc.present(alert, animated: true)
     }
     
-    static func updating (vc:UIViewController, completion: @escaping (String?,String?,String?) -> Void) {
+    static func updating (vc:UIViewController, database: Credentials, completion: @escaping (String?,String?,String?) -> Void) {
 
         
         let alert = UIAlertController(title: "Updating Record", message: nil, preferredStyle: .alert)
         alert.addTextField {(field1) in
-            field1.placeholder = ""
+            field1.text = database.title
         }
         alert.addTextField { (field2) in
-            field2.placeholder = "Username"
+            field2.text = database.username
         }
         alert.addTextField{ (field3) in
-            field3.placeholder = "Password"
+            field3.text = database.password
         }
         
         let actionAdd = UIAlertAction(title: "Update", style: .default) { (_) in

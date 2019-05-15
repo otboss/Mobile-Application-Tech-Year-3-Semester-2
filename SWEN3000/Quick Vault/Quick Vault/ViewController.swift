@@ -10,6 +10,8 @@ import UIKit
 import RealmSwift
 
 var user = Account()
+var currentCellNum = 0
+var globalcredentialList: Results<Credentials>!
 
 class SignInViewController: UIViewController {
 
@@ -137,31 +139,48 @@ class passwords : UITableViewController, UISearchBarDelegate {
     var searching = false
     @IBOutlet var Search: UISearchBar!
     var credentialList: Results<Credentials>!
+    var notificationToken: NotificationToken?
+    var dispatchGroup = DispatchGroup()
     
     override func viewDidLoad() {
         super.viewDidLoad()
         
         let realm = RealmService.shared.realm
         credentialList = realm.objects(Credentials.self)
+        notificationToken = realm.observe{ (notification, realm) in
+            self.tableView.reloadData()
+            print("reload")
+        }
+        
+        RealmService.shared.observeRealmErrors(in: self) { (error) in
+            print(error ?? "NO error detected")
+        }
+        globalcredentialList = credentialList
+        
+    }
+    
+    override func viewWillDisappear(_ animated: Bool) {
+        super.viewDidDisappear(animated)
+        notificationToken?.invalidate()
+        RealmService.shared.stopObservingErrors(vc: self)
     }
     
     override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         if searching {
             return searchItems.count
         } else {
-            return num
-//            return credentialList.count
+            return credentialList.count
         }
         
     }
     
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         
+        
         let cell = tableView.dequeueReusableCell(withIdentifier: "cell1")
         
         cell?.backgroundColor = UIColor(red: 0.6902, green: 0.4549, blue: 0.9294, alpha: 1.0)
         
-//        cell?.contentView.backgroundColor = UIColor.green
         tableView.backgroundColor = UIColor(red:0.58, green:0.51, blue:0.91, alpha:1.0)
 
         
@@ -169,24 +188,46 @@ class passwords : UITableViewController, UISearchBarDelegate {
             cell?.textLabel?.text = searchItems[indexPath.row]
             
         } else {
-            cell?.textLabel?.text = names[indexPath.row]
-//            cell?.textLabel?.text = credentialList
-            
-//            print(credentialList)
+
+            cell?.textLabel?.text = credentialList[indexPath.row].title
         }
         
         
         
         return cell!
     }
+
     
     override func tableView(_ tableView: UITableView, commit editingStyle: UITableViewCell.EditingStyle, forRowAt indexPath: IndexPath) {
         guard editingStyle == .delete else {return}
         
-        num -= 1
-        names.remove(at: indexPath.row)
-        tableView.deleteRows(at: [indexPath], with: .automatic)
+        
+        if  searching {
+            let cell = tableView.cellForRow(at: indexPath)
+            let labelContent = cell?.textLabel?.text ?? ""
+            let place = getCredentialsWhileSearching(value: labelContent)
+            let credential = credentialList[place]
+            RealmService.shared.delete(credential)
+            
+        } else {
+            let credential = credentialList[indexPath.row]
+            RealmService.shared.delete(credential)
+            self.tableView.reloadData()
+        }
+
     
+    }
+    
+    override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
+        
+        if searching {
+            let cell = tableView.cellForRow(at: indexPath)
+            let labelContent = cell?.textLabel?.text
+            currentCellNum = getCredentialsWhileSearching(value: labelContent ?? "")
+            print(indexPath.row.description)
+        } else {
+        currentCellNum = indexPath.row
+        }
     }
     
 
@@ -196,11 +237,18 @@ class passwords : UITableViewController, UISearchBarDelegate {
         AlertServices.adding(vc: self) { (title,username,password) in
             print(title ?? "",username ?? "",password ?? "")
             
+            
+            let newCredential = Credentials(title: title, username: username, password: password)
+            RealmService.shared.create(newCredential)
+            self.tableView.reloadData()
+            print("add reload")
+            
         }
     }
     
     func searchBar(_ searchBar: UISearchBar, textDidChange searchText: String) {
-        searchItems = names.filter({$0.lowercased().prefix(searchText.count) == searchText.lowercased() })
+        let titles = getTitles()
+        searchItems = titles.filter({$0.lowercased().prefix(searchText.count) == searchText.lowercased() })
         print(searchItems)
         searching = true
         tableView.reloadData()
@@ -213,6 +261,30 @@ class passwords : UITableViewController, UISearchBarDelegate {
         tableView.reloadData()
     }
     
+    func getTitles () -> [String] {
+        var dic : [String] = [""]
+        let num = credentialList.count
+        var cur = 0
+        
+        dic.removeAll()
+        while cur < num {
+            dic.append(credentialList[cur].title ?? "No Title")
+            cur += 1
+        }
+        
+        return dic
+    }
+    
+    func getCredentialsWhileSearching (value: String) -> Int {
+        let name = getTitles()
+        var position = 0
+        
+        if name.contains(value) {
+            position = name.firstIndex(of: value) ?? 0
+        }
+        return position
+    }
+    
     
 
     
@@ -221,20 +293,52 @@ class passwords : UITableViewController, UISearchBarDelegate {
 
 
 class listInfo : UITableViewController {
+    
+    var notificationToken: NotificationToken?
 
     
     override func viewDidLoad() {
         super.viewDidLoad()
+        
+        let realm = RealmService.shared.realm
+        notificationToken = realm.observe{ (notification, realm) in
+            self.tableView.reloadData()
+        }
+        
+        RealmService.shared.observeRealmErrors(in: self) { (error) in
+            print(error ?? "NO error detected")
+        }
     }
     
-//    override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-//        return 3
-//    }
+    override func viewWillDisappear(_ animated: Bool) {
+        super.viewDidDisappear(animated)
+        notificationToken?.invalidate()
+        RealmService.shared.stopObservingErrors(vc: self)
+    }
     
-//    override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-//        <#code#>
-//    }
-//
+    override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
+        return 3
+    }
+    
+    override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
+        
+        let cell = tableView.dequeueReusableCell(withIdentifier: "cell1")
+        
+        cell?.backgroundColor = UIColor(red: 0.6902, green: 0.4549, blue: 0.9294, alpha: 1.0)
+        tableView.backgroundColor = UIColor(red:0.58, green:0.51, blue:0.91, alpha:1.0)
+
+        
+        if indexPath.row == 0 {
+            cell?.textLabel?.text = globalcredentialList[currentCellNum].title
+        } else if indexPath.row == 1 {
+            cell?.textLabel?.text = globalcredentialList[currentCellNum].username
+        } else if indexPath.row == 2 {
+            cell?.textLabel?.text = globalcredentialList[currentCellNum].password
+        }
+        
+        return cell!
+    }
+
    
     
 
@@ -242,36 +346,22 @@ class listInfo : UITableViewController {
     
     @IBAction func Editing(_ sender: Any) {
         
-        AlertServices.updating(vc: self) { (title,username,password) in
+        let credential = globalcredentialList[currentCellNum]
+
+        AlertServices.updating(vc: self, database: credential) { (title,username,password) in
         print(title ?? "",username ?? "",password ?? "")
+            
+            let dic: [String: Any?] = ["title": title, "username": username, "password": password]
+            RealmService.shared.update(credential, dictionary: dic)
+            self.tableView.reloadData()
         }
-    
+
     }
-    
+
    
 }
 
 
-//class credentials : UITableViewController {
-//    override func viewDidLoad() {
-//        super.viewDidLoad()
-//    }
-//    
-//    override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-//        
-//        let cell = tableView.dequeueReusableCell(withIdentifier: "cell1")
-//        
-//        if indexPath.row == 0 {
-//            //
-//        } else if indexPath.row == 1 {
-//            //
-//        } else {
-//            //
-//        }
-//        
-//        return cell!
-//    }
-//}
 
 
 

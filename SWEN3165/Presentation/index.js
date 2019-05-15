@@ -98,9 +98,9 @@ const calabashTest = async function () {
     for(var x = 0; x < ranges.length; x++){
         try{
             var characters = "";
-            const upper = testCases[ranges[x]][0];
-            const lower = testCases[ranges[x]][1];
-            for(var y = upper; y <= lower; y++){
+            const lower = testCases[ranges[x]][0];
+            const upper = testCases[ranges[x]][1];
+            for(var y = lower; y <= upper; y++){
                 characters += String.fromCharCode(y);
             }
             console.log("\n\nNOW TESTING CHARACTER SET: "+characters+"\n");

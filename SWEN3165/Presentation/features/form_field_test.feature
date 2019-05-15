@@ -5,10 +5,10 @@
       When I see "Sign Up"
       Then I press "Sign Up"
       When I see "Username"
-      Then I enter text "\"$" into field with id "username"
-      Then I enter text "\"$" into field with id "password"
+      Then I enter text "!" into field with id "username"
+      Then I enter text "!" into field with id "password"
       * I go back
-      Then I enter text "\"$" into field with id "confirmpassword"
+      Then I enter text "!" into field with id "confirmpassword"
       * I go back
       * I wait for 2 seconds
       * I press "submit"  
@@ -20,9 +20,9 @@
       When I see "Login"
       Then I press "Login"
       When I see "Username"
-      Then I enter text "\"$" into field with id "lusername"
+      Then I enter text "!" into field with id "lusername"
       * I go back
-      Then I enter text "\"$" into field with id "lpassword"
+      Then I enter text "!" into field with id "lpassword"
       * I go back
       * I press "Login Now" 
       * I wait for 5 seconds

@@ -11,7 +11,7 @@ class Language{
 
   LanguageDictKeys(BuildContext context){
     Map<String, dynamic> languageDictionary = {};
-    String systemLanguage = getLocality(context).toString();
+    //String systemLanguage = getLocality(context).toString();
     
   }
 }

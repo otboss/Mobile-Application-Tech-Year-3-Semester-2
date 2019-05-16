@@ -14,6 +14,7 @@
 		C23F456322825FBE00CBCB69 /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = C23F456122825FBE00CBCB69 /* LaunchScreen.storyboard */; };
 		C23F456B228271BA00CBCB69 /* Account.swift in Sources */ = {isa = PBXBuildFile; fileRef = C23F456A228271BA00CBCB69 /* Account.swift */; };
 		C23F456D2283BFC500CBCB69 /* local.strings in Resources */ = {isa = PBXBuildFile; fileRef = C23F456C2283BFC500CBCB69 /* local.strings */; };
+		C2D7D01D228D809600224206 /* Encryption.swift in Sources */ = {isa = PBXBuildFile; fileRef = C2D7D01C228D809600224206 /* Encryption.swift */; };
 		C2DB9A322286CC92004293A7 /* main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = C2DB9A312286CC92004293A7 /* main.storyboard */; };
 		C2DB9A34228700FE004293A7 /* vault.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = C2DB9A33228700FE004293A7 /* vault.storyboard */; };
 		C2DB9A3822892674004293A7 /* profile.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = C2DB9A3722892674004293A7 /* profile.storyboard */; };
@@ -36,6 +37,7 @@
 		C23F456422825FBE00CBCB69 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		C23F456A228271BA00CBCB69 /* Account.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Account.swift; sourceTree = "<group>"; };
 		C23F456C2283BFC500CBCB69 /* local.strings */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; path = local.strings; sourceTree = "<group>"; };
+		C2D7D01C228D809600224206 /* Encryption.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = Encryption.swift; path = ../Encryption.swift; sourceTree = "<group>"; };
 		C2DB9A312286CC92004293A7 /* main.storyboard */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; path = main.storyboard; sourceTree = "<group>"; };
 		C2DB9A33228700FE004293A7 /* vault.storyboard */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; path = vault.storyboard; sourceTree = "<group>"; };
 		C2DB9A3722892674004293A7 /* profile.storyboard */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; path = profile.storyboard; sourceTree = "<group>"; };
@@ -105,6 +107,7 @@
 				C2DB9A392289296A004293A7 /* AlertServices.swift */,
 				C2DB9A3B228929C9004293A7 /* RealmServices.swift */,
 				C2DB9A3D2289A6B2004293A7 /* Credentials.swift */,
+				C2D7D01C228D809600224206 /* Encryption.swift */,
 			);
 			path = "Quick Vault";
 			sourceTree = "<group>";
@@ -252,6 +255,7 @@
 				C23F455B22825FA000CBCB69 /* ViewController.swift in Sources */,
 				C23F455922825FA000CBCB69 /* AppDelegate.swift in Sources */,
 				C23F456B228271BA00CBCB69 /* Account.swift in Sources */,
+				C2D7D01D228D809600224206 /* Encryption.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

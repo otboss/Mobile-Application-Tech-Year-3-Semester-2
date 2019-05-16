@@ -8,6 +8,7 @@
 
 import Foundation
 import UIKit
+import RealmSwift
 
 class Account {
     
@@ -20,14 +21,14 @@ class Account {
         return userDefaults.string(forKey: "Username") ?? ""
     }
     
-    func setpassword (value: String){
+    func setpassword (value: Data){
         userDefaults.set(value, forKey: "Password")
     }
-    func getpassword () -> String {
-        return userDefaults.string(forKey:"Password") ?? ""
+    func getpassword () -> Data {
+        return userDefaults.data(forKey:"Password")!
     }
-    func changePassword(oldpassword:String, newpassword:String) -> Bool {
-        if oldpassword != userDefaults.string(forKey: "Password") {
+    func changePassword(oldpassword:Data, newpassword:Data) -> Bool {
+        if oldpassword != userDefaults.data(forKey: "Password") {
             return false
             
         } else {
@@ -38,6 +39,19 @@ class Account {
     func deleteUser() {
         userDefaults.removeObject(forKey: "Username")
         userDefaults.removeObject(forKey: "Password")
+        userDefaults.removeObject(forKey: "TouchIDStatus")
+    }
+    func setTouchIDstatus (value: Bool) {
+        userDefaults.set(value, forKey: "TouchIDStatus")
+    }
+    func getTouchIDstatus () -> Bool {
+        return userDefaults.bool(forKey: "TouchIDStatus") 
+    }
+    func setUserSecret (value: String) {
+        userDefaults.set(value, forKey: "Secret")
+    }
+    func getUserSecret () -> String {
+        return userDefaults.string(forKey: "Secret") ?? ""
     }
     
     

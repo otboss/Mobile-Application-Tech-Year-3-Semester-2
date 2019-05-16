@@ -63,4 +63,6 @@ class RealmService{
     func stopObservingErrors(vc: UIViewController) {
         NotificationCenter.default.removeObserver(vc, name: NSNotification.Name("RealmError"), object:  nil                                             )
     }
+    
+
 }

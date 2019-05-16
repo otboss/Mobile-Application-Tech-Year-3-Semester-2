@@ -44,7 +44,6 @@ Map serverEntrypoints = {
   "/joingroup": "post",
   "/message": "post",
   "/messages": "get",
-  "/anynewmessages": "get",
   "/participants": "get",
   "/isusernametaken": "post"
 };

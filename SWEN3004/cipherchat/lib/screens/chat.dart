@@ -232,29 +232,6 @@ class ChatState extends State<Chat> {
     return oldMessages;
   }
 
-  Future<bool> newMessagesCheck() async {
-    try {
-      String encryptedMessage = secp256k1EllipticCurve.generateRandomString(100);
-      String messageHash = sha256.convert(utf8.encode(encryptedMessage)).toString();
-      Map signature = await secp256k1EllipticCurve.signMessage(messageHash, currentPrivateKey);
-      String username = await databaseManager.getUsername();
-      String joinKey = await databaseManager.getGroupJoinKey(currentGroupId);
-      int offset = await databaseManager.getLastMessageId(currentGroupId);
-      Response response = await dio.get(currentServerUrl + "anynewmessages", data: {
-        "encryptedMessage": encryptedMessage,
-        "signature": signature,
-        "joinKey": joinKey,
-        "username": username,
-        "offset": offset
-      });
-      if (response.data != "true") 
-        return false;
-    } catch (err) {
-      return false;
-    }
-    return true;
-  }
-
   Future<Map> getMessagesForInitialDisplaying() async {
     int lastMessageId = await databaseManager.getLastMessageId(currentGroupId);
     Map oldMessages = await databaseManager.getMessages(currentGroupId,

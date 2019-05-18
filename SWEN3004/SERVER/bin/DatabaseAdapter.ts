@@ -385,7 +385,7 @@ class ParticipantsTable{
 }
 
 class MessagesTable{
-    public tableName:TableName = new TableName("participants");
+    public tableName:TableName = new TableName("messages");
     public messageId:TableColumn = new TableColumn(this.tableName.getTableName(), "mid",  columnTypes.integer, true);
     public groupId:TableColumn = new TableColumn(this.tableName.getTableName(), "gid", columnTypes.integer, false);
     public participantId:TableColumn = new TableColumn(this.tableName.getTableName(), "pid", columnTypes.integer, false);

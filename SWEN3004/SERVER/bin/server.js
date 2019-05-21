@@ -418,6 +418,7 @@ with the title 'Public Server Submission' and the comment of:
         const publicKey2 = addslashes(req.body.publicKey2);
         const passphrase = addslashes(req.body.passphrase);
         const joinKey = sha256(makeJoinKey(1000)+(new Date().getTime().toString()));
+        console.log(req.body);
         try{
             bigInt(publicKey);
             bigInt(publicKey2);
@@ -516,7 +517,7 @@ with the title 'Public Server Submission' and the comment of:
                                     '`+publicKey2+`'
                                 );`, function(error, results, fields){
                                     if(error){
-                                        console.log(err);
+                                        console.log(error);
                                         res.send("-2");
                                     }
                                     else

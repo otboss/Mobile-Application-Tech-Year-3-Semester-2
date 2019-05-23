@@ -369,38 +369,38 @@ export class DatabaseAdapter{
 
 class GroupsTable{
     public tableName:TableName = new TableName("groups");
-    public groupId:TableColumn = new TableColumn(this.tableName.getTableName(), "gid", columnTypes.integer, true);
-    public joinKey:TableColumn = new TableColumn(this.tableName.getTableName(), "joinKey", columnTypes.varchar, false);
-    public timestamp:TableColumn = new TableColumn(this.tableName.getTableName(), "ts", columnTypes.timestamp, false);
+    public groupId:TableColumn = new TableColumn(this.tableName.getTableName(), "gid", ColumnTypes.integer, true);
+    public joinKey:TableColumn = new TableColumn(this.tableName.getTableName(), "joinKey", ColumnTypes.varchar, false);
+    public timestamp:TableColumn = new TableColumn(this.tableName.getTableName(), "ts", ColumnTypes.timestamp, false);
 }
 
 class ParticipantsTable{
     public tableName:TableName = new TableName("participants");
-    public participantId:TableColumn = new TableColumn(this.tableName.getTableName(), "pid", columnTypes.integer, true);
-    public groupId:TableColumn = new TableColumn(this.tableName.getTableName(), "gid", columnTypes.integer, false);
-    public username:TableColumn = new TableColumn(this.tableName.getTableName(), "username", columnTypes.varchar, false);
-    public publicKey:TableColumn = new TableColumn(this.tableName.getTableName(), "publicKey", columnTypes.varchar, false);
-    public publicKey2:TableColumn = new TableColumn(this.tableName.getTableName(), "publicKey2", columnTypes.varchar, false);
-    public timestamp:TableColumn = new TableColumn(this.tableName.getTableName(), "ts", columnTypes.timestamp, false);
+    public participantId:TableColumn = new TableColumn(this.tableName.getTableName(), "pid", ColumnTypes.integer, true);
+    public groupId:TableColumn = new TableColumn(this.tableName.getTableName(), "gid", ColumnTypes.integer, false);
+    public username:TableColumn = new TableColumn(this.tableName.getTableName(), "username", ColumnTypes.varchar, false);
+    public publicKey:TableColumn = new TableColumn(this.tableName.getTableName(), "publicKey", ColumnTypes.varchar, false);
+    public publicKey2:TableColumn = new TableColumn(this.tableName.getTableName(), "publicKey2", ColumnTypes.varchar, false);
+    public timestamp:TableColumn = new TableColumn(this.tableName.getTableName(), "ts", ColumnTypes.timestamp, false);
 }
 
 class MessagesTable{
     public tableName:TableName = new TableName("messages");
-    public messageId:TableColumn = new TableColumn(this.tableName.getTableName(), "mid",  columnTypes.integer, true);
-    public groupId:TableColumn = new TableColumn(this.tableName.getTableName(), "gid", columnTypes.integer, false);
-    public participantId:TableColumn = new TableColumn(this.tableName.getTableName(), "pid", columnTypes.integer, false);
-    public message:TableColumn = new TableColumn(this.tableName.getTableName(), "message", columnTypes.varchar, false);
-    public timestamp:TableColumn = new TableColumn(this.tableName.getTableName(), "ts", columnTypes.timestamp, false);    
+    public messageId:TableColumn = new TableColumn(this.tableName.getTableName(), "mid",  ColumnTypes.integer, true);
+    public groupId:TableColumn = new TableColumn(this.tableName.getTableName(), "gid", ColumnTypes.integer, false);
+    public participantId:TableColumn = new TableColumn(this.tableName.getTableName(), "pid", ColumnTypes.integer, false);
+    public message:TableColumn = new TableColumn(this.tableName.getTableName(), "message", ColumnTypes.varchar, false);
+    public timestamp:TableColumn = new TableColumn(this.tableName.getTableName(), "ts", ColumnTypes.timestamp, false);    
 }
 
 class CompositeKeysTable{
     public tableName:TableName = new TableName("compositeKeys");
-    public compositeKeyId:TableColumn = new TableColumn(this.tableName.getTableName(), "cpid",  columnTypes.integer, true);
-    public messageId:TableColumn = new TableColumn(this.tableName.getTableName(), "mid", columnTypes.integer, false);
-    public groupId:TableColumn = new TableColumn(this.tableName.getTableName(), "gid", columnTypes.integer, false);
-    public participantId:TableColumn = new TableColumn(this.tableName.getTableName(), "pid", columnTypes.integer, false);
-    public compositeKey:TableColumn = new TableColumn(this.tableName.getTableName(), "compositeKey", columnTypes.varchar, false);
-    public timestamp:TableColumn = new TableColumn(this.tableName.getTableName(), "ts", columnTypes.timestamp, false);    
+    public compositeKeyId:TableColumn = new TableColumn(this.tableName.getTableName(), "cpid",  ColumnTypes.integer, true);
+    public messageId:TableColumn = new TableColumn(this.tableName.getTableName(), "mid", ColumnTypes.integer, false);
+    public groupId:TableColumn = new TableColumn(this.tableName.getTableName(), "gid", ColumnTypes.integer, false);
+    public participantId:TableColumn = new TableColumn(this.tableName.getTableName(), "pid", ColumnTypes.integer, false);
+    public compositeKey:TableColumn = new TableColumn(this.tableName.getTableName(), "compositeKey", ColumnTypes.varchar, false);
+    public timestamp:TableColumn = new TableColumn(this.tableName.getTableName(), "ts", ColumnTypes.timestamp, false);    
 }
 
 class TableName{
@@ -413,7 +413,7 @@ class TableName{
     }
 }
 
-enum columnTypes{
+enum ColumnTypes{
     integer,
     varchar,
     text,
@@ -426,8 +426,8 @@ class TableColumn{
     public columnName:string;
     public fullColumnName:string;
     public isPrimary: boolean;
-    public type:columnTypes;
-    constructor(tableName:string, columnName:string, type:columnTypes, isPrimary:boolean){
+    public type:ColumnTypes;
+    constructor(tableName:string, columnName:string, type:ColumnTypes, isPrimary:boolean){
         this.tableName = tableName;
         this.columnName = columnName;
         this.fullColumnName = tableName+"."+columnName;

@@ -14,7 +14,7 @@ class Language{
   }
 
   String getSystemLanguage(BuildContext context){
-    return Localizations.localeOf(context).languageCode;
+    return Localizations.localeOf(context).toString();
   }
 
   String defaultLanguage = SupportedLanguages.en_US.toString();

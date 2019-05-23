@@ -2,7 +2,6 @@
 import 'dart:async';
 import 'dart:io';
 import 'package:cipherchat/main.dart';
-import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import '../main.dart';
 
@@ -418,6 +417,9 @@ class HomeState extends State<Home> {
         return true;
       };
     };
+
+    //print(Localizations.localeOf(context));
+    
 
     FutureBuilder loadRecentConversations = FutureBuilder<List>(
       future: loadConversations(groupsOffset),

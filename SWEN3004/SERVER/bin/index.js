@@ -51,7 +51,6 @@ console.log(`
 BOOTED A CipherChat SERVER
 ==========================
 Selected Port: `+config.port+`
-HTTPS: `+config.enableHTTPS+`
 Debug Mode: false
 
 Starting Server..

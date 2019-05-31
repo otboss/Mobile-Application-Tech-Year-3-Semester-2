@@ -580,7 +580,6 @@ with the title 'Public Server Submission' and the comment of:
         }  
     });
 
-
     router.post('/message', async function(req, res){
         if(Object.keys(req.body).length == 0){
             res.send("");

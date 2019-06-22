@@ -1,1 +1,0 @@
-The contents for this course were submitted at: "url here"

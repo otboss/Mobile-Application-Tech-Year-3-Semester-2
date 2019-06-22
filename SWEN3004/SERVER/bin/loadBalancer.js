@@ -46,6 +46,9 @@ const startLocalServers = async function(){
 
 startLocalServers().then(function(){
     const handler = function(req, res){
+        //Execute the line below in a separate thread for better performance
+        //and scalability when handling large files. It has not been implemented 
+        //due to the small size of current response data
         req.pipe(request({ url: servers[currentServer] + req.url })).pipe(res);
         currentServer = (currentServer + 1) % servers.length;
     };
